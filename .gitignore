@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Datasets, weights, checkpoints — never committed. Keep the directories
+# themselves so the layout is self-documenting.
+data/*
+!data/.gitkeep
+models/*
+!models/.gitkeep
+
+# Ultralytics training output
+runs/
