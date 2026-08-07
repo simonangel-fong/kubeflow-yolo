@@ -28,21 +28,21 @@ few epochs over a long run.
 
 ## Phases
 
-| #   | Phase                            | Description                                                                                       | Done when                                         |
-| --- | -------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| 0   | Fix `.gitignore`                 | Add `data/*` and `models/*` — the current file does **not** ignore them                           | `git status` shows no dataset files               |
-| 1   | Restructure data                 | Move flat `data/` → `data/raw/`; script a split into `data/processed/{train,val}/{images,labels}` | Every image has a matching label; no orphans      |
-| 2   | `data.yaml`                      | Path, `nc: 1`, `names: [license_plate]` in `configs/`                                             | `YOLO` loads it without error                     |
-| 3   | Setup venv                       | `.venv`, `requirements.txt` (ultralytics, jupyter, ipykernel)                                     | `import ultralytics` works in the notebook kernel |
-| 4   | `notebooks/01-local-train.ipynb` | Notebook wired to the venv kernel                                                                 | Kernel runs a cell                                |
-| 5   | Configure + train                | Load `yolo11n.pt`, small `imgsz`/`epochs`, CPU-safe; log device used                              | Run completes, weights in `runs/`                 |
-| 6   | Evaluate                         | `model.val()` → mAP50; predict on a few val images and view boxes                                 | Metrics printed, predictions visually plausible   |
+| #   | Phase               | Description                                | Done when                                         | Status |
+| --- | ------------------- | ------------------------------------------ | ------------------------------------------------- | ------ |
+| 0   | Fix `.gitignore`    | Stop git tracking datasets and weights     | `git status` shows no dataset files               | done   |
+| 1   | Download image data | Download data from archived Google Drive   | Images + labels present in `data/raw/`            | done   |
+| 2   | Setup venv          | venv, `requirements.txt`, install packages | `import ultralytics` works in the notebook kernel |        |
+| 3   | Create notebook     | Notebook wired to the venv kernel          | Kernel runs a cell                                |        |
+| 4   | Configure model     | Prepare data, then configure the model     | `YOLO` loads the dataset without error            |        |
+| 5   | Train model         | Train                                      | Run completes, weights written                    |        |
+| 6   | Test and evaluate   | Test, validate                             | Metrics printed, predictions plausible            |        |
 
 ### Notes
 
-- Phase 1 is the real risk: verify pairing and the split **before** training —
-  YOLO fails quietly on a mismatched `images/`/`labels/` layout.
-- Consider renaming files to strip spaces during the split.
+- Phase 3 is the real risk. Data prep lives here — the split into the
+  `images/`/`labels/` layout, and the `data.yaml` describing it. YOLO fails
+  quietly on a mismatched layout, so verify pairing before training.
 - Reusable logic (split, pairing check) → `src/`, not the notebook.
 
 ---
