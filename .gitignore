@@ -226,3 +226,6 @@ models/*
 
 # Ultralytics training output
 runs/
+
+# Pretrained weights, downloaded on demand into whatever the cwd happens to be
+*.pt

@@ -12,3 +12,14 @@ py -3.12 -m venv .venv
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+---
+
+### Configure model
+
+**`configs/data.yaml`**: indicate working dir
+**`configs/train.yaml`**: Hyperparameters
+
+**Model**:
+
+- `yolo11n.pt`: the smallest variant, pretrained.

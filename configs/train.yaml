@@ -1,0 +1,17 @@
+# Training hyperparameters for stage 1 (local, CPU).
+#
+# The goal is a working pipeline, not accuracy -- imgsz and epochs are set for
+# a run that finishes in minutes, not hours. Raise both once the pipeline is
+# proven end to end.
+
+model: yolo11n.pt
+epochs: 10
+imgsz: 416
+batch: 8
+device: cpu
+workers: 4
+seed: 0
+
+project: runs
+name: local-train
+exist_ok: true
