@@ -1,5 +1,6 @@
 services:
   jupyter:
+    # custom images
     build:
       context: .
       dockerfile: docker/jupyter.Dockerfile

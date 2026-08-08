@@ -17,8 +17,8 @@ pip install -r requirements.txt
 
 ### Configure model
 
-**`configs/data.yaml`**: indicate working dir
-**`configs/train.yaml`**: Hyperparameters
+**`configs/data.yaml`**: data config file
+**`configs/train.yaml`**: train config file
 
 **Model**:
 
