@@ -26,4 +26,12 @@ pip install -r requirements.txt
 
 ---
 
-### Train model
+## Train model
+
+## Track
+
+```sh
+docker compose -f docker-compose.yml up -d --build
+
+docker compose -f docker-compose.yml down -v
+```

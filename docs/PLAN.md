@@ -1,44 +1,52 @@
-## Stage 2 — local track
+## Stage 4 local cluster
 
-- deploy jupyter notebook and mlflow with docker compose
-- train the same model
-- track training with mlflow
-- try hyperparameter tunning with mlflow
-
-Same model and data as stage 1. What changes is where training runs
-(container, not venv) and that runs are recorded instead of lost.
+- create local cluster with docker kind
+- install argocd using helm
+- install kubeflow via argocd
+- install notebook
 
 ---
 
 ## Stack
 
-- docker compose
-- Jupyter (containerised)
-- mlflow
+- docker kind
+- argocd
+- kubeflow
+
+---
+
+## Constraints
+
+Docker has **7.6 GB RAM** and the host **30.8 GB free disk**. Full Kubeflow
+expects 16+ GB. Install the notebook stack only, not the whole platform, and
+raise the Docker memory limit before starting.
 
 ---
 
 ## Phases
 
-| #   | Phase                 | Description                                        | Done when                                     |
-| --- | --------------------- | -------------------------------------------------- | --------------------------------------------- |
-| 1   | compose stack         | jupyter + mlflow in one compose file, data mounted | both UIs reachable, notebook sees `data/raw/` |
-| 2   | train in container    | rerun the stage 1 notebook unchanged               | metrics match stage 1 within noise            |
-| 3   | track training        | log params, metrics and weights to mlflow          | run appears in mlflow with `best.pt` attached |
-| 4   | hyperparameter tuning | several runs over a small search space             | runs comparable side by side in mlflow        |
+| #   | Phase             | Description                                | Done when                                            |
+| --- | ----------------- | ------------------------------------------ | ---------------------------------------------------- |
+| 0   | raise docker RAM  | Docker Desktop limit to 12 GB+             | `docker info` shows the new total                    |
+| 1   | init cluster      | init cluster with docker kind              | `kubectl get nodes` Ready                            |
+| 2   | install argocd    | install argocd with helm                   | UI reachable, `argocd` CLI logged in                 |
+| 3   | install kubeflow  | notebook stack via argocd, from a git repo | Application `Synced` + `Healthy`                     |
+| 4   | install notebook  | create a notebook server, mount the data   | notebook opens, sees `data/raw/`, imports ultralytics |
 
 ### Notes
 
-- mlflow state must outlive `docker compose down` — decide the backing store in
-  phase 1, not after losing runs.
-- Phase 2 proves the container reaches the data and trains correctly; that run
-  is untracked and disposable.
-- `configs/data.yaml` holds an absolute host path. Container paths differ, so
-  it has to be regenerated inside the container.
-- Tracking code belongs in `src/`, not pasted between notebooks.
+- **Scope kubeflow down.** Install `kubeflow-notebooks` (plus its dependencies),
+  not the full manifest. Pipelines arrive in stage 6, serving in stage 7 —
+  installing them now costs memory for nothing.
+- **ArgoCD needs a git repo it can read.** It syncs from a repo, not from local
+  files, so the manifests must be pushed before phase 3 works.
+- **Decide data access in phase 4, not after.** A kind cluster cannot see the
+  host filesystem unless the node is configured with `extraMounts` at creation
+  time — a phase 1 decision.
+- Watch the kind node's disk: images for the notebook stack are several GB.
 
 ---
 
 ## Output
 
-`docs/02-local-track.md` — write-up of the stage.
+`docs/04-local-cluster.md` — write-up of the stage.

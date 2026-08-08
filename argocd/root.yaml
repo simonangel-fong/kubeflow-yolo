@@ -1,0 +1,30 @@
+# App-of-apps root.
+#   kubectl apply -f argocd/root.yaml
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io # Deleting the root cascades to the children
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
+    targetRevision: master
+    path: argocd/apps
+    directory:
+      recurse: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true # Remove resources deleted from git.
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

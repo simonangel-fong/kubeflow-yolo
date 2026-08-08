@@ -1,0 +1,69 @@
+# ArgoCD for the local kind cluster.
+#
+# Trimmed for a single node with 7.6 GB RAM: no HA, no extra replicas, and the
+# components that only matter in a multi-cluster setup are switched off.
+# Access is via `kubectl port-forward`, so no ingress or LoadBalancer here.
+
+global:
+  # Single node -- one replica of everything.
+  revisionHistoryLimit: 3
+
+configs:
+  params:
+    # TLS is terminated by nothing in front of ArgoCD here, so serve plain HTTP
+    # and let port-forward carry it over localhost.
+    server.insecure: true
+
+  cm:
+    # Let the UI show the app health of resources it does not own.
+    application.resourceTrackingMethod: annotation
+    timeout.reconciliation: 60s
+
+controller:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+server:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  service:
+    type: ClusterIP
+
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 1Gi
+
+applicationSet:
+  # Not needed until many apps are templated from one source.
+  enabled: false
+
+notifications:
+  enabled: false
+
+dex:
+  # No SSO for a local cluster; the built-in admin account is enough.
+  enabled: false
+
+redis:
+  enabled: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi

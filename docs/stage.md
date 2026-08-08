@@ -9,7 +9,7 @@ Stage 2 local track
 - track training with mlflow
 - try hyperparameter tunning with mlflow
 
-Stage 3 local pipeline
+Stage 3 local pipeline(skip)
 
 - build a pipeline to train the model locally using .py files
 - run pipeline locally with venv
@@ -63,11 +63,9 @@ stage 11 eks train (gpu)
 - train model with gpu node
 - compare in mlflow
 
-
 stage 12 eks serve
 
 - install kserve
 - deploy the model
 
-
-stage 13 
+stage 13

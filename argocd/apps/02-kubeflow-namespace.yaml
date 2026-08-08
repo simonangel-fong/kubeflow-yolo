@@ -1,0 +1,30 @@
+# # The kubeflow namespace and the cluster roles the controllers bind to.
+# # Cheap, but the notebook controller fails without them.
+
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: kubeflow-namespace
+#   namespace: argocd
+#   annotations:
+#     argocd.argoproj.io/sync-wave: "2"
+#   finalizers:
+#     - resources-finalizer.argocd.argoproj.io
+# spec:
+#   project: default
+
+#   source:
+#     repoURL: https://github.com/kubeflow/manifests.git
+#     targetRevision: "26.03.1"
+#     path: common/kubeflow-namespace/base
+
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: kubeflow
+
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true

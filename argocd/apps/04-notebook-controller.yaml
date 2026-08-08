@@ -1,0 +1,40 @@
+# # Kubeflow Notebook controller -- reconciles Notebook CRs into StatefulSets.
+# #
+# # The `standalone` overlay sets USE_ISTIO=false, which is what makes this
+# # installable without the service mesh. The `default` overlay is not used: it
+# # still carries deprecated `bases:`/`commonLabels:` kustomize syntax.
+
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: notebook-controller
+#   namespace: argocd
+#   annotations:
+#     argocd.argoproj.io/sync-wave: "3"
+#   finalizers:
+#     - resources-finalizer.argocd.argoproj.io
+# spec:
+#   project: default
+
+#   source:
+#     repoURL: https://github.com/kubeflow/manifests.git
+#     targetRevision: "26.03.1"
+#     path: applications/notebooks-v1/upstream/notebook-controller/overlays/standalone
+
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: notebook-controller-system
+
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - ServerSideApply=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 15s
+#         maxDuration: 3m
+#         factor: 2
