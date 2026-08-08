@@ -1,13 +1,13 @@
-"""Build the YOLO train/val split from the raw dataset.
+"""
+Build the YOLO train/val split from the raw dataset.
 
-`data/raw/` is a flat directory of image + label pairs sharing a basename,
-already lowercased and underscore-separated:
+data/raw/: 
+    directory of image + label pairs
+    e.g.,
+        data/raw/ford_focus_with_license_plate_12.jpeg
+        data/raw/ford_focus_with_license_plate_12.txt
 
-    data/raw/ford_focus_with_license_plate_12.jpeg
-    data/raw/ford_focus_with_license_plate_12.txt
-
-This produces the layout Ultralytics expects:
-
+split layout:
     data/processed/{train,val}/{images,labels}/
 """
 
@@ -18,42 +18,55 @@ import shutil
 from collections import Counter
 from pathlib import Path
 
+# suffixes
 IMAGE_SUFFIXES = {".jpeg", ".jpg", ".png"}
 
-# Not a label: the class-name list emitted by the labelling tool.
+# class name file: have label name
 CLASSES_FILENAME = "classes.txt"
 
 
 def find_pairs(raw_dir: Path) -> tuple[list[tuple[Path, Path]], list[Path], list[Path]]:
-    """Pair images with labels by basename.
-
-    Returns (pairs, images_without_labels, labels_without_images). Ultralytics
-    trains happily on a mismatched directory, so orphans must be surfaced
-    rather than silently dropped.
     """
-    images = {p.stem: p for p in raw_dir.iterdir() if p.suffix.lower() in IMAGE_SUFFIXES}
+    Pair images with labels by basename.
+    Parameters: raw data dir path
+
+    Returns (pairs, images_without_labels, labels_without_images).
+    """
+    # images with suffixes
+    images = {p.stem: p for p in raw_dir.iterdir() if p.suffix.lower()
+              in IMAGE_SUFFIXES}
+
+    # labels per txt
     labels = {
         p.stem: p
         for p in raw_dir.iterdir()
         if p.suffix.lower() == ".txt" and p.name != CLASSES_FILENAME
     }
 
-    pairs = [(images[s], labels[s]) for s in sorted(images.keys() & labels.keys())]
+    # pairs list
+    pairs = [(images[s], labels[s])
+             for s in sorted(images.keys() & labels.keys())]
+    # orphan images list
     orphan_images = [images[s] for s in sorted(images.keys() - labels.keys())]
+    # orphan labels list
     orphan_labels = [labels[s] for s in sorted(labels.keys() - images.keys())]
     return pairs, orphan_images, orphan_labels
 
 
 def summarize(raw_dir: Path) -> dict[str, object]:
-    """Dataset facts worth knowing before training."""
+    """Dataset summary."""
     pairs, orphan_images, orphan_labels = find_pairs(raw_dir)
 
+    # init variables
     boxes_per_image: list[int] = []
     class_counts: Counter[str] = Counter()
     malformed: list[str] = []
 
+    # loop labels from pairs
     for _, label in pairs:
+
         lines = [ln for ln in label.read_text().splitlines() if ln.strip()]
+        # record boxes per image
         boxes_per_image.append(len(lines))
         for ln in lines:
             parts = ln.split()
@@ -88,16 +101,16 @@ def build_split(
     limit: int | None = None,
     seed: int = 0,
 ) -> dict[str, int]:
-    """Copy paired files into out_dir/{train,val}/{images,labels}.
+    """
+    Copy paired files into out_dir/{train,val}/{images,labels}.
 
-    `limit` caps the number of pairs used -- this stage optimises for a working
-    pipeline, not accuracy. Copies rather than moves, so the split can be
     rebuilt with a different seed and data/raw stays intact.
     """
     pairs, orphan_images, orphan_labels = find_pairs(raw_dir)
     if not pairs:
         raise RuntimeError(f"no image/label pairs found in {raw_dir}")
 
+    # random seed
     rng = random.Random(seed)
     rng.shuffle(pairs)
     if limit is not None:
@@ -107,11 +120,12 @@ def build_split(
     splits = {"val": pairs[:n_val], "train": pairs[n_val:]}
 
     if out_dir.exists():
-        shutil.rmtree(out_dir)
+        shutil.rmtree(out_dir)  # delete dir tree
 
     for split, items in splits.items():
         for kind in ("images", "labels"):
             (out_dir / split / kind).mkdir(parents=True, exist_ok=True)
+        # copy files
         for image, label in items:
             shutil.copy2(image, out_dir / split / "images" / image.name)
             shutil.copy2(label, out_dir / split / "labels" / label.name)
@@ -125,7 +139,7 @@ def build_split(
 
 
 def verify_split(out_dir: Path) -> dict[str, int]:
-    """Re-derive pairing from disk, so a broken split fails here, not mid-training."""
+    """Confirm split."""
     counts: dict[str, int] = {}
     for split in ("train", "val"):
         images = {p.stem for p in (out_dir / split / "images").iterdir()}
@@ -148,11 +162,14 @@ def verify_split(out_dir: Path) -> dict[str, int]:
 
 
 def write_data_yaml(path: Path, processed_dir: Path, names: list[str]) -> Path:
-    """Write the dataset descriptor Ultralytics reads.
+    """
+    Write the dataset configuration file.
 
-    `path` is absolute so training works regardless of the caller's cwd.
+    data.yaml: tells yolo about images/labels to be detected
     """
     path.parent.mkdir(parents=True, exist_ok=True)
+
+    # `path` is absolute so training works regardless of the caller's cwd.
     path.write_text(
         f"path: {processed_dir.as_posix()}\n"
         "train: train/images\n"
@@ -160,4 +177,5 @@ def write_data_yaml(path: Path, processed_dir: Path, names: list[str]) -> Path:
         f"nc: {len(names)}\n"
         f"names: {names}\n"
     )
+
     return path
