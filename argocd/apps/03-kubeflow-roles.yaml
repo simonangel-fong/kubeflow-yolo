@@ -1,30 +1,30 @@
-# # Aggregated cluster roles (kubeflow-admin, -edit, -view) that the notebook
-# # controller's RBAC references.
+# cluster roles (kubeflow-admin, -edit, -view)
 
-# apiVersion: argoproj.io/v1alpha1
-# kind: Application
-# metadata:
-#   name: kubeflow-roles
-#   namespace: argocd
-#   annotations:
-#     argocd.argoproj.io/sync-wave: "2"
-#   finalizers:
-#     - resources-finalizer.argocd.argoproj.io
-# spec:
-#   project: default
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow-roles
+  namespace: argocd
+  annotations:
+    # Sync wave 2
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
 
-#   source:
-#     repoURL: https://github.com/kubeflow/manifests.git
-#     targetRevision: "26.03.1"
-#     path: common/kubeflow-roles/base
+  source:
+    repoURL: https://github.com/kubeflow/manifests.git
+    targetRevision: "26.03.1"
+    path: common/kubeflow-roles/base
 
-#   destination:
-#     server: https://kubernetes.default.svc
-#     namespace: kubeflow
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
 
-#   syncPolicy:
-#     automated:
-#       prune: true
-#       selfHeal: true
-#     syncOptions:
-#       - CreateNamespace=true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

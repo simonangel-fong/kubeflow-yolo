@@ -75,3 +75,11 @@ argocd app list
 ```
 
 UI at http://127.0.0.1:8081.
+
+---
+
+## ArgoCD
+
+```sh
+kubectl apply -f argocd/root.yaml
+```

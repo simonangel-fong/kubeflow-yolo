@@ -4,10 +4,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root
+  name: 00-root
   namespace: argocd
   finalizers:
-    - resources-finalizer.argocd.argoproj.io # Deleting the root cascades to the children
+    - resources-finalizer.argocd.argoproj.io/background # Deleting the root cascades to the children
 spec:
   project: default
 
