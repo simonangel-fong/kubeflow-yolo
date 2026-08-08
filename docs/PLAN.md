@@ -1,62 +1,44 @@
-## Stage 1 — Local train
+## Stage 2 — local track
 
-Train a YOLO model locally to detect license plates, in a notebook, referencing
-the prior lab (VehiclePlateDetector).
+- deploy jupyter notebook and mlflow with docker compose
+- train the same model
+- track training with mlflow
+- try hyperparameter tunning with mlflow
 
-**Goal is the training pipeline, not model accuracy.** Prefer a small subset and
-few epochs over a long run.
+Same model and data as stage 1. What changes is where training runs
+(container, not venv) and that runs are recorded instead of lost.
 
 ---
 
 ## Stack
 
-- Python 3.12, venv
-- Ultralytics YOLO (latest), pretrained `yolo11n.pt`
-- Jupyter (local kernel)
-
----
-
-## Starting point
-
-- `data/` holds **556 image + label pairs** (flat, already downloaded) plus
-  `classes.txt`.
-- Labels are YOLO format, **single class `0` = license plate**. Some images have
-  multiple boxes.
-- Images are mixed `.jpeg` / `.png`; filenames contain spaces.
+- docker compose
+- Jupyter (containerised)
+- mlflow
 
 ---
 
 ## Phases
 
-| #   | Phase               | Description                                | Done when                                         | Status |
-| --- | ------------------- | ------------------------------------------ | ------------------------------------------------- | ------ |
-| 0   | Fix `.gitignore`    | Stop git tracking datasets and weights     | `git status` shows no dataset files               | done   |
-| 1   | Download image data | Download data from archived Google Drive   | Images + labels present in `data/raw/`            | done   |
-| 2   | Setup venv          | venv, `requirements.txt`, install packages | `import ultralytics` works in the notebook kernel |        |
-| 3   | Create notebook     | Notebook wired to the venv kernel          | Kernel runs a cell                                |        |
-| 4   | Configure model     | Prepare data, then configure the model     | `YOLO` loads the dataset without error            |        |
-| 5   | Train model         | Train                                      | Run completes, weights written                    |        |
-| 6   | Test and evaluate   | Test, validate                             | Metrics printed, predictions plausible            |        |
+| #   | Phase                 | Description                                        | Done when                                     |
+| --- | --------------------- | -------------------------------------------------- | --------------------------------------------- |
+| 1   | compose stack         | jupyter + mlflow in one compose file, data mounted | both UIs reachable, notebook sees `data/raw/` |
+| 2   | train in container    | rerun the stage 1 notebook unchanged               | metrics match stage 1 within noise            |
+| 3   | track training        | log params, metrics and weights to mlflow          | run appears in mlflow with `best.pt` attached |
+| 4   | hyperparameter tuning | several runs over a small search space             | runs comparable side by side in mlflow        |
 
 ### Notes
 
-- Phase 3 is the real risk. Data prep lives here — the split into the
-  `images/`/`labels/` layout, and the `data.yaml` describing it. YOLO fails
-  quietly on a mismatched layout, so verify pairing before training.
-- Reusable logic (split, pairing check) → `src/`, not the notebook.
-
----
-
-## Optional (after Phase 6 works end to end)
-
-| #   | Phase                 | Description                     |
-| --- | --------------------- | ------------------------------- |
-| A   | Setup MLflow          | MLflow via Docker               |
-| B   | Track training        | Log params/metrics from the run |
-| C   | Hyperparameter tuning | Sweep with MLflow tracking      |
+- mlflow state must outlive `docker compose down` — decide the backing store in
+  phase 1, not after losing runs.
+- Phase 2 proves the container reaches the data and trains correctly; that run
+  is untracked and disposable.
+- `configs/data.yaml` holds an absolute host path. Container paths differ, so
+  it has to be regenerated inside the container.
+- Tracking code belongs in `src/`, not pasted between notebooks.
 
 ---
 
 ## Output
 
-`docs/01-local-train.md` — write-up of the stage (currently empty).
+`docs/02-local-track.md` — write-up of the stage.
