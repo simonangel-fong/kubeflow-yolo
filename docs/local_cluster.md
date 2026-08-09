@@ -188,16 +188,6 @@ kubectl -n istio-system port-forward svc/istio-ingressgateway 8091:80
 
 ## Trainer v2
 
-Synced by `argocd/apps/11-trainer.yaml` from the upstream `kubeflow-platform`
-overlay, which installs the TrainJob controller, JobSet, and the runtime
-catalog into `kubeflow` -- not `kubeflow-system`. Two details make that overlay
-the right one here: it annotates both controllers with
-`excludeInboundPorts: "9443"`, keeping the admission webhooks off the ambient
-mesh where the global deny-all would drop the API server's unauthenticated
-call, and it ships `kubeflow-trainer-edit` labelled to aggregate into
-`kubeflow-edit` -- the role `default-editor` is already bound to, so the
-notebook can submit TrainJobs with no extra RBAC.
-
 ```sh
 # ##############################
 # trainer v2
@@ -224,8 +214,7 @@ kubectl get clustertrainingruntime
 # xgboost-distributed      51s
 
 # the notebook's identity can submit
-kubectl auth can-i create trainjobs.trainer.kubeflow.org \
-  --as=system:serviceaccount:kubeflow:default-editor -n kubeflow
+kubectl auth can-i create trainjobs.trainer.kubeflow.org --as=system:serviceaccount:kubeflow:default-editor -n kubeflow
 # yes
 ```
 
