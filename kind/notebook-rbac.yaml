@@ -1,0 +1,27 @@
+# Notebook pod identity.
+#
+# Upstream this is created by the Profile controller, which is not installed
+# here. The notebook controller defaults every Notebook to default-editor, so
+# without it the pod never schedules.
+#
+#   kubectl apply -f kind/notebook-rbac.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default-editor
+  namespace: kubeflow
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-editor
+  namespace: kubeflow
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubeflow-edit
+subjects:
+  - kind: ServiceAccount
+    name: default-editor
+    namespace: kubeflow

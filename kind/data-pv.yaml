@@ -1,0 +1,41 @@
+# Host data/ exposed as a PV.
+#
+#   kubectl apply -f kind/data-pv.yaml
+#
+# The kubeflow namespace enforces PSS restricted, which forbids hostPath
+# volumes in a pod. A PersistentVolume is cluster-scoped and not subject to
+# that check, so the pod mounts an ordinary PVC and the hostPath stays here.
+#
+# storageClassName is deliberately non-empty and unmanaged: it stops the
+# default local-path provisioner from trying to service this claim, and lets
+# the PVC bind to this PV by class rather than by luck.
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: yolo-data
+spec:
+  capacity:
+    # Not enforced for hostPath; the PVC request just has to fit under it.
+    storage: 20Gi
+  accessModes:
+    - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: host-data
+  hostPath:
+    path: /data
+    type: Directory
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: yolo-data
+  namespace: kubeflow
+spec:
+  accessModes:
+    - ReadOnlyMany
+  storageClassName: host-data
+  resources:
+    requests:
+      storage: 20Gi
+  volumeName: yolo-data
