@@ -1,8 +1,8 @@
-## Stage 4 cluster train
+## Stage 5 cluster train
 
-- install Trainer v2 (TrainJob) — `PyTorchJob` is the v1 training-operator API
-  and does not exist in Trainer v2
-- train the same model via notebook
+- create a trainjob image for `src/train.py`, push to Docker Hub
+- define a custom TrainingRuntime for single-node YOLO
+- train the model as a TrainJob in the cluster
 
 ---
 
@@ -10,22 +10,23 @@
 
 - kind
 - argocd
-- istio (ambient)
-- kubeflow
+- kubeflow trainer v2 (installed in stage 4)
+- docker hub
 
 ---
 
 ## Phases
 
-| #   | Phase                    |
-| --- | ------------------------ |
-| 1   | install trainer          |
-| 2   | train model via notebook |
+| #   | Phase                                                            |
+| --- | ---------------------------------------------------------------- |
+| 0   | trainer installed — done in stage 4                              |
+| 1   | build `docker/train.Dockerfile`, test locally, push `:v0.1.0`    |
+| 2   | `argocd/manifests/train/` — PVC, TrainingRuntime, TrainJob;      |
+|     | synced by `argocd/apps/12-train.yaml`                            |
+| 3   | run a `--limit` smoke job, then a full train; check metrics      |
 
 ---
 
 ## Output
 
-`docs/local_cluster.md` — write-up of the stage.
-
-
+`docs/cluster_train.md` — write-up of the stage.

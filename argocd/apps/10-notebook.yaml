@@ -1,40 +1,40 @@
-# YOLO notebook server: the default-editor identity and the Notebook CR.
-#
-# Requires the yolo-data PVC from kind/data-pv.yaml, applied before this syncs.
-# That manifest stays outside argocd because its hostPath is specific to the
-# kind extraMount.
+# # YOLO notebook server: the default-editor identity and the Notebook CR.
+# #
+# # Requires the yolo-data PVC from kind/data-pv.yaml, applied before this syncs.
+# # That manifest stays outside argocd because its hostPath is specific to the
+# # kind extraMount.
 
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: notebook
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "9"
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: default
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: notebook
+#   namespace: argocd
+#   annotations:
+#     argocd.argoproj.io/sync-wave: "9"
+#   finalizers:
+#     - resources-finalizer.argocd.argoproj.io
+# spec:
+#   project: default
 
-  source:
-    repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
-    targetRevision: master
-    path: argocd/manifests/notebook
+#   source:
+#     repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
+#     targetRevision: master
+#     path: argocd/manifests/notebook
 
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: kubeflow
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: kubeflow
 
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 15s
-        maxDuration: 3m
-        factor: 2
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - ServerSideApply=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 15s
+#         maxDuration: 3m
+#         factor: 2

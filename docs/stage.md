@@ -23,8 +23,9 @@ Stage 4 local cluster
 
 Stage 4 cluster train
 
-- install Trainer(PyTorchJob)
-- train the same model via notebook
+- install Trainer
+- create trainjob image
+- train model with kufeflow trainer with image
 
 Stage 5 cluster track
 

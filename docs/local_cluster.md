@@ -218,28 +218,13 @@ kubectl auth can-i create trainjobs.trainer.kubeflow.org --as=system:serviceacco
 # yes
 ```
 
-The webhook is the part most likely to break behind the mesh, so probe it with
-a server-side dry run as the notebook's own service account -- this exercises
-admission without creating anything:
+- Train
 
 ```sh
-kubectl --as=system:serviceaccount:kubeflow:default-editor \
-  apply --dry-run=server -f - <<'EOF'
-apiVersion: trainer.kubeflow.org/v1alpha1
-kind: TrainJob
-metadata:
-  name: webhook-probe
-  namespace: kubeflow
-spec:
-  runtimeRef:
-    name: torch-distributed
-  trainer:
-    numNodes: 1
-EOF
-# trainjob.trainer.kubeflow.org/webhook-probe created (server dry run)
-```
+kubectl -n kubeflow get trainjob
+kubectl -n kubeflow get jobset
 
-Note for phase 2: `torch-distributed` defaults to
-`pytorch/pytorch:2.13.0-cuda13.0-cudnn9-runtime`, a CUDA image on a CPU-only
-kind cluster. It runs CPU-only but pulls several GB. Override the image in the
-TrainJob rather than patching the shared runtime.
+
+kubectl -n kubeflow delete trainjob job_id
+
+```

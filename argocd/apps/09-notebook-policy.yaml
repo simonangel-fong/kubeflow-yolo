@@ -1,39 +1,39 @@
-# Ingress path for notebook pods: NetworkPolicy + AuthorizationPolicy.
-#
-# Two independent deny layers sit between the gateway and a notebook, and both
-# have to be opened. See the manifests for which does what.
+# # Ingress path for notebook pods: NetworkPolicy + AuthorizationPolicy.
+# #
+# # Two independent deny layers sit between the gateway and a notebook, and both
+# # have to be opened. See the manifests for which does what.
 
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: notebook-policy
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "8"
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: default
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: notebook-policy
+#   namespace: argocd
+#   annotations:
+#     argocd.argoproj.io/sync-wave: "8"
+#   finalizers:
+#     - resources-finalizer.argocd.argoproj.io
+# spec:
+#   project: default
 
-  source:
-    repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
-    targetRevision: master
-    path: argocd/manifests/notebook-policy
+#   source:
+#     repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
+#     targetRevision: master
+#     path: argocd/manifests/notebook-policy
 
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: kubeflow
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: kubeflow
 
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 15s
-        maxDuration: 3m
-        factor: 2
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - ServerSideApply=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 15s
+#         maxDuration: 3m
+#         factor: 2
