@@ -89,8 +89,35 @@ UI at http://127.0.0.1:8081.
 
 ---
 
+## Prerequiresites
+
+```sh
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+helm repo update metrics-server
+helm search repo metrics-server/metrics-server
+# NAME                            CHART VERSION   APP VERSION     DESCRIPTION
+# metrics-server/metrics-server   3.13.1          0.8.1           Metrics Server is a scalable, efficient source .
+
+helm install metrics-server metrics-server/metrics-server --version 3.13.1 --namespace kube-system -f kind/metrics-server-values.yaml --wait --timeout 5m
+
+# confirm
+kubectl top nodes
+# NAME                    CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
+# desktop-control-plane   153m         1%       2148Mi          27%
+
+kubectl -n istio-system get hpa
+# NAME                   REFERENCE                         TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+# istio-ingressgateway   Deployment/istio-ingressgateway   cpu: 4%/80%   1         5         1          11m
+# istiod                 Deployment/istiod                 cpu: 0%/80%   1         5         1          11m
+```
+
+---
+
 ## ArgoCD
 
 ```sh
 kubectl apply -f argocd/root.yaml
+# application.argoproj.io/00-root created
+
+kubectl -n argocd get app
 ```

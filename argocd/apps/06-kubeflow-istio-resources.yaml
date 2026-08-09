@@ -24,6 +24,14 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kubeflow
 
+  # Aggregated ClusterRoles ship with empty rules; the RBAC controller fills
+  # them in from the roles matching their aggregationRule.
+  ignoreDifferences:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      jsonPointers:
+        - /rules
+
   syncPolicy:
     automated:
       prune: true

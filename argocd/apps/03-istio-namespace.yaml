@@ -21,6 +21,15 @@ spec:
     server: https://kubernetes.default.svc
     namespace: istio-system
 
+  # The ambient overlay in istio-install labels this namespace PSS-privileged
+  # for ztunnel. This app owns the Namespace but does not declare that label.
+  ignoreDifferences:
+    - group: ""
+      kind: Namespace
+      name: istio-system
+      jsonPointers:
+        - /metadata/labels/pod-security.kubernetes.io~1enforce
+
   syncPolicy:
     automated:
       prune: true
