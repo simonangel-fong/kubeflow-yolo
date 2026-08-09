@@ -19,10 +19,11 @@ Stage 4 local cluster
 - create local cluster with docker kind
 - install argocd using helm
 - install kubeflow via argocd
-- install notebook
+- install Dashboard, notebook
 
 Stage 4 cluster train
 
+- install Trainer(PyTorchJob)
 - train the same model via notebook
 
 Stage 5 cluster track
@@ -32,6 +33,7 @@ Stage 5 cluster track
 
 Stage 6 cluster pipeline
 
+- install Pipelines (KFP)
 - create pipeline in cluster to train the model
 
 Stage 7 cluster serve
@@ -60,6 +62,7 @@ Stage 10 eks pipeline
 
 stage 11 eks train (gpu)
 
+- install Katib
 - train model with gpu node
 - compare in mlflow
 

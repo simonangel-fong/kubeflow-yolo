@@ -17,14 +17,29 @@ spec:
     path: argocd/apps
     directory:
       recurse: true
+      include: "*.yaml" # Ignore README/docs dropped alongside the manifests.
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: argocd # Child Applications live here; each targets its own namespace.
 
   syncPolicy:
     automated:
-      prune: true # Remove resources deleted from git.
+      prune: true # Remove child Applications deleted from git.
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true # Skip re-applying unchanged children on every sync.
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
+
+  # Tolerate the replica drift ArgoCD would otherwise report as OutOfSync.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

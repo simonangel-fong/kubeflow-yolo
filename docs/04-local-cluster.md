@@ -15,6 +15,7 @@ kind create cluster --config kind/cluster.yaml
 #  ✓ Installing StorageClass 💾
 # Set kubectl context to "kind-desktop"
 # You can now use your cluster with:
+# kubectl cluster-info --context kind-desktop
 
 kubectl cluster-info --context kind-desktop
 # Kubernetes control plane is running at https://127.0.0.1:9981
@@ -30,8 +31,22 @@ kubectl get node
 # NAME                    STATUS   ROLES           AGE     VERSION
 # desktop-control-plane   Ready    control-plane   2m27s   v1.35.0
 
-# confirm the host data mount is readable from a pod, not just on the node
-kubectl run mount-check --image=busybox:1.36 --restart=Never --rm -i --overrides='{"spec":{"containers":[{"name":"c","image":"busybox:1.36","command":["sh","-c","ls /data/raw | wc -l"],"volumeMounts":[{"name":"d","mountPath":"/data","readOnly":true}]}],"volumes":[{"name":"d","hostPath":{"path":"/data","type":"Directory"}}]}}'
+# ##############################
+# Confirm mountable
+# ##############################
+kubectl apply -f kind/mount-check.yaml
+# pod/mount-check created
+
+kubectl logs mount-check
+# total 200960
+# drwxrwxrwx    1 root     root           512 Aug  8 02:05 .
+# drwxrwxrwx    1 root     root           512 Aug  8 18:21 ..
+# -rwxrwxrwx    1 root     root         76060 Aug  7 16:27 audi_a3_convertible_with_license_plate_11.jpeg
+# -rwxrwxrwx    1 root     root            76 Aug  7 16:27 audi_a3_convertible_with_license_plate_11.txt
+
+kubectl delete -f kind/mount-check.yaml
+# pod "mount-check" deleted from default namespace
+
 ```
 
 ---
@@ -46,11 +61,7 @@ helm search repo argo/argo-cd
 # NAME            CHART VERSION   APP VERSION     DESCRIPTION
 # argo/argo-cd    10.1.4          v3.4.5          A Helm chart for Argo CD, a declarative, GitOps...
 
-helm install argocd argo/argo-cd \
-  --version 10.3.0 \
-  --namespace argocd --create-namespace \
-  -f kind/argocd-values.yaml \
-  --wait --timeout 10m
+helm install argocd argo/argo-cd --version 10.3.0 --namespace argocd --create-namespace -f kind/argocd-values.yaml --wait --timeout 10m
 
 # confirm
 kubectl get pods -n argocd
@@ -62,16 +73,16 @@ kubectl get pods -n argocd
 # argocd-server-55bb599c74-ptl8k                      1/1     Running   0          12m
 
 # access
-kubectl port-forward -n argocd svc/argocd-server 8081:80
-# Forwarding from 127.0.0.1:8081 -> 8080
+kubectl port-forward -n argocd svc/argocd-server 8000:80
+# Forwarding from 127.0.0.1:8000 -> 8080
+# Forwarding from [::1]:8000 -> 8080
 
 # initial admin password
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
-argocd login 127.0.0.1:8081 --username admin --insecure --plaintext
-
-argocd cluster list
-argocd app list
+# argocd login 127.0.0.1:8000 --username admin --insecure --plaintext
+# argocd cluster list
+# argocd app list
 ```
 
 UI at http://127.0.0.1:8081.
