@@ -1,6 +1,6 @@
 # TrainJob image
 # runs trainjob/train.py in the cluster.
-#   docker build -f trainjob/train.Dockerfile -t simonangelfong/kubeflow-yolo-train:v0.1.0-cpu .
+#   docker build -f trainjob/Dockerfile -t simonangelfong/kubeflow-yolo-train:v0.1.1-cpu .
 
 FROM python:3.12-slim
 

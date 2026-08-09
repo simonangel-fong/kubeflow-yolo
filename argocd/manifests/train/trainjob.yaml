@@ -19,7 +19,7 @@ spec:
     kind: TrainingRuntime
 
   trainer:
-    image: simonangelfong/kubeflow-yolo-train:v0.1.0-cpu
+    image: simonangelfong/kubeflow-yolo-train:v0.1.1-cpu
     command:
       - python
       - -m

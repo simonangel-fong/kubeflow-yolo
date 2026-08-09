@@ -135,12 +135,17 @@ def validate(save_dir: Path, data_yaml: Path, cfg: dict) -> dict:
     """Re-evaluate best.pt on the val split."""
     best_weights = save_dir / "weights" / "best.pt"
     best = YOLO(str(best_weights))
+    # Without an explicit project, ultralytics writes to ./runs/detect --
+    # relative to the working directory, which the pod cannot write to.
     metrics = best.val(
         data=str(data_yaml),
         imgsz=cfg["imgsz"],
         batch=cfg["batch"],
         device=cfg["device"],
         plots=False,
+        project=str(save_dir.parent),
+        name=f"{save_dir.name}-val",
+        exist_ok=True,
     )
     return {
         "mAP50": metrics.box.map50,

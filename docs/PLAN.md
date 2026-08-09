@@ -20,7 +20,7 @@
 | #   | Phase                                                            |
 | --- | ---------------------------------------------------------------- |
 | 0   | trainer installed — done in stage 4                              |
-| 1   | build `docker/train.Dockerfile`, test locally, push `:v0.1.0`    |
+| 1   | build `trainjob/Dockerfile`, test locally, push `:v0.1.1-cpu`    |
 | 2   | `argocd/manifests/train/` — PVC, TrainingRuntime, TrainJob;      |
 |     | synced by `argocd/apps/12-train.yaml`                            |
 | 3   | run a `--limit` smoke job, then a full train; check metrics      |
