@@ -16,19 +16,23 @@ spec:
     repoURL: https://github.com/kubeflow/manifests.git
     targetRevision: "26.03.1"
     path: common/istio/istio-namespace/base
+    kustomize:
+      # ztunnel needs CAP_SYS_ADMIN/NET_ADMIN/NET_RAW, so this namespace must
+      # be PSS-privileged. Upstream sets it to restricted; the ambient overlay
+      # in istio-install normally overrides it, but that copy is dropped there
+      # so this app is the only owner of the Namespace object.
+      patches:
+        - target:
+            kind: Namespace
+            name: istio-system
+          patch: |-
+            - op: replace
+              path: /metadata/labels/pod-security.kubernetes.io~1enforce
+              value: privileged
 
   destination:
     server: https://kubernetes.default.svc
     namespace: istio-system
-
-  # The ambient overlay in istio-install labels this namespace PSS-privileged
-  # for ztunnel. This app owns the Namespace but does not declare that label.
-  ignoreDifferences:
-    - group: ""
-      kind: Namespace
-      name: istio-system
-      jsonPointers:
-        - /metadata/labels/pod-security.kubernetes.io~1enforce
 
   syncPolicy:
     automated:
