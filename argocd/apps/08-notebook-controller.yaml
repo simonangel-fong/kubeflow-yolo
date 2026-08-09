@@ -25,6 +25,19 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kubeflow
 
+  ignoreDifferences:
+    # Aggregated ClusterRole: rules are filled in by the RBAC controller.
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      jsonPointers:
+        - /rules
+    # The API server defaults conversion.strategy to None.
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: notebooks.kubeflow.org
+      jsonPointers:
+        - /spec/conversion
+
   syncPolicy:
     automated:
       prune: true
