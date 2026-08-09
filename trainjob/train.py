@@ -4,16 +4,18 @@ Training entry point.
 build the split, write the dataset descriptor, train, validate.
 
 Usage:
-    python -m src.train                          # configs/train.yaml as-is
-    python -m src.train --limit 200              # smoke run on 200 pairs
-    python -m src.train --epochs 3 --device cpu  # override hyperparameters
+    python -m trainjob.train                          # configs/train.yaml as-is
+    python -m trainjob.train --limit 200              # smoke run on 200 pairs
+    python -m trainjob.train --epochs 3 --device cpu  # override hyperparameters
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -22,13 +24,14 @@ from ultralytics.data.utils import check_det_dataset
 
 from src.data_loader import build_split, verify_split, write_data_yaml
 
-# Repo root: src/train.py -> src -> repo
+# Repo root: trainjob/train.py -> trainjob -> repo
 ROOT = Path(__file__).resolve().parent.parent
 
 RAW = ROOT / "data" / "raw"
 PROCESSED = ROOT / "data" / "processed"
 TRAIN_CFG = ROOT / "configs" / "train.yaml"
 DATA_YAML = ROOT / "configs" / "data.yaml"
+ARTIFACTS = ROOT / "artifacts"
 
 CLASSES_FILENAME = "classes.txt"
 
@@ -45,6 +48,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="hyperparameter file")
     parser.add_argument("--data-yaml", type=Path, default=DATA_YAML,
                         help="dataset descriptor to generate")
+    parser.add_argument("--artifacts", type=Path, default=ARTIFACTS,
+                        help="where to collect weights, metrics and plots")
 
     # split
     parser.add_argument("--val-fraction", type=float, default=0.2)
@@ -145,6 +150,58 @@ def validate(save_dir: Path, data_yaml: Path, cfg: dict) -> dict:
     }
 
 
+def collect_artifacts(
+    artifacts_dir: Path,
+    save_dir: Path,
+    cfg: dict,
+    train_metrics: dict,
+    val_metrics: dict,
+) -> Path:
+    """
+    Gather the run into one predictable directory.
+
+    Ultralytics scatters its output across a save_dir whose name shifts with
+    run collisions. Downstream steps -- mlflow, kserve -- need a fixed path,
+    so the pieces worth keeping are copied to a layout that does not move:
+
+        <artifacts>/best.pt        the trained weights
+        <artifacts>/summary.json   config, metrics, provenance
+        <artifacts>/plots/         curves and confusion matrices
+
+    Returns the artifacts directory.
+    """
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+    best = save_dir / "weights" / "best.pt"
+    shutil.copy2(best, artifacts_dir / "best.pt")
+
+    plots = artifacts_dir / "plots"
+    plots.mkdir(exist_ok=True)
+    for plot in save_dir.glob("*.png"):
+        shutil.copy2(plot, plots / plot.name)
+
+    # results.csv is the per-epoch history; keep it for curve reconstruction.
+    results_csv = save_dir / "results.csv"
+    if results_csv.exists():
+        shutil.copy2(results_csv, artifacts_dir / "results.csv")
+
+    (artifacts_dir / "summary.json").write_text(
+        json.dumps(
+            {
+                "weights": "best.pt",
+                "weights_bytes": best.stat().st_size,
+                "config": cfg,
+                "train_metrics": train_metrics,
+                "val_metrics": val_metrics,
+                "save_dir": str(save_dir),
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+            },
+            indent=2,
+        )
+    )
+    return artifacts_dir
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
@@ -179,19 +236,9 @@ def main(argv: list[str] | None = None) -> int:
     for weight in sorted((save_dir / "weights").glob("*.pt")):
         print(f"{weight.name:10} {weight.stat().st_size / 1e6:.1f} MB")
 
-    # Machine-readable summary for downstream steps (Kubeflow, CI).
-    (save_dir / "summary.json").write_text(
-        json.dumps(
-            {
-                "save_dir": str(save_dir),
-                "weights": str(save_dir / "weights" / "best.pt"),
-                "config": cfg,
-                "train_metrics": train_metrics,
-                "val_metrics": val_metrics,
-            },
-            indent=2,
-        )
-    )
+    artifacts = collect_artifacts(args.artifacts, save_dir, cfg,
+                                  train_metrics, val_metrics)
+    print("\nartifacts  ", artifacts)
     return 0
 
 

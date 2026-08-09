@@ -142,6 +142,7 @@ UI at http://127.0.0.1:8081.
 # app of apps
 # ##############################
 kubectl apply -f argocd/root.yaml
+# application.argoproj.io/00-root created
 ```
 
 ![local_cluster_argocd01](./img/local_cluster_argocd01.png)
