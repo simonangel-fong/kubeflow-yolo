@@ -1,6 +1,16 @@
-# Stage 1 — Local Train
+# Local Train
+
+[Back](../README.md)
+
+- [Local Train](#local-train)
+  - [Local venv](#local-venv)
+    - [Setup venv](#setup-venv)
+    - [Configure model](#configure-model)
+  - [Tracking with MLflow](#tracking-with-mlflow)
 
 ---
+
+## Local venv
 
 ### Setup venv
 
@@ -26,12 +36,14 @@ pip install -r requirements.txt
 
 ---
 
-## Train model
-
-## Track
+## Tracking with MLflow
 
 ```sh
 docker compose -f docker-compose.yml up -d --build
 
 docker compose -f docker-compose.yml down -v
 ```
+
+![local_mlflow01](./img/local_mlflow01.png)
+
+![local_mlflow02](./img/local_mlflow02.png)
