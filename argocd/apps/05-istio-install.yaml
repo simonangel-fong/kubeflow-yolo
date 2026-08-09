@@ -20,13 +20,14 @@ spec:
     server: https://kubernetes.default.svc
     namespace: istio-system
 
-  # istio-cni and ztunnel are DaemonSets in kube-system; ArgoCD reports their
-  # generated fields as drift on every sync.
+  # istiod flips this webhook's failurePolicy from Ignore to Fail once it is
+  # healthy. Without this, selfHeal reverts it on every sync, forever.
   ignoreDifferences:
-    - group: apps
-      kind: DaemonSet
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istio-validator-istio-system
       jsonPointers:
-        - /spec/template/metadata/annotations
+        - /webhooks/0/failurePolicy
 
   syncPolicy:
     automated:
