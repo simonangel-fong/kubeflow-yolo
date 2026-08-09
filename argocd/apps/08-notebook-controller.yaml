@@ -1,0 +1,40 @@
+# kubeflow notebook controller
+#
+# The kubeflow overlay (not standalone) sets USE_ISTIO=true and points the
+# controller at kubeflow/kubeflow-gateway, so each Notebook gets a
+# VirtualService routed through the gateway installed at wave 6.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notebook-controller
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/kubeflow/manifests.git
+    targetRevision: "26.03.1"
+    path: applications/notebooks-v1/upstream/notebook-controller/overlays/kubeflow
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
