@@ -1,0 +1,66 @@
+# Single-node YOLO training runtime.
+#
+# The eight bundled ClusterTrainingRuntimes are all distributed or LLM
+# oriented; none fit a one-node CPU detection job. This one carries the
+# volumes and pod security context, and leaves image/command/args to the
+# TrainJob -- those four fields cannot be patched from a runtime.
+#
+# Namespace-scoped (TrainingRuntime, not ClusterTrainingRuntime) because the
+# PVCs it mounts live in kubeflow.
+
+apiVersion: trainer.kubeflow.org/v1alpha1
+kind: TrainingRuntime
+metadata:
+  name: yolo-cpu
+  namespace: kubeflow
+spec:
+  mlPolicy:
+    numNodes: 1
+
+  template:
+    spec:
+      replicatedJobs:
+        - name: node
+          template:
+            metadata:
+              labels:
+                # Marks this as the step the TrainJob's trainer overrides.
+                trainer.kubeflow.org/trainjob-ancestor-step: trainer
+            spec:
+              template:
+                spec:
+                  # kubeflow enforces PSS restricted.
+                  securityContext:
+                    runAsNonRoot: true
+                    runAsUser: 1000
+                    fsGroup: 100
+                    seccompProfile:
+                      type: RuntimeDefault
+                  containers:
+                    - name: node
+                      image: simonangelfong/kubeflow-yolo-train:v0.1.0-cpu
+                      securityContext:
+                        allowPrivilegeEscalation: false
+                        capabilities:
+                          drop: ["ALL"]
+                      resources:
+                        requests:
+                          cpu: "1"
+                          memory: 2Gi
+                        limits:
+                          cpu: "4"
+                          memory: 6Gi
+                      volumeMounts:
+                        - name: data
+                          mountPath: /data
+                          readOnly: true
+                        - name: workspace
+                          mountPath: /workspace
+                  volumes:
+                    - name: data
+                      persistentVolumeClaim:
+                        claimName: yolo-data
+                        readOnly: true
+                    - name: workspace
+                      persistentVolumeClaim:
+                        claimName: yolo-train

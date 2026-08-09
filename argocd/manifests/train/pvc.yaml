@@ -1,0 +1,21 @@
+# Writable output volume for the TrainJob.
+#
+# The notebook's yolo-workspace PVC is RWO and belongs to the notebook pod;
+# a TrainJob mounting it would contend for the same claim. This is a separate
+# claim on the default local-path provisioner, holding the split, the
+# generated data.yaml, ultralytics' run directory and the collected artifacts.
+#
+# yolo-data (kind/data-pv.yaml) stays read-only and is mounted separately.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: yolo-train
+  namespace: kubeflow
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 5Gi

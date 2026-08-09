@@ -1,0 +1,46 @@
+# YOLO training: output PVC, the single-node runtime, and the TrainJob.
+#
+# Syncs after trainer (wave 10) so the CRDs exist before these are applied.
+# Requires the yolo-data PVC from kind/data-pv.yaml.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: train
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "11"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
+    targetRevision: master
+    path: argocd/manifests/train
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
+
+  ignoreDifferences:
+    # The controller fills in the job status and the resolved runtime.
+    - group: trainer.kubeflow.org
+      kind: TrainJob
+      jsonPointers:
+        - /status
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
