@@ -4,7 +4,7 @@
 # here. The notebook controller defaults every Notebook to default-editor, so
 # without it the pod never schedules.
 #
-#   kubectl apply -f kind/notebook-rbac.yaml
+#   Synced by argocd/apps/10-notebook.yaml
 
 apiVersion: v1
 kind: ServiceAccount

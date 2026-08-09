@@ -1,12 +1,15 @@
 # YOLO notebook server.
 #
-#   kubectl apply -f kind/notebook.yaml
+#   Synced by argocd/apps/10-notebook.yaml
 #
 # The controller derives a Deployment, Service and VirtualService from this.
 # Reachable at /notebook/kubeflow/yolo/ through the istio ingressgateway.
 #
 # /home/jovyan/work  writable PVC, survives restarts
-# /home/jovyan/data  the host data/ directory, read-only (see kind/data-pv.yaml)
+# /home/jovyan/data  the host data/ directory, read-only
+#
+# Depends on the yolo-data PVC from kind/data-pv.yaml, which stays outside
+# argocd because its hostPath is specific to the kind extraMount.
 
 apiVersion: kubeflow.org/v1
 kind: Notebook
