@@ -1,0 +1,37 @@
+# Local test of the predictor image, standing in for the KServe InferenceService.
+#
+#   docker compose -f docker-compose.inference.yml up --build
+#   curl localhost:8080/v1/models/yolo-car-plate
+#
+# KServe's storage initializer copies the model to /mnt/models before the
+# container starts; here ./models is bind-mounted read-only to the same path,
+# so the container sees the layout it will see in the cluster.
+
+services:
+  inference:
+    build:
+      context: .
+      dockerfile: inference/Dockerfile
+    image: simonangelfong/kubeflow-yolo-serve:v0.1.0
+
+    environment:
+      MODEL_NAME: yolo-car-plate
+      MODEL_DIR: /mnt/models
+      CONF_THRESHOLD: "0.25"
+      IOU_THRESHOLD: "0.45"
+
+    volumes:
+      # read-only, as the cluster mounts it
+      - ./models:/mnt/models:ro
+
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    # mirrors the InferenceService probes, so a broken model fails here first
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/models/yolo-car-plate').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

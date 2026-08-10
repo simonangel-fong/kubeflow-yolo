@@ -9,8 +9,8 @@ services:
       PYTHONPATH: /workspace
     volumes:
       - ./jupyter-notebook/notebooks:/workspace/notebooks
-      - ./trainjob/src:/workspace/src
-      - ./trainjob/configs:/workspace/configs
+      - ./train-job/src:/workspace/src
+      - ./train-job/configs:/workspace/configs
       - ./data:/workspace/data
       - ./runs:/workspace/runs
       - ./models:/workspace/models

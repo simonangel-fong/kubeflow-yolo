@@ -1,8 +1,8 @@
-# Local Cluster - kind
+# Kubeflow YOLO - Local Cluster(kind)
 
 [Back](../README.md)
 
-- [Local Cluster - kind](#local-cluster---kind)
+- [Kubeflow YOLO - Local Cluster(kind)](#kubeflow-yolo---local-clusterkind)
   - [Create cluster](#create-cluster)
   - [Prerequisites](#prerequisites)
   - [Install ArgoCD](#install-argocd)
@@ -225,7 +225,5 @@ kubectl auth can-i create trainjobs.trainer.kubeflow.org --as=system:serviceacco
 kubectl -n kubeflow get trainjob
 kubectl -n kubeflow get jobset
 
-
 kubectl -n kubeflow delete trainjob job_id
-
 ```

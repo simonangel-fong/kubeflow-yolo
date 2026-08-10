@@ -1,5 +1,5 @@
 # Predictor image for the KServe InferenceService.
-#   docker build -f serve/Dockerfile -t simonangelfong/kubeflow-yolo-serve:v0.1.0 .
+#   docker build -f inference/Dockerfile -t simonangelfong/kubeflow-yolo-serve:v0.1.0 .
 #
 # ~400 MB against the ~2 GB a torch+ultralytics image costs: onnxruntime and
 # opencv-headless are the only heavy dependencies.
@@ -14,11 +14,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY serve/requirements.txt ./requirements.txt
+COPY inference/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-COPY serve/ ./serve/
+COPY inference/src/ ./src/
 
 # Writable by the arbitrary UID the restricted PSS namespace assigns.
 ENV MODEL_DIR=/mnt/models
@@ -27,4 +27,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8080
 
 # KServe routes to 8080 on the predictor container by default.
-CMD ["uvicorn", "serve.app:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8080"]

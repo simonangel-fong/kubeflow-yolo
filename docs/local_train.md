@@ -1,8 +1,8 @@
-# Local Train
+# Kubeflow YOLO - Local Train
 
 [Back](../README.md)
 
-- [Local Train](#local-train)
+- [Kubeflow YOLO - Local Train](#kubeflow-yolo---local-train)
   - [Local venv](#local-venv)
     - [Setup venv](#setup-venv)
     - [Configure model](#configure-model)
@@ -54,3 +54,5 @@ docker compose -f docker-compose.yml down -v
 ![local_mlflow01](./img/local_mlflow01.png)
 
 ![local_mlflow02](./img/local_mlflow02.png)
+
+![local_mlflow03](./img/local_mlflow03.png)
