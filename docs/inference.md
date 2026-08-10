@@ -64,7 +64,7 @@ docker push simonangelfong/kubeflow-yolo-inference:v0.1.0-cpu
 
 ```sh
 # build
-docker build -f inference/Dockerfile -t simonangelfong/kubeflow-yolo-ui:v0.1.0 .
+docker build -f frontend/Dockerfile -t simonangelfong/kubeflow-yolo-ui:v0.1.0 .
 
 # push
 docker push simonangelfong/kubeflow-yolo-ui:v0.1.0

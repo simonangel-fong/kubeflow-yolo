@@ -1,15 +1,20 @@
-# YOLO inference service.
+# Istio authorization for the KServe admission webhook.
 #
-# Wave 13: after kserve (12), whose CRDs and webhook this InferenceService
-# needs before it can be admitted.
+# Wave 12, ahead of kserve (13): the ClusterServingRuntimes in that app are
+# validated by the webhook as they apply, so the mesh has to admit the API
+# server's call first. Sync them the other way round and every runtime fails
+# with "failed calling webhook ...: EOF".
+#
+# This app only carries the AuthorizationPolicy; the matching NetworkPolicy
+# ships with kubeflow-roles (wave 6) and is already in place.
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: serve
+  name: kserve-policy
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "13"
+    argocd.argoproj.io/sync-wave: "12"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -18,18 +23,11 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
     targetRevision: master
-    path: argocd/manifests/serve
+    path: argocd/manifests/kserve-policy
 
   destination:
     server: https://kubernetes.default.svc
     namespace: kubeflow
-
-  ignoreDifferences:
-    # The controller owns status and the resolved runtime fields.
-    - group: serving.kserve.io
-      kind: InferenceService
-      jsonPointers:
-        - /status
 
   syncPolicy:
     automated:

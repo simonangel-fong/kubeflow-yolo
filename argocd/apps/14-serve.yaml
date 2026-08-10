@@ -1,0 +1,46 @@
+# YOLO inference service.
+#
+# Wave 14: after kserve (13), whose CRDs and webhook this InferenceService
+# needs before it can be admitted.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: serve
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "14"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
+    targetRevision: master
+    path: argocd/manifests/serve
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
+
+  ignoreDifferences:
+    # The controller owns status and the resolved runtime fields.
+    - group: serving.kserve.io
+      kind: InferenceService
+      jsonPointers:
+        - /status
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

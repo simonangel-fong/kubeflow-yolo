@@ -31,7 +31,7 @@ spec:
     containers:
       # KServe requires this exact name for the predictor container.
       - name: kserve-container
-        image: simonangelfong/kubeflow-yolo-serve:v0.1.0
+        image: simonangelfong/kubeflow-yolo-inference:v0.1.0-cpu
         imagePullPolicy: IfNotPresent
 
         env:

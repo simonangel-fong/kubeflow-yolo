@@ -6,9 +6,10 @@
 # hardcodes to the wrong namespace, and drops the privileged localmodelnode
 # DaemonSet.
 #
-# Wave 12: after cert-manager (1) and istio (5), which it needs for webhook
-# certificates and ingress, and before serve (13) which creates the
-# InferenceService against these CRDs.
+# Wave 13: after cert-manager (1) and istio (5), which it needs for webhook
+# certificates and ingress, and after kserve-policy (12), which opens the mesh
+# to the admission webhook that validates this app's ClusterServingRuntimes.
+# Before serve (14), which creates the InferenceService against these CRDs.
 #
 # No Knative here. The InferenceService runs in RawDeployment mode, so it
 # reconciles to a plain Deployment + Service. The overlay's ConfigMap still
@@ -20,7 +21,7 @@ metadata:
   name: kserve
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "12"
+    argocd.argoproj.io/sync-wave: "13"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
