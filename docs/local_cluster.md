@@ -46,6 +46,11 @@ kubectl cluster-info --context kind-desktop
 kubectl get node
 # NAME                    STATUS   ROLES           AGE     VERSION
 # desktop-control-plane   Ready    control-plane   2m27s   v1.35.0
+
+# ##############################
+# Delete cluster
+# ##############################
+kind create cluster
 ```
 
 - Test mountable

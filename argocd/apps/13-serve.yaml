@@ -1,7 +1,7 @@
 # YOLO inference service.
 #
-# Syncs after train (wave 11). Requires KServe CRDs -- if the cluster does not
-# have KServe installed, add it as an earlier wave before enabling this app.
+# Wave 13: after kserve (12), whose CRDs and webhook this InferenceService
+# needs before it can be admitted.
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -9,7 +9,7 @@ metadata:
   name: serve
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "12"
+    argocd.argoproj.io/sync-wave: "13"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

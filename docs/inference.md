@@ -7,8 +7,10 @@
   - [Export and verify](#export-and-verify)
   - [Inference](#inference)
     - [Endpiont desgin](#endpiont-desgin)
-    - [Build](#build)
+    - [Inference](#inference-1)
+    - [Frontend](#frontend)
     - [Test](#test)
+    - [Clean up](#clean-up)
 
 ---
 
@@ -46,7 +48,7 @@ pre/post-processing. Exit 1 if boxes disagree by more than 2 px.
 
 ---
 
-### Build
+### Inference
 
 ```sh
 # build
@@ -54,6 +56,18 @@ docker build -f inference/Dockerfile -t simonangelfong/kubeflow-yolo-inference:v
 
 # push
 docker push simonangelfong/kubeflow-yolo-inference:v0.1.0-cpu
+```
+
+---
+
+### Frontend
+
+```sh
+# build
+docker build -f inference/Dockerfile -t simonangelfong/kubeflow-yolo-ui:v0.1.0 .
+
+# push
+docker push simonangelfong/kubeflow-yolo-ui:v0.1.0
 ```
 
 ---
@@ -77,4 +91,12 @@ python -c "import base64,json,glob;p=sorted(glob.glob('data/processed/val/images
 # inference
 curl.exe -X POST localhost:8080/v1/models/yolo-car-plate:predict -H "Content-Type: application/json" -d "@req.json"
 # {"predictions":[{"detections":[{"class_id":0,"class_name":"car_plate","confidence":0.8533,"box":{"x1":264.35,"y1":458.91,"x2":410.6,"y2":516.73}}],"count":1}]}
+```
+
+---
+
+### Clean up
+
+```sh
+docker compose -f docker-compose.inference.yml down -v
 ```
