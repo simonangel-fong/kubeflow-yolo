@@ -12,7 +12,11 @@ WORKDIR /workspace
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir mlflow
+    && pip install --no-cache-dir jupyterlab mlflow
+
+# ONNX export and the parity check against serve/inference.py.
+# onnxslim is what ultralytics shells out to for export(simplify=True).
+RUN pip install --no-cache-dir onnx onnxslim onnxruntime
 
 # env var
 ENV YOLO_CONFIG_DIR=/workspace/.ultralytics

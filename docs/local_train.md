@@ -12,6 +12,13 @@
 
 ## Local venv
 
+Stack
+
+- python 3.12, venv
+- docker compose
+  - jupyter notebook
+  - mlflow
+
 ### Setup venv
 
 Create the environment and install:
@@ -20,7 +27,7 @@ Create the environment and install:
 py -3.12 -m venv .venv
 
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements.venv.txt
 ```
 
 ---

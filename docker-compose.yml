@@ -13,6 +13,7 @@ services:
       - ./trainjob/configs:/workspace/configs
       - ./data:/workspace/data
       - ./runs:/workspace/runs
+      - ./models:/workspace/models
     ports:
       - "127.0.0.1:8888:8888"
     depends_on:

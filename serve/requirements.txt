@@ -1,0 +1,9 @@
+# Predictor runtime. No torch, no ultralytics -- the ONNX graph plus the
+# numpy pre/post-processing in serve/inference.py is the whole inference path.
+
+onnxruntime>=1.20
+opencv-python-headless>=4.10
+numpy>=1.26
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9

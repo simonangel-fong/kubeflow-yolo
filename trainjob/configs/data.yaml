@@ -1,4 +1,4 @@
-path: C:/Users/simon/OneDrive/Tech/Github/kubeflow-yolo/data/processed
+path: /workspace/data/processed
 train: train/images
 val: val/images
 nc: 1

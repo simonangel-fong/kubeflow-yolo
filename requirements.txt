@@ -1,0 +1,11 @@
+# venv, cpu only.
+#   pip install --no-cache-dir -r requirements.venv.txt
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch
+torchvision
+
+ultralytics>=8.3.0
+matplotlib>=3.9.0
+pyyaml>=6.0
