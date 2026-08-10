@@ -1,11 +1,7 @@
-# Local test of the predictor image, standing in for the KServe InferenceService.
-#
+# Local test of the predictor image, with a browser UI in front of it.
 #   docker compose -f docker-compose.inference.yml up --build
-#   curl localhost:8080/v1/models/yolo-car-plate
-#
-# KServe's storage initializer copies the model to /mnt/models before the
-# container starts; here ./models is bind-mounted read-only to the same path,
-# so the container sees the layout it will see in the cluster.
+#   curl localhost:8080/v1/models/yolo-car-plate     API directly
+#   http://localhost:3000                            UI
 
 services:
   inference:
@@ -29,9 +25,29 @@ services:
 
     # mirrors the InferenceService probes, so a broken model fails here first
     healthcheck:
-      test: ["CMD", "python", "-c",
-             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/models/yolo-car-plate').status==200 else 1)"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/models/yolo-car-plate').status==200 else 1)",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: simonangelfong/kubeflow-yolo-frontend:v0.1.0
+
+    ports:
+      - "127.0.0.1:3000:80"
+
+    # nginx proxies /v1/ to inference:8080; wait for the model to be loaded so
+    # the UI's first readiness call does not race the predictor's startup.
+    depends_on:
+      inference:
+        condition: service_healthy
