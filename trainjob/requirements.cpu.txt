@@ -1,4 +1,4 @@
-# TrainJob dependencies, CPU only.
+# CPU only.
 #   pip install --no-cache-dir -r trainjob/requirements.cpu.txt
 
 --extra-index-url https://download.pytorch.org/whl/cpu

@@ -21,18 +21,18 @@ Stage 4 local cluster
 - install kubeflow via argocd
 - install Dashboard, notebook
 
-Stage 4 cluster train
+Stage 5 cluster train
 
 - install Trainer
 - create trainjob image
 - train model with kufeflow trainer with image
 
-Stage 5 cluster track
+Stage cluster track(skip)
 
 - install mlflow in cluster via argocd
 - train and track train via mlflow
 
-Stage 6 cluster pipeline
+Stage 6 cluster pipeline(skip)
 
 - install Pipelines (KFP)
 - create pipeline in cluster to train the model
@@ -52,12 +52,12 @@ Stage 9 eks train
 - train model
 - save processed data in s3; train model(with cpu) and save to s3
 
-Stage 9 eks track
+Stage 9 eks track(skip)
 
 - install mlflow
 - trach training
 
-Stage 10 eks pipeline
+Stage 10 eks pipeline(skip)
 
 - train model with pipeline
 
@@ -72,4 +72,7 @@ stage 12 eks serve
 - install kserve
 - deploy the model
 
-stage 13
+stage 13 application
+
+- backend & frontend
+  - user upload image; response the image with box identifying the plate

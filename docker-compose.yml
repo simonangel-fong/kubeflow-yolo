@@ -3,14 +3,14 @@ services:
     # custom images
     build:
       context: .
-      dockerfile: docker/jupyter.Dockerfile
+      dockerfile: jupyter-notebook/Dockerfile
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       PYTHONPATH: /workspace
     volumes:
-      - ./notebooks:/workspace/notebooks
-      - ./src:/workspace/src
-      - ./configs:/workspace/configs
+      - ./jupyter-notebook/notebooks:/workspace/notebooks
+      - ./trainjob/src:/workspace/src
+      - ./trainjob/configs:/workspace/configs
       - ./data:/workspace/data
       - ./runs:/workspace/runs
     ports:

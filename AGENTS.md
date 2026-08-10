@@ -22,7 +22,7 @@ serve it on AWS.
 │   └── processed/            # Finalized arrays used directly for training
 ├── docs/                     # Documentation, architecture, API specs
 ├── models/                   # Serialized artifacts, weights, checkpoints
-├── notebooks/                # EDA and prototyping
+├── jupyter-notebook/notebooks/                # EDA and prototyping
 ├── src/                      # Core production source code
 │   ├── data_loader.py        # Data loading, pipelines, preprocessing
 │   ├── train.py              # Training entry point

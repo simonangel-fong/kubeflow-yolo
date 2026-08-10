@@ -1,4 +1,7 @@
-## Stage 5 cluster train
+Stage 7 cluster serve
+
+- install kserve
+- deploy the model
 
 - create a trainjob image for `src/train.py`, push to Docker Hub
 - define a custom TrainingRuntime for single-node YOLO
@@ -10,23 +13,23 @@
 
 - kind
 - argocd
-- kubeflow trainer v2 (installed in stage 4)
+- kubeflow kserve
 - docker hub
 
 ---
 
 ## Phases
 
-| #   | Phase                                                            |
-| --- | ---------------------------------------------------------------- |
-| 0   | trainer installed — done in stage 4                              |
-| 1   | build `trainjob/Dockerfile`, test locally, push `:v0.1.1-cpu`    |
-| 2   | `argocd/manifests/train/` — PVC, TrainingRuntime, TrainJob;      |
-|     | synced by `argocd/apps/12-train.yaml`                            |
-| 3   | run a `--limit` smoke job, then a full train; check metrics      |
+| #   | Phase                                        |
+| --- | -------------------------------------------- |
+| 0   | Identify trained model; retrain if necessary |
+| 1   | transform model format to deploy with kserve |
+| 2   | install kserve                               |
+| 3   | deploy model with kserve                     |
+| 4   | test deployed model                          |
 
 ---
 
 ## Output
 
-`docs/cluster_train.md` — write-up of the stage.
+`docs/kubeflow_kserve.md`: write key commands

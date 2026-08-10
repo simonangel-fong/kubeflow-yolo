@@ -1,6 +1,0 @@
-# Python 3.12
-
-ultralytics>=8.3.0
-jupyter>=1.1.0
-ipykernel>=6.29.0
-matplotlib>=3.9.0
