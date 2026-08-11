@@ -1,5 +1,7 @@
 server {
-    listen 80;
+    # 8080, not 80: the cluster runs this as non-root under PSS restricted,
+    # which cannot bind a privileged port.
+    listen 8080;
     server_name _;
 
     root /usr/share/nginx/html;
@@ -14,9 +16,13 @@ server {
     }
 
     # Proxy the API so the browser sees one origin and CORS never applies.
-    # "inference" is the compose service name, resolved on the shared network.
+    #
+    # The upstream differs by environment -- "inference:8080" under compose,
+    # "yolo-car-plate-predictor.yolo-serving.svc.cluster.local:80" in the
+    # cluster -- so it comes from PREDICTOR_UPSTREAM. nginx's entrypoint
+    # renders /etc/nginx/templates/*.template into conf.d at container start.
     location /v1/ {
-        proxy_pass http://inference:8080;
+        proxy_pass http://${PREDICTOR_UPSTREAM};
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

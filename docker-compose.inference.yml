@@ -20,8 +20,9 @@ services:
       # read-only, as the cluster mounts it
       - ./models:/mnt/models:ro
 
+    # 8081, not 8080: kind publishes the cluster's ingress on host 8080.
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8081:8080"
 
     # mirrors the InferenceService probes, so a broken model fails here first
     healthcheck:
@@ -44,7 +45,7 @@ services:
     image: simonangelfong/kubeflow-yolo-ui:v0.1.0
 
     ports:
-      - "127.0.0.1:3000:80"
+      - "127.0.0.1:3000:8080"
 
     # nginx proxies /v1/ to inference:8080; wait for the model to be loaded so
     # the UI's first readiness call does not race the predictor's startup.
