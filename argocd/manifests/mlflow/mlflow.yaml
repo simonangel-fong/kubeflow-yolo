@@ -74,7 +74,36 @@ spec:
             # reached through the shared gateway on a path prefix rather than
             # a catch-all. The VirtualService therefore does NOT rewrite --
             # the server expects the prefix to still be there.
+            #
+            # This moves the REST API too, so clients need the prefix in the
+            # tracking URI -- not just the browser:
+            #
+            #   MLFLOW_TRACKING_URI=http://mlflow.mlflow.svc.cluster.local/mlflow
+            #
+            # Without it the client hits /api/2.0/... and gets a 404.
             - --static-prefix=/mlflow
+            # Default is 4 uvicorn workers (server/__init__.py: `workers or
+            # 4`), each a full copy of the Python stack -- together they went
+            # over a 1Gi limit and the container was OOMKilled mid-startup.
+            # One worker is the right count regardless: the backend store is
+            # SQLite on an RWO volume, which wants a single writer.
+            - --workers=1
+            # MLflow 3.x validates the Host header against localhost and
+            # private IPs to blunt DNS rebinding, and 403s anything else --
+            # so the notebook (Service DNS) and the browser (via the gateway)
+            # are both refused unless their names are listed here.
+            #
+            # Setting this *replaces* the default rather than adding to it,
+            # which drops the private-IP allowance the kubelet relies on: it
+            # probes by pod IP, and losing that put the container in a
+            # CrashLoop on 403. 10.244.* is kind's default pod CIDR and puts
+            # it back. Wildcards are supported; '*' would work but is wider
+            # than anything here needs.
+            #
+            #   mlflow.mlflow[.svc.cluster.local]  in-cluster clients
+            #   localhost:8080                     kind's host port mapping
+            #   10.244.*                           kubelet probes, by pod IP
+            - --allowed-hosts=mlflow,mlflow.mlflow,mlflow.mlflow.svc,mlflow.mlflow.svc.cluster.local,localhost,localhost:8080,10.244.*
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -85,23 +114,34 @@ spec:
           resources:
             requests:
               cpu: "100m"
-              memory: 256Mi
+              memory: 512Mi
             limits:
               cpu: "1"
-              memory: 1Gi
-          readinessProbe:
+              # Measured ~1.6Gi idle with a single worker on this cluster --
+              # MLflow 3.x pulls in a large dependency tree. 3Gi leaves room
+              # for artifact upload, which buffers through the server. The
+              # original 1Gi was what OOMKilled the container.
+              memory: 3Gi
+          # Holds the other two off until the server answers once. First boot
+          # runs the schema migration against an empty SQLite file, which put
+          # startup past the liveness threshold and had the kubelet restarting
+          # the container before it could finish. Allows up to 5 minutes.
+          startupProbe:
             httpGet:
               # Prefixed: --static-prefix moves every route, /health included.
               path: /mlflow/health
               port: 5000
-            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /mlflow/health
+              port: 5000
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              # Prefixed: --static-prefix moves every route, /health included.
               path: /mlflow/health
               port: 5000
-            initialDelaySeconds: 30
             periodSeconds: 30
           volumeMounts:
             - name: store
