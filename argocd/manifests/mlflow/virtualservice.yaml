@@ -1,0 +1,41 @@
+# Route the istio ingress gateway to the MLflow UI.
+#
+#   http://localhost:8080/mlflow/  ->  gateway -> mlflow.mlflow
+#
+# kubeflow-gateway already listens on port 80 for any host, so this only has
+# to claim a path prefix on it -- the same arrangement as manifests/serve.
+#
+# Unlike the inference UI, there is no rewrite here. MLflow is started with
+# --static-prefix=/mlflow, so it serves its own routes and assets already
+# under that prefix and expects to receive it intact. Stripping it would make
+# every asset request 404.
+
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: mlflow
+  namespace: mlflow
+spec:
+  gateways:
+    - kubeflow/kubeflow-gateway
+  hosts:
+    - "*"
+  http:
+    # /mlflow -> /mlflow/ so relative asset URLs resolve.
+    - match:
+        - uri:
+            exact: /mlflow
+      redirect:
+        uri: /mlflow/
+
+    - match:
+        - uri:
+            prefix: /mlflow/
+      route:
+        - destination:
+            host: mlflow.mlflow.svc.cluster.local
+            port:
+              number: 80
+      # Artifact upload goes through the server (--serve-artifacts), and a
+      # set of YOLO weights takes longer than the gateway's 15s default.
+      timeout: 300s

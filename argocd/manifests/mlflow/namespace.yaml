@@ -1,0 +1,14 @@
+# Namespace for the MLflow tracking server.
+#
+# Not kubeflow, and left out of the ambient mesh -- the same reasoning as
+# manifests/serve/namespace.yaml. istio-install ships a global-deny-all
+# AuthorizationPolicy, so enrolling this namespace would mean writing an ALLOW
+# policy before the notebook or the gateway could reach the server.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlflow
+  labels:
+    # The server runs as a fixed non-root UID; nothing here needs more.
+    pod-security.kubernetes.io/enforce: restricted

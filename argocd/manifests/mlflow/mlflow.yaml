@@ -1,0 +1,125 @@
+# MLflow tracking server.
+#
+#   Synced by argocd/apps/15-mlflow.yaml
+#
+# Backend store and artifact store both live on one PVC:
+#
+#   /mlflow/mlflow.db    SQLite, the backend store (runs, params, metrics)
+#   /mlflow/artifacts    the artifact root (weights, plots, confusion matrix)
+#
+# SQLite rather than Postgres because this is a single-user kind cluster
+# logging one training run at a time. The backend store has to be a database
+# rather than a plain directory -- the model registry does not work against a
+# file store -- but it does not have to be a server.
+#
+# One replica, and not more: SQLite over a ReadWriteOnce volume tolerates
+# exactly one writer. The Recreate strategy below matters for the same reason.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mlflow
+  namespace: mlflow
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  namespace: mlflow
+spec:
+  replicas: 1
+  # RollingUpdate would briefly run a second pod against the same RWO volume
+  # and the same SQLite file. Recreate tears the old one down first.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      securityContext:
+        # The image sets no USER and would otherwise run as root, which the
+        # namespace's restricted PSS label rejects.
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mlflow
+          image: ghcr.io/mlflow/mlflow:v3.15.1
+          # The image's CMD is a bare python3 REPL, so the command is spelled
+          # out here. --serve-artifacts routes artifact upload and download
+          # through the server, so clients need no shared filesystem and no
+          # object store credentials -- they only ever talk to MLFLOW_TRACKING_URI.
+          command:
+            - mlflow
+            - server
+            - --host=0.0.0.0
+            - --port=5000
+            - --backend-store-uri=sqlite:////mlflow/mlflow.db
+            - --serve-artifacts
+            - --artifacts-destination=file:///mlflow/artifacts
+            # Serve every route and asset under /mlflow, so the UI can be
+            # reached through the shared gateway on a path prefix rather than
+            # a catch-all. The VirtualService therefore does NOT rewrite --
+            # the server expects the prefix to still be there.
+            - --static-prefix=/mlflow
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 5000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              # Prefixed: --static-prefix moves every route, /health included.
+              path: /mlflow/health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              # Prefixed: --static-prefix moves every route, /health included.
+              path: /mlflow/health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          volumeMounts:
+            - name: store
+              mountPath: /mlflow
+      volumes:
+        - name: store
+          persistentVolumeClaim:
+            claimName: mlflow
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+  namespace: mlflow
+spec:
+  selector:
+    app: mlflow
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
