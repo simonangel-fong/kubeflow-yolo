@@ -9,6 +9,7 @@
   - [ArgoCD root](#argocd-root)
   - [Notebook](#notebook)
   - [Trainer v2](#trainer-v2)
+  - [UI](#ui)
 
 ---
 
@@ -231,4 +232,13 @@ kubectl -n kubeflow get trainjob
 kubectl -n kubeflow get jobset
 
 kubectl -n kubeflow delete trainjob job_id
+```
+
+---
+
+## UI
+
+```sh
+kubectl port-forward -n yolo-serving svc/yolo-ui 3001:80
+
 ```

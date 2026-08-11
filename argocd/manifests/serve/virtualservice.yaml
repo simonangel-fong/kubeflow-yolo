@@ -1,0 +1,43 @@
+# Route the istio ingress gateway to the UI.
+#
+#   http://localhost:8080/yolo/  ->  gateway -> yolo-ui.yolo-serving -> predictor
+#
+# kubeflow-gateway (istio-system selector istio=ingressgateway) already listens
+# on port 80 for any host, so this only has to claim a path prefix on it.
+#
+# The UI's own asset and API paths are absolute (/css, /js, /v1), so a /yolo
+# prefix would break them the moment the browser asked for /css/style.css.
+# rewrite drops the prefix before the request reaches nginx, and the redirect
+# below sends a bare /yolo to /yolo/ so relative asset URLs resolve.
+
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: yolo-ui
+  namespace: yolo-serving
+spec:
+  gateways:
+    - kubeflow/kubeflow-gateway
+  hosts:
+    - "*"
+  http:
+    # /yolo -> /yolo/ so the browser resolves css/ and js/ under the prefix.
+    - match:
+        - uri:
+            exact: /yolo
+      redirect:
+        uri: /yolo/
+
+    - match:
+        - uri:
+            prefix: /yolo/
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: yolo-ui.yolo-serving.svc.cluster.local
+            port:
+              number: 80
+      # A cold CPU inference on a large image takes a few hundred ms; the
+      # gateway's 15s default would cut off a slow first request.
+      timeout: 120s

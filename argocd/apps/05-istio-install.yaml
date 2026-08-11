@@ -30,6 +30,32 @@ spec:
             metadata:
               name: istio-system
 
+        # kind has no load balancer, so the gateway Service ships as ClusterIP
+        # and nothing ever binds a node port -- kind/cluster.yaml maps host
+        # 8080 to node 80, but node 80 has no listener and the mapping is dead.
+        #
+        # NodePort fixes that. The ports are 30080/30443 rather than 80/443:
+        # this cluster runs the default --service-node-port-range of
+        # 30000-32767, and a nodePort outside it is rejected outright.
+        # kind/cluster.yaml maps them to host 8080/8443 to match.
+        #
+        # ports[1] is http2 (80 -> 8080) and ports[2] is https (443 -> 8443);
+        # the indices are positional, so a change to the upstream Service's
+        # port order would need this patch revisited.
+        - target:
+            kind: Service
+            name: istio-ingressgateway
+          patch: |-
+            - op: replace
+              path: /spec/type
+              value: NodePort
+            - op: add
+              path: /spec/ports/1/nodePort
+              value: 30080
+            - op: add
+              path: /spec/ports/2/nodePort
+              value: 30443
+
   destination:
     server: https://kubernetes.default.svc
     namespace: istio-system
