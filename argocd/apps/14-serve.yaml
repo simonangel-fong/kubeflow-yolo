@@ -22,7 +22,8 @@ spec:
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: kubeflow
+    # yolo-serving, not kubeflow: see manifests/serve/namespace.yaml for why.
+    namespace: yolo-serving
 
   ignoreDifferences:
     # The controller owns status and the resolved runtime fields.

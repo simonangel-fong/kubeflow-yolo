@@ -5,14 +5,15 @@
 # a Python backend or an ensemble config -- both heavier than kind wants. The
 # container in serve/ does the letterbox and NMS itself.
 #
-# STORAGE_URI points at the MLflow model version. The storage initializer pulls
-# it to /mnt/models before the predictor container starts.
+# The model ships inside the image at /mnt/models -- no storageUri, no storage
+# initializer. KServe's pod-mutator webhook is scoped to namespaces without a
+# control-plane label, so nothing would be injected here anyway.
 
 apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
   name: yolo-car-plate
-  namespace: kubeflow
+  namespace: yolo-serving
   annotations:
     # kind has no load balancer and no autoscaler worth the trouble; keep one
     # pod up rather than paying a cold start on every demo request.
@@ -31,7 +32,7 @@ spec:
     containers:
       # KServe requires this exact name for the predictor container.
       - name: kserve-container
-        image: simonangelfong/kubeflow-yolo-inference:v0.1.0-cpu
+        image: simonangelfong/kubeflow-yolo-inference:v0.1.1-cpu
         imagePullPolicy: IfNotPresent
 
         env:
@@ -41,10 +42,6 @@ spec:
             value: /mnt/models
           - name: CONF_THRESHOLD
             value: "0.25"
-          # Triggers the storage initializer. Set by kustomize per environment;
-          # models:/ URIs need the MLflow tracking server reachable in-cluster.
-          - name: STORAGE_URI
-            value: "pvc://yolo-train/artifacts/model"
 
         securityContext:
           allowPrivilegeEscalation: false
