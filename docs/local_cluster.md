@@ -101,6 +101,13 @@ kubectl -n istio-system get hpa
 # istiod                 Deployment/istiod                 cpu: 0%/80%   1         5         1          11m
 ```
 
+- pvc
+
+```sh
+kubectl apply -f kind/data-pv.yaml
+```
+
+
 ---
 
 ## Install ArgoCD

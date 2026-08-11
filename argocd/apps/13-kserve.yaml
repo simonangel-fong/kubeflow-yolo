@@ -1,98 +1,98 @@
-# kserve -- InferenceService controller, CRDs and webhooks
-#
-# From kubeflow/manifests rather than kserve/kserve upstream: the same repo and
-# tag as cert-manager (wave 1), and the overlay installs into the kubeflow
-# namespace, patches the cert-manager inject-ca-from annotations that upstream
-# hardcodes to the wrong namespace, and drops the privileged localmodelnode
-# DaemonSet.
-#
-# Wave 13: after cert-manager (1) and istio (5), which it needs for webhook
-# certificates and ingress, and after kserve-policy (12), which opens the mesh
-# to the admission webhook that validates this app's ClusterServingRuntimes.
-# Before serve (14), which creates the InferenceService against these CRDs.
-#
-# No Knative here. The InferenceService runs in RawDeployment mode, so it
-# reconciles to a plain Deployment + Service. The overlay's ConfigMap still
-# names a knative-local-gateway; that path is only taken in Serverless mode.
+# # kserve -- InferenceService controller, CRDs and webhooks
+# #
+# # From kubeflow/manifests rather than kserve/kserve upstream: the same repo and
+# # tag as cert-manager (wave 1), and the overlay installs into the kubeflow
+# # namespace, patches the cert-manager inject-ca-from annotations that upstream
+# # hardcodes to the wrong namespace, and drops the privileged localmodelnode
+# # DaemonSet.
+# #
+# # Wave 13: after cert-manager (1) and istio (5), which it needs for webhook
+# # certificates and ingress, and after kserve-policy (12), which opens the mesh
+# # to the admission webhook that validates this app's ClusterServingRuntimes.
+# # Before serve (14), which creates the InferenceService against these CRDs.
+# #
+# # No Knative here. The InferenceService runs in RawDeployment mode, so it
+# # reconciles to a plain Deployment + Service. The overlay's ConfigMap still
+# # names a knative-local-gateway; that path is only taken in Serverless mode.
 
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: kserve
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "13"
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: default
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: kserve
+#   namespace: argocd
+#   annotations:
+#     argocd.argoproj.io/sync-wave: "13"
+#   finalizers:
+#     - resources-finalizer.argocd.argoproj.io
+# spec:
+#   project: default
 
-  source:
-    repoURL: https://github.com/kubeflow/manifests.git
-    targetRevision: "26.03.1"
-    path: applications/kserve/kserve
+#   source:
+#     repoURL: https://github.com/kubeflow/manifests.git
+#     targetRevision: "26.03.1"
+#     path: applications/kserve/kserve
 
-    kustomize:
-      patches:
-        # The overlay ships defaultDeploymentMode: Serverless, which makes the
-        # controller reconcile every InferenceService into Knative resources.
-        # Knative is not installed and is not wanted on kind: scale-to-zero
-        # would cost a cold start on every request. RawDeployment gives a plain
-        # Deployment + Service instead.
-        - target:
-            kind: ConfigMap
-            name: inferenceservice-config
-          patch: |-
-            - op: replace
-              path: /data/deploy
-              value: |-
-                {
-                  "defaultDeploymentMode": "RawDeployment"
-                }
+#     kustomize:
+#       patches:
+#         # The overlay ships defaultDeploymentMode: Serverless, which makes the
+#         # controller reconcile every InferenceService into Knative resources.
+#         # Knative is not installed and is not wanted on kind: scale-to-zero
+#         # would cost a cold start on every request. RawDeployment gives a plain
+#         # Deployment + Service instead.
+#         - target:
+#             kind: ConfigMap
+#             name: inferenceservice-config
+#           patch: |-
+#             - op: replace
+#               path: /data/deploy
+#               value: |-
+#                 {
+#                   "defaultDeploymentMode": "RawDeployment"
+#                 }
 
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: kubeflow
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: kubeflow
 
-  ignoreDifferences:
-    # Self-signed webhook certs: cert-manager fills these in after sync.
-    - group: ""
-      kind: Secret
-      name: kserve-webhook-server-cert
-      jsonPointers:
-        - /data
-    # caBundle is injected by cert-manager's ca-injector from those certs.
-    - group: admissionregistration.k8s.io
-      kind: ValidatingWebhookConfiguration
-      jqPathExpressions:
-        - .webhooks[].clientConfig.caBundle
-    - group: admissionregistration.k8s.io
-      kind: MutatingWebhookConfiguration
-      jqPathExpressions:
-        - .webhooks[].clientConfig.caBundle
-    # CRD conversion webhooks carry the same injected bundle.
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      jqPathExpressions:
-        - .spec.conversion.webhook.clientConfig.caBundle
-    # Aggregated ClusterRoles: rules are filled in by the RBAC controller.
-    - group: rbac.authorization.k8s.io
-      kind: ClusterRole
-      jqPathExpressions:
-        - select(.metadata.name | test("^kserve-.*-aggregate")) | .rules
+#   ignoreDifferences:
+#     # Self-signed webhook certs: cert-manager fills these in after sync.
+#     - group: ""
+#       kind: Secret
+#       name: kserve-webhook-server-cert
+#       jsonPointers:
+#         - /data
+#     # caBundle is injected by cert-manager's ca-injector from those certs.
+#     - group: admissionregistration.k8s.io
+#       kind: ValidatingWebhookConfiguration
+#       jqPathExpressions:
+#         - .webhooks[].clientConfig.caBundle
+#     - group: admissionregistration.k8s.io
+#       kind: MutatingWebhookConfiguration
+#       jqPathExpressions:
+#         - .webhooks[].clientConfig.caBundle
+#     # CRD conversion webhooks carry the same injected bundle.
+#     - group: apiextensions.k8s.io
+#       kind: CustomResourceDefinition
+#       jqPathExpressions:
+#         - .spec.conversion.webhook.clientConfig.caBundle
+#     # Aggregated ClusterRoles: rules are filled in by the RBAC controller.
+#     - group: rbac.authorization.k8s.io
+#       kind: ClusterRole
+#       jqPathExpressions:
+#         - select(.metadata.name | test("^kserve-.*-aggregate")) | .rules
 
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      # The kserve CRDs are far past the annotation size limit that
-      # client-side apply would impose.
-      - ServerSideApply=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 15s
-        maxDuration: 3m
-        factor: 2
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       # The kserve CRDs are far past the annotation size limit that
+#       # client-side apply would impose.
+#       - ServerSideApply=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 15s
+#         maxDuration: 3m
+#         factor: 2

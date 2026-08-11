@@ -1,56 +1,56 @@
-# # kubeflow notebook controller
-# #
-# # The kubeflow overlay (not standalone) sets USE_ISTIO=true and points the
-# # controller at kubeflow/kubeflow-gateway, so each Notebook gets a
-# # VirtualService routed through the gateway installed at wave 6.
+# kubeflow notebook controller
+#
+# The kubeflow overlay (not standalone) sets USE_ISTIO=true and points the
+# controller at kubeflow/kubeflow-gateway, so each Notebook gets a
+# VirtualService routed through the gateway installed at wave 6.
 
-# apiVersion: argoproj.io/v1alpha1
-# kind: Application
-# metadata:
-#   name: notebook-controller
-#   namespace: argocd
-#   annotations:
-#     argocd.argoproj.io/sync-wave: "7"
-#   finalizers:
-#     - resources-finalizer.argocd.argoproj.io
-# spec:
-#   project: default
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notebook-controller
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
 
-#   source:
-#     repoURL: https://github.com/kubeflow/manifests.git
-#     targetRevision: "26.03.1"
-#     path: applications/notebooks-v1/upstream/notebook-controller/overlays/kubeflow
+  source:
+    repoURL: https://github.com/kubeflow/manifests.git
+    targetRevision: "26.03.1"
+    path: applications/notebooks-v1/upstream/notebook-controller/overlays/kubeflow
 
-#   destination:
-#     server: https://kubernetes.default.svc
-#     namespace: kubeflow
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
 
-#   ignoreDifferences:
-#     # Aggregated ClusterRole: rules are filled in by the RBAC controller.
-#     - group: rbac.authorization.k8s.io
-#       kind: ClusterRole
-#       jsonPointers:
-#         - /rules
-#     # The API server defaults conversion.strategy to None, and drops
-#     # preserveUnknownFields: false from apiextensions/v1 CRDs (it is the only
-#     # permitted value there, so it is not persisted back onto the live object).
-#     - group: apiextensions.k8s.io
-#       kind: CustomResourceDefinition
-#       name: notebooks.kubeflow.org
-#       jsonPointers:
-#         - /spec/conversion
-#         - /spec/preserveUnknownFields
+  ignoreDifferences:
+    # Aggregated ClusterRole: rules are filled in by the RBAC controller.
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      jsonPointers:
+        - /rules
+    # The API server defaults conversion.strategy to None, and drops
+    # preserveUnknownFields: false from apiextensions/v1 CRDs (it is the only
+    # permitted value there, so it is not persisted back onto the live object).
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: notebooks.kubeflow.org
+      jsonPointers:
+        - /spec/conversion
+        - /spec/preserveUnknownFields
 
-#   syncPolicy:
-#     automated:
-#       prune: true
-#       selfHeal: true
-#     syncOptions:
-#       - CreateNamespace=true
-#       - ServerSideApply=true
-#     retry:
-#       limit: 5
-#       backoff:
-#         duration: 15s
-#         maxDuration: 3m
-#         factor: 2
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

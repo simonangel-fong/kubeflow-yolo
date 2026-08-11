@@ -1,11 +1,7 @@
-Stage 7 cluster serve
+Stage 4 local cluster
 
-- install kserve
-- deploy the model
-
-- create a trainjob image for `src/train.py`, push to Docker Hub
-- define a custom TrainingRuntime for single-node YOLO
-- train the model as a TrainJob in the cluster
+- install mlflow
+- install kubeflow dashboard
 
 ---
 
@@ -13,20 +9,18 @@ Stage 7 cluster serve
 
 - kind
 - argocd
-- kubeflow kserve
-- docker hub
+- kubeflow
 
 ---
 
 ## Phases
 
-| #   | Phase                                        |
-| --- | -------------------------------------------- |
-| 0   | Identify trained model; retrain if necessary |
-| 1   | transform model format to deploy with kserve |
-| 2   | install kserve                               |
-| 3   | deploy model with kserve                     |
-| 4   | test deployed model                          |
+| #   | Phase                                 |
+| --- | ------------------------------------- |
+| 0   | install kubeflow dashboard via argocd |
+| 1   | install mlflow ia argocd              |
+| 2   | connect notebook with mlflow          |
+| 3   | smoke test: 10images 10 epoch         |
 
 ---
 
