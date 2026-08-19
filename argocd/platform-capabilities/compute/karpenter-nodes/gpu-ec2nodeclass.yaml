@@ -9,10 +9,10 @@ spec:
     - alias: al2023@latest
   subnetSelectorTerms:
     - tags:
-        karpenter.sh/discovery: kubeflow-yolo
+        karpenter.sh/discovery: kubeflow-yolo-dev
   securityGroupSelectorTerms:
     - tags:
-        karpenter.sh/discovery: kubeflow-yolo
+        karpenter.sh/discovery: kubeflow-yolo-dev
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
