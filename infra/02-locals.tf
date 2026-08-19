@@ -48,9 +48,13 @@ locals {
   # ##############################
   karpenter_namespace     = "kube-system"
   karpenter_chart_version = "1.14.0"
-
-  # Value Karpenter's EC2NodeClass matches on via karpenter.sh/discovery.
   karpenter_discovery = "${local.project_prefix}-eks"
+
+  # ##############################
+  # ESO
+  # ##############################
+  eso_namespace       = "external-secrets"
+  eso_service_account = "external-secrets"
 
   # ##############################
   # ArgoCD
