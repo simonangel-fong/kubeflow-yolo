@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-albc
+  namespace: argocd
+  labels:
+    scope: platform
+    capability: networking
+  annotations:
+    argocd.argoproj.io/sync-wave: "40"
+  finalizers:
+    - argocd.argoproj.io/resources-finalizer
+spec:
+  project: platform
+  source:
+    repoURL: https://aws.github.io/eks-charts
+    chart: aws-load-balancer-controller
+    targetRevision: 3.4.1 
+    helm:
+      releaseName: aws-load-balancer-controller
+      values: |
+        clusterName: multi-tenant-eks-dev
+        region: ca-central-1
+        vpcId: 
+          vpc-0d4bbd7f7c431ebe2
+        serviceAccount:
+          create: true
+          name: aws-load-balancer-controller
+        replicaCount: 2
+        podDisruptionBudget:
+          maxUnavailable: 1
+        tolerations:
+          - key: workload-class
+            operator: Equal
+            value: platform
+            effect: NoSchedule
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: aws-load-balancer-controller
+                  topologyKey: kubernetes.io/hostname
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

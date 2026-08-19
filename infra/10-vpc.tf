@@ -1,5 +1,8 @@
 # vpc.tf
 
+# ##############################
+# VPC
+# ##############################
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 6.0"
@@ -11,20 +14,20 @@ module "vpc" {
   public_subnets  = values(local.vpc_public_subnets)
   private_subnets = values(local.vpc_private_subnets)
 
-  # Single NAT gateway keeps dev cost down; private subnets still reach the internet.
+  # Enable nat gateway
   enable_nat_gateway = true
   single_nat_gateway = true
 
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  # Required by EKS to discover subnets for load balancers.
   public_subnet_tags = {
-    "kubernetes.io/role/elb" = "1"
+    "kubernetes.io/role/elb" = "1" # lb
   }
 
   private_subnet_tags = {
-    "kubernetes.io/role/internal-elb" = "1"
+    "kubernetes.io/role/internal-elb" = "1"                       # lb
+    "karpenter.sh/discovery"          = local.karpenter_discovery # karpenter
   }
 
   tags = local.project_tags

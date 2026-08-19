@@ -1,0 +1,41 @@
+# gateway
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: istio-ingress
+  namespace: istio-ingress
+  annotations:
+    networking.istio.io/service-type: LoadBalancer
+spec:
+  gatewayClassName: istio
+  infrastructure:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-name: multi-tenant-eks-dev
+      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Cluster=multi-tenant-eks-dev,Environment=dev,Project=multi-tenant-eks,ManagedBy=aws-load-balancer-controller
+      service.beta.kubernetes.io/aws-load-balancer-type: external
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    labels:
+      app.kubernetes.io/name: istio-ingress
+      app.kubernetes.io/component: gateway
+      app.kubernetes.io/part-of: istio
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: arguswatcher-net-wildcard-tls
+      allowedRoutes:
+        namespaces:
+          from: All

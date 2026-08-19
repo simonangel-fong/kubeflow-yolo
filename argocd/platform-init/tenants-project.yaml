@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: tenants
+  namespace: argocd
+spec:
+  description: Scope for ApplicationSet-generated tenant Applications
+  sourceRepos:
+    - https://github.com/simonangel-fong/eks-multi-tenant-cluster
+    - "*"
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: argoproj.io
+      kind: AppProject
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

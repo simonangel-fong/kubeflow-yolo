@@ -44,6 +44,15 @@ locals {
   eks_node_disk_size     = 50
 
   # ##############################
+  # Karpenter
+  # ##############################
+  karpenter_namespace     = "kube-system"
+  karpenter_chart_version = "1.14.0"
+
+  # Value Karpenter's EC2NodeClass matches on via karpenter.sh/discovery.
+  karpenter_discovery = "${local.project_prefix}-eks"
+
+  # ##############################
   # ArgoCD
   # ##############################
   argocd_namespace     = "argocd"

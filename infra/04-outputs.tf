@@ -67,6 +67,34 @@ output "eks_update_kubeconfig" {
 }
 
 # ##############################
+# Karpenter
+# ##############################
+output "karpenter_node_iam_role_name" {
+  description = "IAM role assumed by Karpenter-launched nodes; referenced by the EC2NodeClass"
+  value       = module.karpenter.node_iam_role_name
+}
+
+output "karpenter_node_iam_role_arn" {
+  description = "ARN of the Karpenter node IAM role"
+  value       = module.karpenter.node_iam_role_arn
+}
+
+output "karpenter_controller_iam_role_arn" {
+  description = "ARN of the Karpenter controller IAM role"
+  value       = module.karpenter.iam_role_arn
+}
+
+output "karpenter_queue_name" {
+  description = "SQS queue the controller polls for spot interruption notices"
+  value       = module.karpenter.queue_name
+}
+
+output "karpenter_discovery_tag" {
+  description = "Value of karpenter.sh/discovery on subnets and the node security group; use in the EC2NodeClass selectors"
+  value       = local.karpenter_discovery
+}
+
+# ##############################
 # ArgoCD
 # ##############################
 output "argocd_namespace" {

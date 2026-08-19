@@ -1,10 +1,7 @@
-# App-of-apps root.
-#   kubectl apply -f argocd/root.yaml
-
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: 00-root
+  name: 00-app-of-apps
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io/background # Deleting the root cascades to the children
@@ -14,14 +11,14 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
     targetRevision: master
-    path: argocd/apps
+    path: argocd/bootstrap
     directory:
       recurse: true
       include: "*.yaml" # Ignore README/docs dropped alongside the manifests.
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd # Child Applications live here; each targets its own namespace.
+    namespace: argocd 
 
   syncPolicy:
     automated:
