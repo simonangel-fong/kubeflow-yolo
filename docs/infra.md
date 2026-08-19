@@ -27,7 +27,6 @@ phase
    3. Amazon VPC CNI enable network policy
    4. Metrics Server
    5. csi ebs
-   5. csi ebs
 5. install argocd with terraform
 6. install karpenter with terrform
 7. install karpenter manifest
