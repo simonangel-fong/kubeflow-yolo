@@ -4,7 +4,7 @@ kind: EC2NodeClass
 metadata:
   name: database
 spec:
-  role: kubeflow-yolo-dev-eks-karpenter-node
+  role: kubeflow-yolo-dev-karpenter-node
   amiSelectorTerms:
     - alias: al2023@latest
   subnetSelectorTerms:
