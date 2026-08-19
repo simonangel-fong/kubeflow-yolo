@@ -26,6 +26,7 @@ argocd login localhost:8080
 
 kubectl -n argocd patch app/platform-karpenter --type merge -p '{"metadata":{"finalizers":[]}}'
 
+kubectl -n external-secrets rollout restart deploy external-secrets
 
 
 ```

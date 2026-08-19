@@ -47,7 +47,7 @@ resource "aws_eks_pod_identity_association" "eso" {
 # Secrets: cloudflare-api-token
 # ##############################
 resource "aws_secretsmanager_secret" "eso_cloudflare" {
-  name = "${local.project_prefix}/cloudflare-api-token"
+  name = "${module.eks.cluster_name}/cloudflare-api-token"
 }
 
 resource "aws_secretsmanager_secret_version" "cloudflare" {

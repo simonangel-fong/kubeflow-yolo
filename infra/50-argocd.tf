@@ -1,9 +1,9 @@
 # argocd.tf
 
 resource "helm_release" "argocd" {
-  name       = "argocd"
-  repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argo-cd"
+  name       = local.argocd_release
+  repository = local.argocd_repo
+  chart      = local.argocd_chart
   version    = local.argocd_chart_version
 
   namespace        = local.argocd_namespace
@@ -13,13 +13,7 @@ resource "helm_release" "argocd" {
   wait_for_jobs = true
   timeout       = 900
 
-  values = [yamlencode({
-    server = {
-      service = {
-        type = "ClusterIP"
-      }
-    }
-  })]
+  values = [local.argocd_values]
 
   depends_on = [module.eks]
 }

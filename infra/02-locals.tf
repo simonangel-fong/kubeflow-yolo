@@ -48,7 +48,7 @@ locals {
   # ##############################
   karpenter_namespace     = "kube-system"
   karpenter_chart_version = "1.14.0"
-  karpenter_discovery = "${local.project_prefix}-eks"
+  karpenter_discovery     = "${local.project_prefix}-eks"
 
   # ##############################
   # ESO
@@ -59,6 +59,43 @@ locals {
   # ##############################
   # ArgoCD
   # ##############################
-  argocd_namespace     = "argocd"
+  argocd_release       = "argocd"
+  argocd_chart         = "argo-cd"
+  argocd_repo          = "https://argoproj.github.io/argo-helm"
   argocd_chart_version = "10.4.0"
+  argocd_namespace     = "argocd"
+
+  argocd_values = yamlencode({
+    global = {
+      tolerations = [
+        {
+          key      = "workload-class"
+          operator = "Equal"
+          value    = "platform"
+          effect   = "NoSchedule"
+        },
+      ]
+    }
+    server = {
+      service = {
+        type = "ClusterIP"
+      }
+      extensions = {
+        enabled = true
+        contents = [
+          {
+            name = "rollout-extension"
+            url  = "https://github.com/argoproj-labs/rollout-extension/releases/download/v0.3.7/extension.tar"
+          }
+        ]
+      }
+    }
+  })
+
+  # ##############################
+  # AWS Load Balancer Controller
+  # ##############################
+  albc_namespace       = "kube-system"
+  albc_service_account = "aws-load-balancer-controller"
+
 }
