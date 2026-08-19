@@ -14,7 +14,6 @@ terraform -chdir=infra destroy -auto-approve
 
 ## ArgoCD
 
-
 ```sh
 aws eks update-kubeconfig --region ca-central-1 --name kubeflow-yolo-dev-eks
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
