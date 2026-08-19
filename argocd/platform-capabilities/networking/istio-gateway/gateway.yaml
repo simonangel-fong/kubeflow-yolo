@@ -10,7 +10,7 @@ spec:
   gatewayClassName: istio
   infrastructure:
     annotations:
-      service.beta.kubernetes.io/aws-load-balancer-name: kubeflow-yolo-dev-eks
+      service.beta.kubernetes.io/aws-load-balancer-name: kubeflow-yolo-dev
       service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Cluster=kubeflow-yolo-dev-eks,Environment=dev,Project=kubeflow-yolo-dev,ManagedBy=aws-load-balancer-controller
       service.beta.kubernetes.io/aws-load-balancer-type: external
       service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
