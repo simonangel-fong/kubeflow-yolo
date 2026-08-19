@@ -20,6 +20,14 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 3.2"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 3.2"
+    }
   }
 
   backend "s3" {}
@@ -29,21 +37,34 @@ provider "aws" {
   region = var.aws_region
 
   default_tags {
-    tags = local.default_tags
+    tags = local.project_tags
   }
 }
-
-provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
-
-  default_tags {
-    tags = local.default_tags
-  }
-}
-
-# provider "cloudflare" {
-#   api_token = var.cloudflare_api_token
-# }
 
 # data "aws_caller_identity" "current" {}
+
+# Auth via the AWS CLI exec plugin rather than a token data source: tokens
+# expire after 15 minutes, which a long apply can outlive.
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", var.aws_region]
+  }
+}
+
+provider "helm" {
+  kubernetes = {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+    exec = {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", var.aws_region]
+    }
+  }
+}
