@@ -7,7 +7,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "21.24.0"
 
-  name               = "${local.project_prefix}-eks"
+  name               = local.project_prefix
   kubernetes_version = local.eks_version
 
   vpc_id     = module.vpc.vpc_id

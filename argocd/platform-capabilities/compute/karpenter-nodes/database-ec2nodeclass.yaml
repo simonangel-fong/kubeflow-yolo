@@ -9,10 +9,10 @@ spec:
     - alias: al2023@latest
   subnetSelectorTerms:
     - tags:
-        karpenter.sh/discovery: kubeflow-yolo-dev-eks
+        karpenter.sh/discovery: kubeflow-yolo-dev
   securityGroupSelectorTerms:
     - tags:
-        karpenter.sh/discovery: kubeflow-yolo-dev-eks
+        karpenter.sh/discovery: kubeflow-yolo-dev
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
@@ -26,7 +26,7 @@ spec:
     httpPutResponseHopLimit: 1
     httpTokens: required
   tags:
-    Name: kubeflow-yolo-dev-eks-database
+    Name: kubeflow-yolo-dev-database
     workload-class: database
-    Cluster: kubeflow-yolo-dev-eks
+    Cluster: kubeflow-yolo-dev
     ManagedBy: karpenter

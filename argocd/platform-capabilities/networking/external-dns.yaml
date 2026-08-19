@@ -30,7 +30,7 @@ spec:
           - arguswatcher.net
         policy: upsert-only
         registry: txt
-        txtOwnerId: kubeflow-yolo-dev-eks
+        txtOwnerId: kubeflow-yolo-dev
         txtPrefix: "extdns-"
         env:
           - name: CF_API_TOKEN

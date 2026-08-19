@@ -15,5 +15,5 @@ parameters:
   tagSpecification_3: "PVCName={{ .PVCName }}"
   tagSpecification_4: "PVName={{ .PVName }}"
   tagSpecification_5: "StorageClass=gp3-iops"
-  tagSpecification_6: "Cluster=kubeflow-yolo-dev-eks"
+  tagSpecification_6: "Cluster=kubeflow-yolo-dev"
   tagSpecification_7: "ManagedBy=ebs-csi-driver"

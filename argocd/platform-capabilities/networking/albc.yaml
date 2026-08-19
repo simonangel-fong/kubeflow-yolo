@@ -19,10 +19,10 @@ spec:
     helm:
       releaseName: aws-load-balancer-controller
       values: |
-        clusterName: kubeflow-yolo-dev-eks
+        clusterName: kubeflow-yolo-dev
         region: ca-central-1
         vpcId: 
-          vpc-0d4bbd7f7c431ebe2
+          vpc-0a997b760c4289a52
         serviceAccount:
           create: true
           name: aws-load-balancer-controller

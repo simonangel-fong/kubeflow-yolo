@@ -48,7 +48,7 @@ locals {
   # ##############################
   karpenter_namespace     = "kube-system"
   karpenter_chart_version = "1.14.0"
-  karpenter_discovery     = "${local.project_prefix}-eks"
+  karpenter_discovery     = "${local.project_prefix}"
 
   # ##############################
   # ESO
