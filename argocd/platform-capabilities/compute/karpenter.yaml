@@ -30,8 +30,8 @@ spec:
         dnsPolicy: Default
         replicas: 2
         settings:
-          clusterName: multi-tenant-eks-dev
-          interruptionQueue: Karpenter-multi-tenant-eks-dev
+          clusterName: kubeflow-yolo-dev-eks
+          interruptionQueue: Karpenter-kubeflow-yolo-dev-eks
         webhook:
           enabled: false
         serviceAccount:

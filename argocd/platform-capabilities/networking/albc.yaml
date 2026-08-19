@@ -19,7 +19,7 @@ spec:
     helm:
       releaseName: aws-load-balancer-controller
       values: |
-        clusterName: multi-tenant-eks-dev
+        clusterName: kubeflow-yolo-dev-eks
         region: ca-central-1
         vpcId: 
           vpc-0d4bbd7f7c431ebe2

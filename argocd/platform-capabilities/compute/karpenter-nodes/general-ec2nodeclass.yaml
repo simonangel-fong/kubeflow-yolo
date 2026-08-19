@@ -4,15 +4,15 @@ kind: EC2NodeClass
 metadata:
   name: general
 spec:
-  role: multi-tenant-eks-dev-karpenter-node
+  role: kubeflow-yolo-dev-eks-karpenter-node
   amiSelectorTerms:
     - alias: al2023@latest
   subnetSelectorTerms:
     - tags:
-        karpenter.sh/discovery: multi-tenant-eks-dev
+        karpenter.sh/discovery: kubeflow-yolo-dev-eks
   securityGroupSelectorTerms:
     - tags:
-        karpenter.sh/discovery: multi-tenant-eks-dev
+        karpenter.sh/discovery: kubeflow-yolo-dev-eks
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
@@ -26,7 +26,7 @@ spec:
     httpPutResponseHopLimit: 1
     httpTokens: required
   tags:
-    Name: multi-tenant-eks-dev-general
+    Name: kubeflow-yolo-dev-eks-general
     workload-class: general
-    Cluster: multi-tenant-eks-dev
+    Cluster: kubeflow-yolo-dev-eks
     ManagedBy: karpenter
