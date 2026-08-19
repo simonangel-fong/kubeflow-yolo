@@ -14,7 +14,7 @@ spec:
   project: default
   description: 
   source:
-    repoURL: https://github.com/simonangel-fong/eks-multi-tenant-cluster
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
     path: argocd/platform-init
   destination:

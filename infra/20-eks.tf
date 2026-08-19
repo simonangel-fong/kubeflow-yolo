@@ -47,20 +47,40 @@ module "eks" {
   enable_cluster_creator_admin_permissions = true
 
   addons = {
-    coredns = {}
+    coredns = {
+      configuration_values = jsonencode({
+        tolerations = [
+          { key = "workload-class", operator = "Equal", value = "platform", effect = "NoSchedule" },
+          { key = "CriticalAddonsOnly", operator = "Exists" },
+        ]
+      })
+    }
     eks-pod-identity-agent = {
       before_compute = true # before node
     }
     kube-proxy = {
       before_compute = true # before note
     }
-    metrics-server = {}
+    metrics-server = {
+      configuration_values = jsonencode({
+        tolerations = [
+          { key = "workload-class", operator = "Equal", value = "platform", effect = "NoSchedule" },
+        ]
+      })
+    }
 
     aws-ebs-csi-driver = {
       pod_identity_association = [{
         role_arn        = aws_iam_role.ebs_csi.arn
         service_account = "ebs-csi-controller-sa"
       }]
+      configuration_values = jsonencode({
+        controller = {
+          tolerations = [
+            { key = "workload-class", operator = "Equal", value = "platform", effect = "NoSchedule" },
+          ]
+        }
+      })
     }
 
     vpc-cni = {

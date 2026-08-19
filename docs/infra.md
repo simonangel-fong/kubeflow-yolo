@@ -21,6 +21,13 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 kubectl -n argocd port-forward svc/argocd-server 8080:443
 
 kubectl apply -f app-of-apps.yaml
+argocd login localhost:8080
+
+
+kubectl -n argocd patch app/platform-karpenter --type merge -p '{"metadata":{"finalizers":[]}}'
+
+
+{"level":"ERROR","time":"2026-08-19T18:18:50.878Z","logger":"controller","message":"failed detecting cluster endpoint","commit":"2be9554","aws-error-code":"AccessDeniedException","aws-operation-name":"DescribeCluster","aws-request-id":"3ca303fa-e745-48b6-941c-b9be85e377fa","aws-service-name":"EKS","aws-status-code":403,"error":"failed to resolve cluster endpoint, operation error EKS: DescribeCluster, https response error StatusCode: 403, RequestID: 3ca303fa-e745-48b6-941c-b9be85e377fa, api error AccessDeniedException: User: arn:aws:sts::099139718958:assumed-role/KarpenterController-7369051ba8b44e7fb5e584a529/eks-kubeflow-y-karpenter--6406e3bd-adb0-4b23-8e77-88ac3fd5387c is not authorized to perform: eks:DescribeCluster on resource: arn:aws:eks:ca-central-1:099139718958:cluster/multi-tenant-eks-dev because no identity-based policy allows the eks:DescribeCluster action (aws-error-code=AccessDeniedException, aws-operation-name=DescribeCluster, aws-request-id=3ca303fa-e745-48b6-941c-b9be85e377fa, aws-service-name=EKS, aws-status-code=403)"}
 ```
 
 ---
