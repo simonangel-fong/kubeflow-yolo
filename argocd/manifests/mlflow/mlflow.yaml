@@ -96,14 +96,19 @@ spec:
             # Setting this *replaces* the default rather than adding to it,
             # which drops the private-IP allowance the kubelet relies on: it
             # probes by pod IP, and losing that put the container in a
-            # CrashLoop on 403. 10.244.* is kind's default pod CIDR and puts
-            # it back. Wildcards are supported; '*' would work but is wider
-            # than anything here needs.
+            # CrashLoop on 403. Wildcards are supported; '*' would work but is
+            # wider than anything here needs.
+            #
+            # The pod CIDR is cluster-specific, so both are listed and the
+            # manifest stays portable between them:
             #
             #   mlflow.mlflow[.svc.cluster.local]  in-cluster clients
             #   localhost:8080                     kind's host port mapping
-            #   10.244.*                           kubelet probes, by pod IP
-            - --allowed-hosts=mlflow,mlflow.mlflow,mlflow.mlflow.svc,mlflow.mlflow.svc.cluster.local,localhost,localhost:8080,10.244.*
+            #   10.244.*                           kubelet probes on kind
+            #   10.0.*                             kubelet probes on EKS, whose
+            #                                      VPC CNI assigns pod IPs from
+            #                                      the VPC CIDR 10.0.0.0/16
+            - --allowed-hosts=mlflow,mlflow.mlflow,mlflow.mlflow.svc,mlflow.mlflow.svc.cluster.local,localhost,localhost:8080,10.244.*,10.0.*
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
