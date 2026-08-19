@@ -8,20 +8,17 @@ data "http" "albc_policy" {
   url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v3.4.1/docs/install/iam_policy.json"
 }
 
-data "aws_iam_policy_document" "albc_trust" {
-  statement {
-    actions = ["sts:AssumeRole", "sts:TagSession"]
-    principals {
-      type        = "Service"
-      identifiers = ["pods.eks.amazonaws.com"]
-    }
-  }
-}
-
 # Role
 resource "aws_iam_role" "albc" {
-  name               = "${local.project_prefix}-role-albc"
-  assume_role_policy = data.aws_iam_policy_document.albc_trust.json
+  name = "${local.project_prefix}-albc"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "pods.eks.amazonaws.com" }
+      Action    = ["sts:AssumeRole", "sts:TagSession"]
+    }]
+  })
 }
 
 resource "aws_iam_policy" "albc" {
