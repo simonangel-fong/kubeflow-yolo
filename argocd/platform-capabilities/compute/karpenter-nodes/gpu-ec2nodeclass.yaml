@@ -28,5 +28,5 @@ spec:
   tags:
     Name: kubeflow-yolo-dev-gpu
     workload-class: gpu
-    Cluster: kubeflow-yolo-dev
+    Cluster: kubeflow-yolo
     ManagedBy: karpenter

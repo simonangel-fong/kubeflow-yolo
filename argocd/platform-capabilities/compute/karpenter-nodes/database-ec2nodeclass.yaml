@@ -28,5 +28,5 @@ spec:
   tags:
     Name: kubeflow-yolo-dev-database
     workload-class: database
-    Cluster: kubeflow-yolo-dev
+    Cluster: kubeflow-yolo
     ManagedBy: karpenter
