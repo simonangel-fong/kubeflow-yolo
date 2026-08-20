@@ -34,6 +34,8 @@ spec:
     memory: 400Gi
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
-    consolidateAfter: 90s
+    # 90s reclaimed nodes out from under Katib trials while they were still
+    # pip-installing, which reads as "underutilized" and killed the pods.
+    consolidateAfter: 15m
     budgets:
       - nodes: "20%"
