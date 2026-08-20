@@ -52,6 +52,13 @@ locals {
   karpenter_discovery     = local.project_prefix
 
   # ##############################
+  # S3
+  # ##############################
+  # Bucket names are globally unique across all AWS accounts, so suffix the
+  # account ID to avoid collisions on a name as generic as the project prefix.
+  s3_bucket_name = "${local.project_prefix}-${data.aws_caller_identity.current.account_id}"
+
+  # ##############################
   # ESO
   # ##############################
   eso_namespace       = "external-secrets"

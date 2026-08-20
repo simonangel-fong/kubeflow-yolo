@@ -1,0 +1,41 @@
+# CPU notebook served by the notebook-controller.
+#
+# Scheduling: the bootstrap managed node group is tainted
+# workload-class=platform:NoSchedule, so this pod must land on the Karpenter
+# "general" NodePool (t/m families, gen > 3), which is untainted and labelled
+# workload-class: general.
+apiVersion: kubeflow.org/v1
+kind: Notebook
+metadata:
+  name: yolo-cpu
+  namespace: kubeflow-user-example-com
+  labels:
+    app: yolo-cpu
+spec:
+  template:
+    spec:
+      nodeSelector:
+        workload-class: general
+
+      containers:
+        - name: notebook
+          # Default CPU image from the jupyter-web-app spawner config in this cluster.
+          image: ghcr.io/kubeflow/kubeflow/notebook-servers/jupyter-scipy:v1.11.0
+          imagePullPolicy: IfNotPresent
+
+          resources:
+            requests:
+              cpu: "1"
+              memory: 4Gi
+            limits:
+              cpu: "2"
+              memory: 8Gi
+
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/jovyan
+
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: yolo-cpu-workspace

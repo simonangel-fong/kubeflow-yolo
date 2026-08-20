@@ -1,0 +1,15 @@
+# Workspace volume for the CPU notebook.
+# gp3 is the default StorageClass (WaitForFirstConsumer), so the EBS volume is
+# only provisioned once Karpenter has placed the notebook pod on a node.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: yolo-cpu-workspace
+  namespace: kubeflow-user-example-com
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 20Gi

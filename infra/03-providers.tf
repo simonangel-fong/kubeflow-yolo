@@ -41,7 +41,7 @@ provider "aws" {
   }
 }
 
-# data "aws_caller_identity" "current" {}
+data "aws_caller_identity" "current" {}
 
 # Auth via the AWS CLI exec plugin rather than a token data source: tokens
 # expire after 15 minutes, which a long apply can outlive.

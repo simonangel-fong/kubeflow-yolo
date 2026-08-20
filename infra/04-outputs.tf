@@ -50,6 +50,19 @@ output "karpenter_discovery_tag" {
 }
 
 # ##############################
+# S3
+# ##############################
+output "s3_bucket_name" {
+  description = "Project bucket for datasets, model artifacts and MLflow storage"
+  value       = aws_s3_bucket.project.id
+}
+
+output "s3_bucket_arn" {
+  description = "ARN of the project bucket"
+  value       = aws_s3_bucket.project.arn
+}
+
+# ##############################
 # ArgoCD
 # ##############################
 output "argocd_namespace" {

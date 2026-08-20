@@ -87,18 +87,18 @@ module "eks" {
 
       disk_size = local.eks_node_disk_size
 
-      # labels = {
-      #   "role"                    = "bootstrap"
-      #   "workload-class"          = "platform"
-      #   "karpenter.sh/controller" = "true"
-      # }
-      # taints = {
-      #   platform = {
-      #     key    = "workload-class"
-      #     value  = "platform"
-      #     effect = "NO_SCHEDULE"
-      #   }
-      # }
+      labels = {
+        "role"                    = "bootstrap"
+        "workload-class"          = "platform"
+        "karpenter.sh/controller" = "true"
+      }
+      taints = {
+        platform = {
+          key    = "workload-class"
+          value  = "platform"
+          effect = "NO_SCHEDULE"
+        }
+      }
 
     }
   }
