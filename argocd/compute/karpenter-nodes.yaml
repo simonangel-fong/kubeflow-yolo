@@ -11,7 +11,7 @@ metadata:
   finalizers:
     - argocd.argoproj.io/resources-finalizer
 spec:
-  project: platform
+  project: default
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
