@@ -153,6 +153,10 @@ kubectl get pod yolo-cpu-0 -n kubeflow-user-example-com -o wide
 # NAME         READY   STATUS    RESTARTS   AGE     IP           NODE                                          NOMINATED NODE   READINESS GATES
 # yolo-cpu-0   2/2     Running   0          3m36s   10.0.12.20   ip-10-0-12-37.ca-central-1.compute.internal   <none>           <none>
 
+# provision notebook instance
+kubectl apply -f kubeflow/notebook/notebook-cpu.yaml
+kubectl apply -f kubeflow/notebook/notebook-gpu.yaml
+
 
 ```
 
@@ -220,7 +224,57 @@ dvc push
 
 ---
 
-# training
+### training
+
+```sh
+# clone project
+git clone https://github.com/simonangel-fong/kubeflow-yolo.git
+```
+
+---
+
+## Experiment
+
+Submit from a terminal **inside the notebook** — `OptimizerClient()` reads the
+in-cluster service account, so it does not work from a laptop.
+
+```sh
+# deps for the submitting process (trials install their own)
+pip install kubeflow
+
+# submit
+cd ~/kubeflow-yolo/kubeflow/katib
+python sweep_sdk.py
+# submitted: off19ad4ab34
+
+# watch from anywhere
+kubectl get experiment,trials -n kubeflow-user-example-com
+# NAME                             TYPE      STATUS   AGE
+# experiment.kubeflow.org/off19ad4ab34   Running   True     2m
+# NAME                          TYPE      STATUS   AGE
+# trial.kubeflow.org/off19ad4ab34-gpsdhhc7   Running   True     2m
+# trial.kubeflow.org/off19ad4ab34-slzvp85r   Running   True     2m
+
+# trial pods: 3 containers = trial + metrics collector + istio sidecar
+kubectl get pods -n kubeflow-user-example-com | grep node-0-0
+
+# trial logs; the objective prints `mAP50=<value>` for the collector
+kubectl logs -n kubeflow-user-example-com <trial-pod> -c node
+
+# best result once complete
+kubectl get experiment <name> -n kubeflow-user-example-com \
+  -o jsonpath='{.status.currentOptimalTrial}' | jq
+
+# clean up
+kubectl delete experiment <name> -n kubeflow-user-example-com
+```
+
+Trials are evicted mid-run if Karpenter consolidates the node under them. The
+`general` NodePool uses `consolidateAfter: 15m` for this reason — at the
+previous 90s, trials died while still pip-installing.
+
+
+
 
 # katib
 

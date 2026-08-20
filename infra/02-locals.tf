@@ -41,8 +41,8 @@ locals {
 
   # Standardised on m5a.xlarge, matching the general Karpenter NodePool.
   eks_node_instance_type = "m5a.xlarge"
-  eks_node_count         = 3
-  eks_node_count_max     = 5
+  eks_node_count         = 2
+  eks_node_count_max     = 3
   eks_node_disk_size     = 50
 
   # ##############################

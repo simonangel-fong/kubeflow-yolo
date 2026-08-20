@@ -75,7 +75,10 @@ def objective(lr0: float, batch: int, epochs: int):
         for sub in ("images", "labels"):
             (processed / split / sub).mkdir(parents=True, exist_ok=True)
         for stem in names:
-            src_img = next(raw.glob(f"{stem}.*[gp]"))
+            src_img = next(
+                p for p in raw.glob(f"{stem}.*")
+                if p.suffix.lower() in {".jpeg", ".jpg", ".png"}
+            )
             shutil.copy(src_img, processed / split / "images" / src_img.name)
             label = raw / f"{stem}.txt"
             if label.exists():
