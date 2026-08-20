@@ -23,3 +23,8 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      # StorageClass.parameters is immutable, so a patch fails once the class
+      # exists. Recreate instead. Bound PVCs and their data are unaffected:
+      # the class is only read when a volume is provisioned.
+      - Replace=true

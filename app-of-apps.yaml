@@ -14,7 +14,12 @@ spec:
     path: argocd
     directory:
       recurse: true
-      include: "*.yaml" # Ignore README/docs dropped alongside the manifests.
+      # Only the Application files, which sit directly under argocd/<capability>/.
+      # Without the depth limit this also applies the manifests inside
+      # karpenter-nodes/ and storage-classes/, so the root and its children both
+      # own the same objects — and the root then fails on immutable fields like
+      # StorageClass.parameters.
+      include: "*/*.yaml"
 
   destination:
     server: https://kubernetes.default.svc
