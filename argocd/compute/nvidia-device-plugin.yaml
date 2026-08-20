@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-nvidia-device-plugin
+  namespace: argocd
+  labels:
+    scope: platform
+    capability: compute
+  annotations:
+    # after karpenter-nodes (11), so the gpu NodePool exists first
+    argocd.argoproj.io/sync-wave: "12"
+  finalizers:
+    - argocd.argoproj.io/resources-finalizer
+spec:
+  project: default
+  source:
+    repoURL: https://nvidia.github.io/k8s-device-plugin
+    chart: nvidia-device-plugin
+    targetRevision: 0.20.0
+    helm:
+      releaseName: nvidia-device-plugin
+      values: |
+        # Advertises nvidia.com/gpu on GPU nodes. Without it a pod requesting
+        # a GPU stays Pending forever, since no node reports the resource.
+        nodeSelector:
+          workload-class: gpu
+
+        tolerations:
+          - key: workload-class
+            operator: Equal
+            value: gpu
+            effect: NoSchedule
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true

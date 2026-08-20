@@ -1,0 +1,77 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: yolo-gpu-workspace
+  namespace: kubeflow-user-example-com
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: kubeflow.org/v1
+kind: Notebook
+metadata:
+  name: yolo-gpu
+  namespace: kubeflow-user-example-com
+  labels:
+    app: yolo-gpu
+spec:
+  template:
+    spec:
+      nodeSelector:
+        workload-class: gpu
+      serviceAccountName: default-editor
+
+      # The gpu NodePool taints its nodes, so unlike the CPU notebook this
+      # needs a matching toleration or Karpenter will not place the pod.
+      tolerations:
+        - key: workload-class
+          operator: Equal
+          value: gpu
+          effect: NoSchedule
+
+      containers:
+        - name: notebook
+          image: ghcr.io/kubeflow/kubeflow/notebook-servers/jupyter-pytorch-cuda-full:v1.11.0
+          imagePullPolicy: IfNotPresent
+
+          env:
+            - name: YOLO_CONFIG_DIR
+              value: /home/jovyan/.ultralytics
+            - name: AWS_REGION
+              value: ca-central-1
+
+          # Sized to fit a g5.xlarge (4 vCPU / 16Gi), the smallest instance the
+          # gpu NodePool provisions, leaving headroom for kubelet and daemonsets.
+          resources:
+            requests:
+              cpu: "2"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
+            limits:
+              # nvidia.com/gpu is not divisible: request and limit must match.
+              cpu: "3"
+              memory: 12Gi
+              nvidia.com/gpu: "1"
+
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/jovyan
+            # Dataloader workers share memory through /dev/shm, which defaults
+            # to 64Mi in a container and is the usual cause of a silent
+            # "DataLoader worker killed" during training.
+            - name: dshm
+              mountPath: /dev/shm
+
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: yolo-gpu-workspace
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 8Gi
