@@ -17,7 +17,7 @@ terraform -chdir=infra destroy -auto-approve
 ```sh
 aws eks update-kubeconfig --region ca-central-1 --name kubeflow-yolo-dev
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-kubectl -n argocd port-forward svc/argocd-server 8080:443
+kubectl -n argocd port-forward svc/argocd-server 8000:443
 
 kubectl apply -f app-of-apps.yaml
 argocd login localhost:8080
