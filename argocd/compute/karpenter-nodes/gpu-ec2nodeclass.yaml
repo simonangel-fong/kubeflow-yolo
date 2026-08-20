@@ -6,6 +6,7 @@ metadata:
 spec:
   role: kubeflow-yolo-dev-karpenter-node
   amiSelectorTerms:
+    # Resolves to the nvidia variant for g5/g6, which ships the GPU driver.
     - alias: al2023@latest
   subnetSelectorTerms:
     - tags:

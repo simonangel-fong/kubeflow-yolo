@@ -29,9 +29,11 @@ spec:
         - key: karpenter.sh/capacity-type
           operator: In
           values: ["on-demand"]
-        - key: karpenter.k8s.aws/instance-family
+        # Pinned to one type so GPU cost and size are predictable.
+        # Note g5.xlarge is offered only in ca-central-1a/1b, not 1d.
+        - key: node.kubernetes.io/instance-type
           operator: In
-          values: ["g5", "g6"]
+          values: ["g5.xlarge"]
   limits:
     cpu: 64
     nvidia.com/gpu: 4

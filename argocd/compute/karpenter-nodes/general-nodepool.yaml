@@ -24,12 +24,11 @@ spec:
         - key: karpenter.sh/capacity-type
           operator: In
           values: ["on-demand", "spot"]
-        - key: karpenter.k8s.aws/instance-category
+        # Pinned to one type so node size is predictable. A category/generation
+        # range let Karpenter pick m5a.large (2 vCPU), which starved notebooks.
+        - key: node.kubernetes.io/instance-type
           operator: In
-          values: ["t", "m"]
-        - key: karpenter.k8s.aws/instance-generation
-          operator: Gt
-          values: ["3"]
+          values: ["m5a.xlarge"]
   limits:
     cpu: 100
     memory: 400Gi
