@@ -219,10 +219,20 @@ __marimo__/
 
 # Datasets, weights, checkpoints — never committed. Keep the directories
 # themselves so the layout is self-documenting.
+#
+# The .dvc pointer files are the exception: they are small text metadata and
+# MUST be tracked in Git, since they are what lets `dvc pull` restore the real
+# data. DVC writes its own .gitignore next to the data it tracks.
 data/*
 !data/.gitkeep
+!*.dvc
 models/*
 !models/.gitkeep
+
+# Ignore the data DVC tracks, but never DVC's own bookkeeping.
+!.dvc/
+.dvc/cache
+.dvc/tmp
 
 # Ultralytics training output
 runs/
