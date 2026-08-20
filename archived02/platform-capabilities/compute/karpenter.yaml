@@ -1,0 +1,49 @@
+# karpenter installation
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-karpenter
+  namespace: argocd
+  labels:
+    scope: platform
+    capability: compute
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+  finalizers:
+    - argocd.argoproj.io/resources-finalizer
+spec:
+  project: platform
+  source:
+    repoURL: public.ecr.aws/karpenter
+    chart: karpenter
+    targetRevision: 1.13.0
+    helm:
+      releaseName: karpenter
+      values: |
+        nodeSelector:
+          karpenter.sh/controller: "true"
+        tolerations:
+          - key: workload-class
+            operator: Equal
+            value: platform
+            effect: NoSchedule
+        dnsPolicy: Default
+        replicas: 2
+        settings:
+          clusterName: kubeflow-yolo-dev
+          interruptionQueue: Karpenter-kubeflow-yolo-dev
+        webhook:
+          enabled: false
+        serviceAccount:
+          create: true
+          name: karpenter
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

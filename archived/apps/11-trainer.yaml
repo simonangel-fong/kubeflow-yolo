@@ -1,5 +1,4 @@
 # kubeflow trainer v2 -- TrainJob controller, JobSet, and the runtime catalog
-
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

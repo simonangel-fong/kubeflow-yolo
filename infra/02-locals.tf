@@ -39,8 +39,9 @@ locals {
   # ##############################
   eks_version = "1.36"
 
-  eks_node_instance_type = "t3.xlarge"
-  eks_node_count         = 2
+  eks_node_instance_type = "m5.2xlarge"
+  eks_node_count         = 3
+  eks_node_count_max     = 5
   eks_node_disk_size     = 50
 
   # ##############################

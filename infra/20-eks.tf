@@ -63,6 +63,17 @@ module "eks" {
     }
   }
 
+  node_security_group_additional_rules = {
+    istio_webhook = {
+      description                   = "Control plane to istiod webhook"
+      protocol                      = "tcp"
+      from_port                     = 15017
+      to_port                       = 15017
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
+  }
+
   # node group
   eks_managed_node_groups = {
     bootstrap = {
@@ -71,23 +82,23 @@ module "eks" {
       capacity_type  = "ON_DEMAND"
 
       min_size     = local.eks_node_count
-      max_size     = local.eks_node_count
+      max_size     = local.eks_node_count_max
       desired_size = local.eks_node_count
 
       disk_size = local.eks_node_disk_size
 
-      labels = {
-        "role"                    = "bootstrap"
-        "workload-class"          = "platform"
-        "karpenter.sh/controller" = "true"
-      }
-      taints = {
-        platform = {
-          key    = "workload-class"
-          value  = "platform"
-          effect = "NO_SCHEDULE"
-        }
-      }
+      # labels = {
+      #   "role"                    = "bootstrap"
+      #   "workload-class"          = "platform"
+      #   "karpenter.sh/controller" = "true"
+      # }
+      # taints = {
+      #   platform = {
+      #     key    = "workload-class"
+      #     value  = "platform"
+      #     effect = "NO_SCHEDULE"
+      #   }
+      # }
 
     }
   }
