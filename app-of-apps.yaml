@@ -11,7 +11,7 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
     targetRevision: master
-    path: argocd/bootstrap
+    path: argocd
     directory:
       recurse: true
       include: "*.yaml" # Ignore README/docs dropped alongside the manifests.

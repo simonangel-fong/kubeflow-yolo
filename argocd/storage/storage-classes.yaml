@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/platform-capabilities/storage/storage-classes
+    path: argocd/storage/storage-classes
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

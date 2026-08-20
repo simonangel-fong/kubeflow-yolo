@@ -10,6 +10,7 @@ volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
 parameters:
   type: gp3
+  encrypted: "true"
   tagSpecification_1: "Name={{ .PVCNamespace }}-{{ .PVCName }}"
   tagSpecification_2: "Namespace={{ .PVCNamespace }}"
   tagSpecification_3: "PVCName={{ .PVCName }}"
