@@ -20,7 +20,7 @@ spec:
       # children both own the same objects — and the root then fails outright on
       # immutable fields like StorageClass.parameters.
       # NOTE: include matches filenames only; directory scoping needs exclude.
-      exclude: "{karpenter-nodes/*,storage-classes/*}"
+      exclude: "{compute/karpenter-nodes/*,storage/storage-classes/*}"
 
   destination:
     server: https://kubernetes.default.svc
