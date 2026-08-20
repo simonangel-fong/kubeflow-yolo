@@ -24,7 +24,9 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      # StorageClass.parameters is immutable, so a patch fails once the class
-      # exists. Recreate instead. Bound PVCs and their data are unaffected:
-      # the class is only read when a volume is provisioned.
+      # StorageClass.parameters is immutable, so both patch and replace fail
+      # once the class exists. Force makes ArgoCD delete and recreate it.
+      # Bound PVCs and their data are unaffected: the class is only read when
+      # a volume is provisioned, not while a PV is in use.
       - Replace=true
+      - Force=true
