@@ -59,6 +59,14 @@ locals {
   s3_bucket_name = "${local.project_prefix}-${data.aws_caller_identity.current.account_id}"
 
   # ##############################
+  # Kubeflow
+  # ##############################
+  # Profile namespace for user@example.com and its editor service account,
+  # which notebook and pipeline pods run as.
+  kubeflow_profile_namespace       = "kubeflow-user-example-com"
+  kubeflow_profile_service_account = "default-editor"
+
+  # ##############################
   # ESO
   # ##############################
   eso_namespace       = "external-secrets"

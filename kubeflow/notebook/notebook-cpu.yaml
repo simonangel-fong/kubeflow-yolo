@@ -17,11 +17,24 @@ spec:
       nodeSelector:
         workload-class: general
 
+      # Carries the S3 pod identity association from infra/61-s3-notebook.tf,
+      # which is what lets `dvc pull` reach the bucket.
+      serviceAccountName: default-editor
+
       containers:
         - name: notebook
           # Default CPU image from the jupyter-web-app spawner config in this cluster.
           image: ghcr.io/kubeflow/kubeflow/notebook-servers/jupyter-scipy:v1.11.0
           imagePullPolicy: IfNotPresent
+
+          env:
+            # Default is ~/.config/Ultralytics, which is not writable on the
+            # stock image; without this ultralytics warns and falls back to
+            # /tmp, losing settings on restart.
+            - name: YOLO_CONFIG_DIR
+              value: /home/jovyan/.ultralytics
+            - name: AWS_REGION
+              value: ca-central-1
 
           resources:
             requests:
