@@ -1,0 +1,590 @@
+# PIPELINE DEFINITION
+# Name: yolo-plate-detector
+# Description: Fetch DVC data from S3, split, train YOLO, evaluate, upload.
+# Inputs:
+#    batch: int [Default: 8.0]
+#    bucket: str [Default: 'kubeflow-yolo-dev-099139718958']
+#    dvc_dir_hash: str [Default: '0e94102a7a6b4424a0f1292c2f221072.dir']
+#    epochs: int [Default: 3.0]
+#    imgsz: int [Default: 640.0]
+#    lr0: float [Default: 0.01]
+#    region: str [Default: 'ca-central-1']
+#    split_seed: int [Default: 0.0]
+#    upload_prefix: str [Default: 'models']
+#    val_fraction: float [Default: 0.2]
+#    weights: str [Default: 'yolo11n.pt']
+components:
+  comp-evaluate:
+    executorLabel: exec-evaluate
+    inputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+        processed:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        imgsz:
+          parameterType: NUMBER_INTEGER
+    outputDefinitions:
+      artifacts:
+        metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+      parameters:
+        Output:
+          parameterType: NUMBER_DOUBLE
+  comp-fetch-data:
+    executorLabel: exec-fetch-data
+    inputDefinitions:
+      parameters:
+        bucket:
+          parameterType: STRING
+        dvc_dir_hash:
+          parameterType: STRING
+        region:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        raw:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-prepare-data:
+    executorLabel: exec-prepare-data
+    inputDefinitions:
+      artifacts:
+        raw:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        split_seed:
+          parameterType: NUMBER_INTEGER
+        val_fraction:
+          parameterType: NUMBER_DOUBLE
+    outputDefinitions:
+      artifacts:
+        processed:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-train:
+    executorLabel: exec-train
+    inputDefinitions:
+      artifacts:
+        processed:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        batch:
+          parameterType: NUMBER_INTEGER
+        epochs:
+          parameterType: NUMBER_INTEGER
+        imgsz:
+          parameterType: NUMBER_INTEGER
+        lr0:
+          parameterType: NUMBER_DOUBLE
+        weights:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+  comp-upload-model:
+    executorLabel: exec-upload-model
+    inputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        bucket:
+          parameterType: STRING
+        map50:
+          parameterType: NUMBER_DOUBLE
+        prefix:
+          parameterType: STRING
+        region:
+          parameterType: STRING
+        run_id:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        uri:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+deploymentSpec:
+  executors:
+    exec-evaluate:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - evaluate
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'opencv-python-headless'\
+          \ 'ultralytics' 'boto3' 'numpy<2'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.17.0' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef _repair_env():\n    \"\"\"\n    Undo the dependency damage ultralytics\
+          \ does on install.\n\n    packages_to_install runs before the component\
+          \ body, and ultralytics drags\n    in opencv-python (GUI build) over the\
+          \ headless one. Importing cv2 then\n    fails on the missing libxcb. Pinning\
+          \ numpy<2 keeps the torch/numpy bridge\n    intact. Call this before importing\
+          \ ultralytics or cv2.\n\n    A lightweight component ships only its own\
+          \ source, so this has to be passed\n    through `additional_funcs` to exist\
+          \ inside the pod -- without that the\n    component fails with NameError\
+          \ at runtime, not at compile time.\n    \"\"\"\n    import subprocess\n\
+          \    import sys\n\n    subprocess.run(\n        [sys.executable, \"-m\"\
+          , \"pip\", \"uninstall\", \"-y\", \"-q\",\n         \"opencv-python\", \"\
+          opencv-contrib-python\"],\n        check=False,\n    )\n    subprocess.run(\n\
+          \        [sys.executable, \"-m\", \"pip\", \"install\", \"-q\", \"--force-reinstall\"\
+          ,\n         \"opencv-python-headless\", \"numpy<2\"],\n        check=True,\n\
+          \    )\n\n\ndef evaluate(\n    model: Input[Model],\n    processed: Input[Dataset],\n\
+          \    imgsz: int,\n    metrics: Output[Metrics],\n) -> float:\n    \"\"\"\
+          \n    Re-validate best.pt and log metrics to the run UI.\n\n    Returns\
+          \ mAP50 so a downstream step -- a registry push gated on quality --\n  \
+          \  can branch on it. The printed name=value lines match the format the Katib\n\
+          \    StdOut collector parses, so trial logs and pipeline logs read alike.\n\
+          \    \"\"\"\n    from pathlib import Path\n\n    _repair_env()\n\n    from\
+          \ ultralytics import YOLO\n\n    data_yaml = Path(processed.path) / \"data.yaml\"\
+          \n    best = YOLO(str(Path(model.path) / \"best.pt\"))\n\n    # Without\
+          \ an explicit project ultralytics writes to ./runs/detect, relative\n  \
+          \  # to a working directory the pod cannot write to.\n    result = best.val(\n\
+          \        data=str(data_yaml),\n        imgsz=imgsz,\n        device=\"cpu\"\
+          ,\n        plots=False,\n        project=\"/tmp/val\",\n        name=\"\
+          eval\",\n        exist_ok=True,\n    )\n\n    values = {\n        \"mAP50\"\
+          : float(result.box.map50),\n        \"mAP50-95\": float(result.box.map),\n\
+          \        \"precision\": float(result.box.mp),\n        \"recall\": float(result.box.mr),\n\
+          \    }\n    for name, value in values.items():\n        metrics.log_metric(name,\
+          \ value)\n        print(name + \"=\" + str(value))\n\n    return values[\"\
+          mAP50\"]\n\n"
+        image: python:3.11
+        resources:
+          memoryLimit: 4.294967296
+          resourceMemoryLimit: 4Gi
+    exec-fetch-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - fetch_data
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'boto3'  && \
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.17.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef fetch_data(\n    bucket: str,\n    dvc_dir_hash: str,\n    region:\
+          \ str,\n    raw: Output[Dataset],\n):\n    \"\"\"\n    Pull the DVC-tracked\
+          \ raw dataset out of S3.\n\n    `dvc_dir_hash` is the md5 of the .dir object\
+          \ that `dvc add data/raw` wrote\n    into data/raw.dvc. That object is a\
+          \ JSON manifest mapping each file's md5\n    to its relative path, so the\
+          \ whole dataset is addressable from one hash --\n    which is what makes\
+          \ a pipeline run reproducible against a dataset version.\n\n    Credentials\
+          \ come from EKS Pod Identity via the default-editor service\n    account;\
+          \ see infra/61-s3-notebook.tf. Nothing is mounted and nothing is\n    read\
+          \ from the environment.\n    \"\"\"\n    import json\n    from concurrent.futures\
+          \ import ThreadPoolExecutor\n    from pathlib import Path\n\n    import\
+          \ boto3\n\n    s3 = boto3.client(\"s3\", region_name=region)\n\n    def\
+          \ dvc_key(md5: str) -> str:\n        # DVC shards the content-addressed\
+          \ store by the first two hex chars.\n        return \"dvcstore/files/md5/\"\
+          \ + md5[:2] + \"/\" + md5[2:]\n\n    manifest = json.loads(\n        s3.get_object(Bucket=bucket,\
+          \ Key=dvc_key(dvc_dir_hash))[\"Body\"].read()\n    )\n\n    root = Path(raw.path)\n\
+          \    root.mkdir(parents=True, exist_ok=True)\n\n    def fetch(entry):\n\
+          \        target = root / entry[\"relpath\"]\n        target.parent.mkdir(parents=True,\
+          \ exist_ok=True)\n        s3.download_file(bucket, dvc_key(entry[\"md5\"\
+          ]), str(target))\n\n    with ThreadPoolExecutor(max_workers=16) as pool:\n\
+          \        list(pool.map(fetch, manifest))\n\n    raw.metadata[\"files\"]\
+          \ = len(manifest)\n    raw.metadata[\"dvc_dir_hash\"] = dvc_dir_hash\n \
+          \   print(\"fetched\", len(manifest), \"files to\", root)\n\n"
+        image: python:3.11
+    exec-prepare-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - prepare_data
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pyyaml'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.17.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef prepare_data(\n    raw: Input[Dataset],\n    val_fraction: float,\n\
+          \    split_seed: int,\n    processed: Output[Dataset],\n):\n    \"\"\"\n\
+          \    Build the train/val split and the ultralytics dataset descriptor.\n\
+          \n    The split is seeded so a rerun with the same seed sees the same images\
+          \ --\n    without that, comparing two runs' mAP tells you nothing about\
+          \ the change\n    you made.\n\n    data.yaml `path` must be absolute: ultralytics\
+          \ resolves a relative root\n    against the process cwd and then its own\
+          \ DATASETS_DIR, never against the\n    yaml's own location.\n    \"\"\"\n\
+          \    import random\n    import shutil\n    from pathlib import Path\n\n\
+          \    import yaml\n\n    suffixes = {\".jpeg\", \".jpg\", \".png\"}\n   \
+          \ src = Path(raw.path)\n    dst = Path(processed.path)\n\n    stems = sorted(p.stem\
+          \ for p in src.iterdir() if p.suffix.lower() in suffixes)\n    random.Random(split_seed).shuffle(stems)\n\
+          \    cut = int(len(stems) * (1 - val_fraction))\n\n    counts = {}\n   \
+          \ for split, names in ((\"train\", stems[:cut]), (\"val\", stems[cut:])):\n\
+          \        for sub in (\"images\", \"labels\"):\n            (dst / split\
+          \ / sub).mkdir(parents=True, exist_ok=True)\n        for stem in names:\n\
+          \            image = next(\n                p for p in src.glob(stem + \"\
+          .*\") if p.suffix.lower() in suffixes\n            )\n            shutil.copy(image,\
+          \ dst / split / \"images\" / image.name)\n            label = src / (stem\
+          \ + \".txt\")\n            # An image with no label file is a legitimate\
+          \ negative sample.\n            if label.exists():\n                shutil.copy(label,\
+          \ dst / split / \"labels\" / label.name)\n        counts[split] = len(names)\n\
+          \n    class_names = (src / \"classes.txt\").read_text().split()\n    (dst\
+          \ / \"data.yaml\").write_text(\n        yaml.safe_dump(\n            {\n\
+          \                \"path\": str(dst),\n                \"train\": \"train/images\"\
+          ,\n                \"val\": \"val/images\",\n                \"nc\": len(class_names),\n\
+          \                \"names\": class_names,\n            },\n            sort_keys=False,\n\
+          \        )\n    )\n\n    processed.metadata.update(counts)\n    processed.metadata[\"\
+          classes\"] = class_names\n    print(\"split\", counts, \"classes\", class_names)\n\
+          \n"
+        image: python:3.11
+    exec-train:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'opencv-python-headless'\
+          \ 'ultralytics' 'boto3' 'numpy<2'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.17.0' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef _repair_env():\n    \"\"\"\n    Undo the dependency damage ultralytics\
+          \ does on install.\n\n    packages_to_install runs before the component\
+          \ body, and ultralytics drags\n    in opencv-python (GUI build) over the\
+          \ headless one. Importing cv2 then\n    fails on the missing libxcb. Pinning\
+          \ numpy<2 keeps the torch/numpy bridge\n    intact. Call this before importing\
+          \ ultralytics or cv2.\n\n    A lightweight component ships only its own\
+          \ source, so this has to be passed\n    through `additional_funcs` to exist\
+          \ inside the pod -- without that the\n    component fails with NameError\
+          \ at runtime, not at compile time.\n    \"\"\"\n    import subprocess\n\
+          \    import sys\n\n    subprocess.run(\n        [sys.executable, \"-m\"\
+          , \"pip\", \"uninstall\", \"-y\", \"-q\",\n         \"opencv-python\", \"\
+          opencv-contrib-python\"],\n        check=False,\n    )\n    subprocess.run(\n\
+          \        [sys.executable, \"-m\", \"pip\", \"install\", \"-q\", \"--force-reinstall\"\
+          ,\n         \"opencv-python-headless\", \"numpy<2\"],\n        check=True,\n\
+          \    )\n\n\ndef train(\n    processed: Input[Dataset],\n    lr0: float,\n\
+          \    batch: int,\n    epochs: int,\n    imgsz: int,\n    weights: str,\n\
+          \    model: Output[Model],\n):\n    \"\"\"\n    Train YOLO and emit best.pt\
+          \ as the step's Model artifact.\n\n    Ultralytics names save_dir unpredictably\
+          \ when runs collide, so best.pt is\n    copied to a fixed path that the\
+          \ evaluate step can rely on.\n    \"\"\"\n    import shutil\n    from pathlib\
+          \ import Path\n\n    _repair_env()\n\n    from ultralytics import YOLO\n\
+          \n    data_yaml = Path(processed.path) / \"data.yaml\"\n    out = Path(model.path)\n\
+          \    out.mkdir(parents=True, exist_ok=True)\n\n    yolo = YOLO(weights)\n\
+          \    results = yolo.train(\n        data=str(data_yaml),\n        epochs=epochs,\n\
+          \        batch=batch,\n        lr0=lr0,\n        imgsz=imgsz,\n        device=\"\
+          cpu\",\n        workers=2,\n        project=str(out / \"runs\"),\n     \
+          \   name=\"train\",\n        exist_ok=True,\n        plots=False,\n    )\n\
+          \n    save_dir = Path(results.save_dir)\n    shutil.copy2(save_dir / \"\
+          weights\" / \"best.pt\", out / \"best.pt\")\n\n    results_csv = save_dir\
+          \ / \"results.csv\"\n    if results_csv.exists():\n        shutil.copy2(results_csv,\
+          \ out / \"results.csv\")\n\n    model.metadata.update(\n        {\"lr0\"\
+          : lr0, \"batch\": batch, \"epochs\": epochs, \"imgsz\": imgsz,\n       \
+          \  \"weights\": weights, \"framework\": \"ultralytics\"}\n    )\n    print(\"\
+          best.pt written to\", out / \"best.pt\")\n\n"
+        image: python:3.11
+        resources:
+          cpuLimit: 4.0
+          cpuRequest: 2.0
+          memoryLimit: 8.589934592
+          memoryRequest: 6.442450944
+          resourceCpuLimit: '4'
+          resourceCpuRequest: '2'
+          resourceMemoryLimit: 8Gi
+          resourceMemoryRequest: 6Gi
+    exec-upload-model:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - upload_model
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'boto3'  && \
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.17.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef upload_model(\n    model: Input[Model],\n    bucket: str,\n \
+          \   region: str,\n    prefix: str,\n    map50: float,\n    run_id: str,\n\
+          \    uri: Output[Dataset],\n):\n    \"\"\"\n    Copy the trained weights\
+          \ to S3 under the KFP run id.\n\n    Keyed by run id so runs never overwrite\
+          \ each other, and accompanied by a\n    metrics.json so a later KServe deployment\
+          \ can tell what it is picking up.\n\n    `run_id` arrives as a parameter\
+          \ rather than being read in the body: KFP\n    substitutes placeholders\
+          \ like {{$.pipeline_job_uuid}} in the container args\n    only, so one embedded\
+          \ in this source would upload to a literal path.\n    \"\"\"\n    import\
+          \ json\n    from pathlib import Path\n\n    import boto3\n\n    key = prefix.rstrip(\"\
+          /\") + \"/\" + run_id + \"/best.pt\"\n\n    s3 = boto3.client(\"s3\", region_name=region)\n\
+          \    s3.upload_file(str(Path(model.path) / \"best.pt\"), bucket, key)\n\
+          \    s3.put_object(\n        Bucket=bucket,\n        Key=prefix.rstrip(\"\
+          /\") + \"/\" + run_id + \"/metrics.json\",\n        Body=json.dumps({\"\
+          mAP50\": map50, \"run_id\": run_id}, indent=2).encode(),\n    )\n\n    destination\
+          \ = \"s3://\" + bucket + \"/\" + key\n    Path(uri.path).write_text(destination)\n\
+          \    uri.metadata[\"uri\"] = destination\n    print(\"uploaded\", destination)\n\
+          \n"
+        image: python:3.11
+pipelineInfo:
+  description: Fetch DVC data from S3, split, train YOLO, evaluate, upload.
+  name: yolo-plate-detector
+root:
+  dag:
+    tasks:
+      evaluate:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-evaluate
+        dependentTasks:
+        - prepare-data
+        - train
+        inputs:
+          artifacts:
+            model:
+              taskOutputArtifact:
+                outputArtifactKey: model
+                producerTask: train
+            processed:
+              taskOutputArtifact:
+                outputArtifactKey: processed
+                producerTask: prepare-data
+          parameters:
+            imgsz:
+              componentInputParameter: imgsz
+        taskInfo:
+          name: evaluate
+      fetch-data:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-fetch-data
+        inputs:
+          parameters:
+            bucket:
+              componentInputParameter: bucket
+            dvc_dir_hash:
+              componentInputParameter: dvc_dir_hash
+            region:
+              componentInputParameter: region
+        taskInfo:
+          name: fetch-data
+      prepare-data:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-prepare-data
+        dependentTasks:
+        - fetch-data
+        inputs:
+          artifacts:
+            raw:
+              taskOutputArtifact:
+                outputArtifactKey: raw
+                producerTask: fetch-data
+          parameters:
+            split_seed:
+              componentInputParameter: split_seed
+            val_fraction:
+              componentInputParameter: val_fraction
+        taskInfo:
+          name: prepare-data
+      train:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train
+        dependentTasks:
+        - prepare-data
+        inputs:
+          artifacts:
+            processed:
+              taskOutputArtifact:
+                outputArtifactKey: processed
+                producerTask: prepare-data
+          parameters:
+            batch:
+              componentInputParameter: batch
+            epochs:
+              componentInputParameter: epochs
+            imgsz:
+              componentInputParameter: imgsz
+            lr0:
+              componentInputParameter: lr0
+            weights:
+              componentInputParameter: weights
+        retryPolicy:
+          backoffDuration: 0s
+          backoffFactor: 2.0
+          backoffMaxDuration: 3600s
+          maxRetryCount: 1
+        taskInfo:
+          name: train
+      upload-model:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-upload-model
+        dependentTasks:
+        - evaluate
+        - train
+        inputs:
+          artifacts:
+            model:
+              taskOutputArtifact:
+                outputArtifactKey: model
+                producerTask: train
+          parameters:
+            bucket:
+              componentInputParameter: bucket
+            map50:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: evaluate
+            prefix:
+              componentInputParameter: upload_prefix
+            region:
+              componentInputParameter: region
+            run_id:
+              runtimeValue:
+                constant: '{{$.pipeline_job_uuid}}'
+        taskInfo:
+          name: upload-model
+  inputDefinitions:
+    parameters:
+      batch:
+        defaultValue: 8.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      bucket:
+        defaultValue: kubeflow-yolo-dev-099139718958
+        isOptional: true
+        parameterType: STRING
+      dvc_dir_hash:
+        defaultValue: 0e94102a7a6b4424a0f1292c2f221072.dir
+        isOptional: true
+        parameterType: STRING
+      epochs:
+        defaultValue: 3.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      imgsz:
+        defaultValue: 640.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      lr0:
+        defaultValue: 0.01
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      region:
+        defaultValue: ca-central-1
+        isOptional: true
+        parameterType: STRING
+      split_seed:
+        defaultValue: 0.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      upload_prefix:
+        defaultValue: models
+        isOptional: true
+        parameterType: STRING
+      val_fraction:
+        defaultValue: 0.2
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      weights:
+        defaultValue: yolo11n.pt
+        isOptional: true
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.17.0

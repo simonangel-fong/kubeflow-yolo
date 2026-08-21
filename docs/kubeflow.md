@@ -173,7 +173,7 @@ pip install -r requirements.txt
 dvc version
 # DVC version: 3.67.1 (pip)
 
-# Initialize 
+# Initialize
 dvc init
 # Initialized DVC repository.
 
@@ -204,7 +204,7 @@ dvc remote add -d s3 s3://kubeflow-yolo-dev-099139718958/data/raw
 # track data
 dvc add data/raw
 # 100% Adding...|███████████████████████████████████████████████████████████████████████████████████████████|1/1 [00:00,  2.37file/s]
-                                                                                                                                   
+
 # To track the changes with git, run:
 
 #         git add 'data\raw.dvc'
@@ -218,7 +218,7 @@ git commit -m "dvc: track data/raw"
 dvc push
 # Collecting                                                                                                   |1.11k [00:01,  985entry/s]
 # Pushing
-# 1096 files pushed                                                                                                  
+# 1096 files pushed
 
 ```
 
@@ -271,13 +271,79 @@ Trials are evicted mid-run if Karpenter consolidates the node under them. The
 `general` NodePool uses `consolidateAfter: 15m` for this reason — at the
 previous 90s, trials died while still pip-installing.
 
-
-
-
 # katib
 
 # pipeline
 
+Four steps, artifacts passed between them:
+
+```txt
+fetch_data -> prepare_data -> train -> evaluate
+                                    \-> upload_model
 ```
 
+Lightweight components, so each step pip installs its own deps at runtime and
+an edit costs a recompile rather than an image build and push. The opencv and
+`numpy<2` repair from the Katib objective applies here too, shared through
+`additional_funcs` — a lightweight component only ships its own source, so a
+plain module-level helper is a `NameError` inside the pod.
+
+## One-time setup
+
+`kfp.Client()` authenticates with a projected ServiceAccount token, and the
+notebook's default token has the wrong audience. The PodDefault mounts a
+correctly scoped one:
+
+```sh
+kubectl apply -f kubeflow/notebook/kfp-api-token.yaml
+
+# confirm the token landed
+kubectl exec -n kubeflow-user-example-com yolo-cpu-0 -c notebook -- ls /var/run/secrets/kubeflow/pipelines/
+# token
 ```
+
+## Submit
+
+From a terminal **inside the notebook** — `ml-pipeline-ui` is a ClusterIP
+service behind istio, so this does not work from a laptop.
+
+```sh
+pip install kfp
+
+cd ~/kubeflow-yolo/kubeflow/pipelines
+python compile.py
+# compiled .../yolo_pipeline.yaml
+
+python submit.py
+# run 3f9c1a72-...
+# arguments (defaults)
+
+# override hyperparameters, or train against a different dataset version
+python submit.py --epochs 10 --lr0 0.005
+python submit.py --dvc-dir-hash <md5-from-data/raw.dvc>
+```
+
+Watch it from anywhere:
+
+```sh
+kubectl get workflows -n kubeflow-user-example-com
+kubectl logs -n kubeflow-user-example-com <pod> -c main
+```
+
+mAP50 / mAP50-95 / precision / recall land on the run's Metrics tab. The
+weights go to `s3://<bucket>/models/<run-id>/best.pt` with a `metrics.json`
+alongside, keyed by run id so runs never overwrite each other.
+
+## Notes
+
+- `dvc_dir_hash` is a pipeline parameter, not a constant. It is the md5 of the
+  `.dir` manifest in `data/raw.dvc`, so a run is pinned to a dataset version —
+  re-running against new data is a parameter change, not a code change.
+- S3 access needs no credentials in the pipeline: EKS Pod Identity is
+  associated to `default-editor`, which pipeline pods already run as
+  (`infra/61-s3-notebook.tf`).
+- `fetch_data` is cached, so re-running with the same dataset hash skips the
+  download and starts at the split.
+- The train step sets `set_retry(num_retries=1)`: Karpenter can still
+  consolidate a node out from under a long step, same failure that was killing
+  Katib trials.

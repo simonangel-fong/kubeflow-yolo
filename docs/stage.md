@@ -57,9 +57,10 @@ Stage 9 eks track(skip)
 - install mlflow
 - trach training
 
-Stage 10 eks pipeline(skip)
+Stage 10 eks pipeline
 
 - train model with pipeline
+- fetch dvc data from s3, split, train, evaluate, upload weights to s3
 
 stage 11 eks train (gpu)
 
