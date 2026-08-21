@@ -13,6 +13,7 @@ labelled `kfp-api-token: "true"` -- see kubeflow/notebook/.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from pathlib import Path
 
 import kfp
@@ -20,6 +21,7 @@ import kfp
 NAMESPACE = "kubeflow-user-example-com"
 PACKAGE = Path(__file__).parent / "yolo_pipeline.yaml"
 EXPERIMENT = "yolo-plate-detector"
+PIPELINE = "yolo-plate-detector"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -54,11 +56,40 @@ def main(argv: list[str] | None = None) -> int:
     }
     arguments = {k: v for k, v in overrides.items() if v is not None}
 
+    # Submitting the package directly runs it but never creates a Pipeline
+    # object, so the Pipelines page stays empty. Upload it instead, and add a
+    # version on every later submit, so each run links back to what it ran.
+    version_name = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    pipeline_id = client.get_pipeline_id(PIPELINE)
+
+    if pipeline_id is None:
+        pipeline = client.upload_pipeline(
+            pipeline_package_path=str(PACKAGE),
+            pipeline_name=PIPELINE,
+            description="Fetch the dataset from S3, split, train YOLO, evaluate, register.",
+            namespace=NAMESPACE,
+        )
+        pipeline_id = pipeline.pipeline_id
+        # the upload creates a default version but does not return its id
+        version_id = client.list_pipeline_versions(
+            pipeline_id=pipeline_id, page_size=1, sort_by="created_at desc",
+        ).pipeline_versions[0].pipeline_version_id
+        print("created pipeline", PIPELINE, pipeline_id)
+    else:
+        version = client.upload_pipeline_version(
+            pipeline_package_path=str(PACKAGE),
+            pipeline_version_name=version_name,
+            pipeline_id=pipeline_id,
+        )
+        version_id = version.pipeline_version_id
+        print("added version", version_name, "to", PIPELINE)
+
     experiment = client.create_experiment(name=args.experiment, namespace=NAMESPACE)
     run = client.run_pipeline(
         experiment_id=experiment.experiment_id,
         job_name="yolo-" + ("-".join(str(v) for v in arguments.values()) or "default"),
-        pipeline_package_path=str(PACKAGE),
+        pipeline_id=pipeline_id,
+        version_id=version_id,
         params=arguments,
     )
 

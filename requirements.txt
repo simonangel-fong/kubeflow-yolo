@@ -16,4 +16,5 @@ dvc[s3]>=3.0
 kubeflow
 kubeflow-katib
 kfp>=2.14
+kfp-kubernetes
 boto3
