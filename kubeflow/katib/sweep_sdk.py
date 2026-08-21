@@ -19,8 +19,26 @@ def objective(parameters):
     import json
     import random
     import shutil
+    import subprocess
+    import sys
     from concurrent.futures import ThreadPoolExecutor
     from pathlib import Path
+
+    # packages_to_install runs before this, and ultralytics drags in the GUI
+    # build of opencv, overwriting the headless one. The base image has no
+    # libxcb, so importing cv2 fails. Swap it back before importing anything.
+    subprocess.run(
+        [sys.executable, "-m", "pip", "uninstall", "-y", "-q",
+         "opencv-python", "opencv-contrib-python"],
+        check=False,
+    )
+    # numpy<2 as well: the base image ships torch 2.2.1 built against numpy 1.x,
+    # and ultralytics pulls numpy 2.x, which breaks the torch/numpy bridge.
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "-q", "--force-reinstall",
+         "opencv-python-headless", "numpy<2"],
+        check=True,
+    )
 
     import boto3
     from ultralytics import YOLO
