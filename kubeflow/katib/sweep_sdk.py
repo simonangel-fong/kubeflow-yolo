@@ -30,6 +30,12 @@ def objective(lr0: float, batch: int, epochs: int):
     from concurrent.futures import ThreadPoolExecutor
     from pathlib import Path
 
+    # Katib substitutes hyperparameters as strings, so ultralytics would receive
+    # epochs="3" and fail. Coerce before anything uses them.
+    lr0 = float(lr0)
+    batch = int(batch)
+    epochs = int(epochs)
+
     # The runtime image marks its environment externally managed (PEP 668), so
     # the SDK's packages_to_install is silently refused. Install here instead,
     # and swap ultralytics' opencv-python for the headless build: the runtime
