@@ -14,9 +14,11 @@ Compile and submit with submit.py; see docs/kubeflow.md for the run notes.
 from kfp import dsl
 from kfp.dsl import Dataset, Input, Metrics, Model, Output
 
-# The base image ships torch 2.2.1 built against numpy 1.x. Ultralytics pulls
-# numpy 2.x and the GUI build of opencv, which needs libxcb that the image does
-# not have. Both get corrected inside each component that imports ultralytics.
+# Pinned so the runtime does not move when the SDK changes its default.
+BASE_IMAGE = "python:3.12"
+
+# numpy<2 keeps the torch/numpy ABI bridge intact. Ultralytics overrides both
+# this and the headless opencv on install; _repair_env puts them back.
 YOLO_PACKAGES = ["opencv-python-headless", "ultralytics", "boto3", "numpy<2"]
 
 IMAGE_SUFFIXES = (".jpeg", ".jpg", ".png")
@@ -24,16 +26,10 @@ IMAGE_SUFFIXES = (".jpeg", ".jpg", ".png")
 
 def _repair_env():
     """
-    Undo the dependency damage ultralytics does on install.
+    Restore headless opencv and numpy<2 after ultralytics overrides them.
 
-    packages_to_install runs before the component body, and ultralytics drags
-    in opencv-python (GUI build) over the headless one. Importing cv2 then
-    fails on the missing libxcb. Pinning numpy<2 keeps the torch/numpy bridge
-    intact. Call this before importing ultralytics or cv2.
-
-    A lightweight component ships only its own source, so this has to be passed
-    through `additional_funcs` to exist inside the pod -- without that the
-    component fails with NameError at runtime, not at compile time.
+    Call before importing ultralytics or cv2. Must be passed through
+    `additional_funcs` to exist inside the pod.
     """
     import subprocess
     import sys
@@ -50,7 +46,7 @@ def _repair_env():
     )
 
 
-@dsl.component(packages_to_install=["boto3"])
+@dsl.component(base_image=BASE_IMAGE, packages_to_install=["boto3"])
 def fetch_data(
     bucket: str,
     dvc_dir_hash: str,
@@ -101,7 +97,7 @@ def fetch_data(
     print("fetched", len(manifest), "files to", root)
 
 
-@dsl.component(packages_to_install=["pyyaml"])
+@dsl.component(base_image=BASE_IMAGE, packages_to_install=["pyyaml"])
 def prepare_data(
     raw: Input[Dataset],
     val_fraction: float,
@@ -167,7 +163,11 @@ def prepare_data(
     print("split", counts, "classes", class_names)
 
 
-@dsl.component(packages_to_install=YOLO_PACKAGES, additional_funcs=[_repair_env])
+@dsl.component(
+    base_image=BASE_IMAGE,
+    packages_to_install=YOLO_PACKAGES,
+    additional_funcs=[_repair_env],
+)
 def train(
     processed: Input[Dataset],
     lr0: float,
@@ -223,7 +223,11 @@ def train(
     print("best.pt written to", out / "best.pt")
 
 
-@dsl.component(packages_to_install=YOLO_PACKAGES, additional_funcs=[_repair_env])
+@dsl.component(
+    base_image=BASE_IMAGE,
+    packages_to_install=YOLO_PACKAGES,
+    additional_funcs=[_repair_env],
+)
 def evaluate(
     model: Input[Model],
     processed: Input[Dataset],
@@ -271,7 +275,7 @@ def evaluate(
     return values["mAP50"]
 
 
-@dsl.component(packages_to_install=["boto3"])
+@dsl.component(base_image=BASE_IMAGE, packages_to_install=["boto3"])
 def upload_model(
     model: Input[Model],
     bucket: str,
