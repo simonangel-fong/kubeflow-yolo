@@ -312,7 +312,7 @@ pip install kfp
 
 cd ~/kubeflow-yolo/kubeflow/pipelines
 python compile.py
-# compiled .../yolo_pipeline.yaml
+# compiled /home/jovyan/kubeflow-yolo/kubeflow/pipelines/yolo_pipeline.yaml
 
 python submit.py
 # run 3f9c1a72-...
