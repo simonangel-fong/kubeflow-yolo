@@ -25,8 +25,29 @@ REGION = "ca-central-1"
 def objective(lr0: float, batch: int, epochs: int):
     """One trial: pull the dataset, train, print the metric Katib collects."""
     import json
+    import subprocess
+    import sys
     from concurrent.futures import ThreadPoolExecutor
     from pathlib import Path
+
+    # The runtime image marks its environment externally managed (PEP 668), so
+    # the SDK's packages_to_install is silently refused. Install here instead,
+    # and swap ultralytics' opencv-python for the headless build: the runtime
+    # has no libxcb, so the GUI variant fails at `import cv2`.
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "-q", "--break-system-packages",
+         "ultralytics>=8.3.0", "boto3"],
+        check=True,
+    )
+    subprocess.run(
+        [sys.executable, "-m", "pip", "uninstall", "-y", "-q", "opencv-python"],
+        check=False,
+    )
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "-q", "--break-system-packages",
+         "opencv-python-headless"],
+        check=True,
+    )
 
     import boto3
     from ultralytics import YOLO
@@ -121,10 +142,7 @@ if __name__ == "__main__":
             runtime="torch-distributed",
             trainer=CustomTrainer(
                 func=objective,
-                packages_to_install=[
-                    "ultralytics>=8.3.0",
-                    "boto3",
-                ],
+                # packages are installed inside objective(); see the note there
                 resources_per_node={"cpu": "2", "memory": "6Gi"},
                 env={"YOLO_CONFIG_DIR": "/tmp/ultralytics",
                      "MPLCONFIGDIR": "/tmp/matplotlib",

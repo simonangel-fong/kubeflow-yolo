@@ -245,28 +245,26 @@ pip install kubeflow
 # submit
 cd ~/kubeflow-yolo/kubeflow/katib
 python sweep_sdk.py
-# submitted: off19ad4ab34
+# submitted: d9328eb9f65b
 
 # watch from anywhere
 kubectl get experiment,trials -n kubeflow-user-example-com
-# NAME                             TYPE      STATUS   AGE
-# experiment.kubeflow.org/off19ad4ab34   Running   True     2m
-# NAME                          TYPE      STATUS   AGE
-# trial.kubeflow.org/off19ad4ab34-gpsdhhc7   Running   True     2m
-# trial.kubeflow.org/off19ad4ab34-slzvp85r   Running   True     2m
+# NAME                                   TYPE      STATUS   AGE
+# experiment.kubeflow.org/d9328eb9f65b   Created   True     20s
 
-# trial pods: 3 containers = trial + metrics collector + istio sidecar
 kubectl get pods -n kubeflow-user-example-com | grep node-0-0
+# d9328eb9f65b-84p4wwj8-node-0-0-86rfq         3/3     Running           0          30s
+# d9328eb9f65b-r4d5nfdj-node-0-0-2dzcv         1/3     PodInitializing   0          30s
 
 # trial logs; the objective prints `mAP50=<value>` for the collector
-kubectl logs -n kubeflow-user-example-com <trial-pod> -c node
+kubectl logs -n kubeflow-user-example-com d9328eb9f65b-84p4wwj8-node-0-0-86rfq -c node
 
 # best result once complete
-kubectl get experiment <name> -n kubeflow-user-example-com \
+kubectl get experiment d9328eb9f65b -n kubeflow-user-example-com \
   -o jsonpath='{.status.currentOptimalTrial}' | jq
 
 # clean up
-kubectl delete experiment <name> -n kubeflow-user-example-com
+kubectl delete experiment d9328eb9f65b -n kubeflow-user-example-com
 ```
 
 Trials are evicted mid-run if Karpenter consolidates the node under them. The
