@@ -37,11 +37,10 @@ locals {
   # ##############################
   # EKS
   # ##############################
-  eks_version = "1.36"
-
-  # Standardised on m5a.xlarge, matching the general Karpenter NodePool.
-  eks_node_instance_type = "m5a.xlarge"
-  eks_node_count         = 2
+  eks_version            = "1.36"
+  eks_node_instance_type = "m5a.large"
+  eks_node_count_desired = 2
+  eks_node_count_min     = 1
   eks_node_count_max     = 3
   eks_node_disk_size     = 50
 
@@ -55,15 +54,11 @@ locals {
   # ##############################
   # S3
   # ##############################
-  # Bucket names are globally unique across all AWS accounts, so suffix the
-  # account ID to avoid collisions on a name as generic as the project prefix.
   s3_bucket_name = "${local.project_prefix}-${data.aws_caller_identity.current.account_id}"
 
   # ##############################
   # Kubeflow
   # ##############################
-  # Profile namespace for user@example.com and its editor service account,
-  # which notebook and pipeline pods run as.
   kubeflow_profile_namespace       = "kubeflow-user-example-com"
   kubeflow_profile_service_account = "default-editor"
 

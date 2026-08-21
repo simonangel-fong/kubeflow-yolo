@@ -81,9 +81,9 @@ module "eks" {
       ami_type       = "AL2023_x86_64_STANDARD"
       capacity_type  = "ON_DEMAND"
 
-      min_size     = local.eks_node_count
+      min_size     = local.eks_node_count_min
       max_size     = local.eks_node_count_max
-      desired_size = local.eks_node_count
+      desired_size = local.eks_node_count_desired
 
       disk_size = local.eks_node_disk_size
 

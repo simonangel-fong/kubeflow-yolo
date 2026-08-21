@@ -27,26 +27,17 @@ while ! kustomize build example | kubectl apply --server-side --force-conflicts 
 
 # confirm
 kubectl get pods -n cert-manager
-# NAME                                       READY   STATUS              RESTARTS   AGE
-# cert-manager-74bfd9fd8b-8dz9n              0/1     ContainerCreating   0          7m32s
-# cert-manager-cainjector-5c89fd994b-z52mh   1/1     Running             0          53m
-# cert-manager-cainjector-7fcd95ddb9-8qzpj   0/1     ContainerCreating   0          7m32s
-# cert-manager-f648fc988-k6hpx               1/1     Running             0          53m
-# cert-manager-webhook-75bb6df98b-5lsmg      1/1     Running             0          53m
-# cert-manager-webhook-7b6856df8d-6cfdj      0/1     ContainerCreating   0          7m32s
+# NAME                                       READY   STATUS    RESTARTS   AGE
+# cert-manager-69c7fcbf78-98x27              1/1     Running   0          29m
+# cert-manager-cainjector-69f8c8cdbf-dwwqk   1/1     Running   0          29m
+# cert-manager-webhook-84fd89df64-5qxph      1/1     Running   0          29m
 
 
-kubectl get pods -n istio-systemem
+kubectl get pods -n istio-system
 # NAME                                     READY   STATUS    RESTARTS   AGE
-# cluster-local-gateway-869bffccbb-69w8t   1/1     Running   0          5m35s
-# istio-cni-node-5l8tn                     1/1     Running   0          50m
-# istio-cni-node-dxc2f                     1/1     Running   0          50m
-# istio-cni-node-sf4fx                     1/1     Running   0          50m
-# istio-ingressgateway-79449c5b89-45pw8    1/1     Running   0          5m35s
-# istiod-6744f496cd-7c75m                  1/1     Running   0          5m35s
-# ztunnel-5xd7f                            1/1     Running   0          50m
-# ztunnel-dkpv5                            1/1     Running   0          50m
-# ztunnel-vbhdh                            1/1     Running   0          50m
+# cluster-local-gateway-869bffccbb-kgf5h   1/1     Running   0          30m
+# istio-ingressgateway-79449c5b89-gnf9k    1/1     Running   0          30m
+# istiod-7dbc4c9576-lt6bc                  1/1     Running   0          30m
 
 kubectl get pods -n auth
 # NAME                   READY   STATUS    RESTARTS   AGE
@@ -60,12 +51,12 @@ kubectl get pods -n oauth2-proxy
 
 kubectl get pods -n knative-serving
 # NAME                                    READY   STATUS    RESTARTS   AGE
-# activator-664bfc9bdd-xzl4v              2/2     Running   0          6m29s
-# autoscaler-55647d5956-8wd69             2/2     Running   0          6m29s
-# controller-58467d45bb-gbpps             2/2     Running   0          6m29s
-# net-istio-controller-55794746c9-h9bvw   2/2     Running   0          6m29s
-# net-istio-webhook-848d4b7d5f-tz2h7      2/2     Running   0          6m29s
-# webhook-679db87d6d-cdt8r                2/2     Running   0          6m29s
+# activator-664bfc9bdd-gm2l4              2/2     Running   0          29m
+# autoscaler-55647d5956-j984b             2/2     Running   0          29m
+# controller-58467d45bb-984sq             2/2     Running   0          29m
+# net-istio-controller-55794746c9-rr4kn   2/2     Running   0          29m
+# net-istio-webhook-848d4b7d5f-gfv58      2/2     Running   0          29m
+# webhook-679db87d6d-xhjnq                2/2     Running   0          29m
 
 kubectl get pods -n kubeflow
 # NAME                                                    READY   STATUS    RESTARTS        AGE
@@ -108,9 +99,9 @@ kubectl get pods -n kubeflow
 
 kubectl get pods -n kubeflow-user-example-com
 # NAME                                         READY   STATUS    RESTARTS   AGE
-# model-registry-db-86979795c4-v8lwg           1/1     Running   0          3m18s
-# model-registry-deployment-64686c8cbf-prxmd   2/2     Running   0          3m18s
-# model-registry-ui-6cc794669b-7g2vl           2/2     Running   0          3m18s
+# model-registry-db-86979795c4-8nb25           1/1     Running   0          27m
+# model-registry-deployment-64686c8cbf-564cq   2/2     Running   0          27m
+# model-registry-ui-6cc794669b-6crgf           2/2     Running   0          27m
 
 # login ui
 kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80
@@ -156,8 +147,6 @@ kubectl get pod yolo-cpu-0 -n kubeflow-user-example-com -o wide
 # provision notebook instance
 kubectl apply -f kubeflow/notebook/notebook-cpu.yaml
 kubectl apply -f kubeflow/notebook/notebook-gpu.yaml
-
-
 ```
 
 ---
@@ -275,18 +264,12 @@ previous 90s, trials died while still pip-installing.
 
 # pipeline
 
-Four steps, artifacts passed between them:
-
 ```txt
 fetch_data -> prepare_data -> train -> evaluate
                                     \-> upload_model
 ```
 
-Lightweight components, so each step pip installs its own deps at runtime and
-an edit costs a recompile rather than an image build and push. The opencv and
-`numpy<2` repair from the Katib objective applies here too, shared through
-`additional_funcs` — a lightweight component only ships its own source, so a
-plain module-level helper is a `NameError` inside the pod.
+---
 
 ## One-time setup
 

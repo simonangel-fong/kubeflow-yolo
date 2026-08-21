@@ -1,12 +1,8 @@
-# s3-notebook.tf
+# s3-iam.tf
 
 # ##############################
-# S3 access for Kubeflow notebooks / pipelines
+# IAM: S3
 # ##############################
-# Pods get credentials through EKS Pod Identity: the agent serves them over a
-# link-local endpoint, so boto3 and DVC pick them up with no code and no
-# mounted keys. Without this association a notebook has no AWS identity at all
-# and `dvc pull` fails with "Unable to locate credentials".
 data "aws_iam_policy_document" "notebook_s3_assume_role" {
   statement {
     effect  = "Allow"

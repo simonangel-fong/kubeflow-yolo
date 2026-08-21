@@ -19,10 +19,6 @@ metadata:
   namespace: kubeflow-user-example-com
   labels:
     app: yolo-cpu
-    # Opts the pod into the kfp-api-token PodDefault, which mounts the token
-    # kfp.Client() needs to submit pipelines. It belongs here rather than under
-    # spec.template: the Notebook CRD's template accepts only `spec`, and the
-    # controller copies these labels onto the pod it creates.
     kfp-api-token: "true"
 spec:
   template:
