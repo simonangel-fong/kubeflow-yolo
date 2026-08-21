@@ -36,10 +36,14 @@ def objective(lr0: float, batch: int, epochs: int):
     batch = int(batch)
     epochs = int(epochs)
 
+    # NOTE: no backticks anywhere in this function. The SDK ships it to the pod
+    # inside an unquoted bash heredoc, so backticks become command substitution
+    # and the trial dies with "import: command not found" before Python starts.
+    #
     # The runtime image marks its environment externally managed (PEP 668), so
     # the SDK's packages_to_install is silently refused. Install here instead,
     # and swap ultralytics' opencv-python for the headless build: the runtime
-    # has no libxcb, so the GUI variant fails at `import cv2`.
+    # has no libxcb, so the GUI variant fails on importing cv2.
     subprocess.run(
         [sys.executable, "-m", "pip", "install", "-q", "--break-system-packages",
          "ultralytics>=8.3.0", "boto3"],
@@ -135,7 +139,7 @@ def objective(lr0: float, batch: int, epochs: int):
 
     metrics = model.val(data=str(data_yaml), imgsz=640, device="cpu", plots=False)
 
-    # Katib's StdOut collector parses `name=value`, so the spacing matters.
+    # Katib's StdOut collector parses name=value, so the spacing matters.
     print(f"mAP50={metrics.box.map50:.6f}")
     print(f"mAP50-95={metrics.box.map:.6f}")
 
