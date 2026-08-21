@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         experiment_id=experiment.experiment_id,
         job_name="yolo-" + ("-".join(str(v) for v in arguments.values()) or "default"),
         pipeline_package_path=str(PACKAGE),
-        arguments=arguments,
+        params=arguments,
     )
 
     print("run", run.run_id)
