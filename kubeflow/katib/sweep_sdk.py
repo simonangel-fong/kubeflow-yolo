@@ -116,10 +116,26 @@ if __name__ == "__main__":
     client.tune(
         name="yolo-sweep",
         objective=objective,
+        # The admission webhook rejects a null feasibleSpace.distribution, which
+        # is what katib.search.* emits by default, so build the specs directly.
         parameters={
-            "lr0": katib.search.double(min=0.001, max=0.05),
-            "batch": katib.search.categorical(["4", "8"]),
-            "epochs": katib.search.categorical(["3"]),
+            "lr0": katib.V1beta1ParameterSpec(
+                name="lr0",
+                parameter_type="double",
+                feasible_space=katib.V1beta1FeasibleSpace(
+                    min="0.001", max="0.05", distribution="uniform"
+                ),
+            ),
+            "batch": katib.V1beta1ParameterSpec(
+                name="batch",
+                parameter_type="categorical",
+                feasible_space=katib.V1beta1FeasibleSpace(list=["4", "8"]),
+            ),
+            "epochs": katib.V1beta1ParameterSpec(
+                name="epochs",
+                parameter_type="categorical",
+                feasible_space=katib.V1beta1FeasibleSpace(list=["3"]),
+            ),
         },
         objective_metric_name="mAP50",
         additional_metric_names=["mAP50-95"],
