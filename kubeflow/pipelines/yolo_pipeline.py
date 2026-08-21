@@ -343,10 +343,49 @@ def register_model(
     # 2. upload
     base = prefix.rstrip("/") + "/" + run_id
 
-    # KServe downloads storageUri to /mnt/models and hands the directory to the
-    # runtime, so the servable onnx must sit unpacked under its own prefix
-    served = base + "/model/model.onnx"
-    s3.upload_file(str(onnx), bucket, served)
+    # KServe hands storageUri to Triton as a model repository, whose required
+    # layout is <repo>/<model-name>/config.pbtxt and <repo>/<model-name>/1/model.onnx
+    # (triton-inference-server/server docs/user_guide/model_repository.md).
+    repo = base + "/model"
+    s3.upload_file(str(onnx), bucket, repo + "/" + model_name + "/1/model.onnx")
+
+    # describe the graph from the graph itself rather than hardcoding shapes
+    import onnx as onnx_mod
+
+    graph = onnx_mod.load(str(onnx), load_external_data=False).graph
+    nl = chr(10)
+
+    def spec(value) -> str:
+        dims = [
+            d.dim_value if d.HasField("dim_value") else -1
+            for d in value.type.tensor_type.shape.dim
+        ]
+        return nl.join([
+            "  {",
+            '    name: "' + value.name + '"',
+            "    data_type: TYPE_FP32",
+            "    dims: [" + ", ".join(str(d) for d in dims) + "]",
+            "  }",
+        ])
+
+    config = nl.join([
+        'name: "' + model_name + '"',
+        'platform: "onnxruntime_onnx"',
+        # the exported graph has a fixed batch dimension, so batching is off
+        "max_batch_size: 0",
+        "input [",
+        ("," + nl).join(spec(v) for v in graph.input),
+        "]",
+        "output [",
+        ("," + nl).join(spec(v) for v in graph.output),
+        "]",
+        "",
+    ])
+    s3.put_object(
+        Bucket=bucket,
+        Key=repo + "/" + model_name + "/config.pbtxt",
+        Body=config.encode(),
+    )
 
     # the tarball is an archive, not the servable path
     bundle = Path("/tmp/model.tar.gz")
@@ -356,7 +395,7 @@ def register_model(
     s3.upload_file(str(bundle), bucket, base + "/model.tar.gz")
     s3.upload_file(str(metrics), bucket, base + "/metrics.json")
 
-    storage_uri = "s3://" + bucket + "/" + base + "/model"
+    storage_uri = "s3://" + bucket + "/" + repo
 
     # 3. register
     from model_registry import ModelRegistry
