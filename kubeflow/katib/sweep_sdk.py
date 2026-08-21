@@ -1,67 +1,35 @@
 """
-Katib hyperparameter sweep for the YOLO license-plate model, via the SDK.
+Katib hyperparameter sweep for the YOLO license-plate model.
 
-Run from a Kubeflow notebook in the profile namespace:
+Run from a terminal inside the Kubeflow notebook:
 
+    pip install kubeflow-katib
     python sweep_sdk.py
-
-The objective runs as a Python function in the trial pod, so no custom image
-is needed: `packages_to_install` builds the environment at pod start.
 """
 
-from kubeflow.optimizer import (
-    Objective,
-    OptimizerClient,
-    RandomSearch,
-    Search,
-    TrialConfig,
-)
-from kubeflow.trainer.types.types import CustomTrainer, TrainJobTemplate
+import kubeflow.katib as katib
 
+NAMESPACE = "kubeflow-user-example-com"
 BUCKET = "kubeflow-yolo-dev-099139718958"
-REGION = "ca-central-1"
+DVC_DIR_HASH = "0e94102a7a6b4424a0f1292c2f221072.dir"
 
 
-def objective(lr0: float, batch: int, epochs: int):
-    """One trial: pull the dataset, train, print the metric Katib collects."""
+def objective(parameters):
+    """Runs inside the trial pod. Katib passes every parameter as a string."""
     import json
-    import subprocess
-    import sys
+    import random
+    import shutil
     from concurrent.futures import ThreadPoolExecutor
     from pathlib import Path
-
-    # Katib substitutes hyperparameters as strings, so ultralytics would receive
-    # epochs="3" and fail. Coerce before anything uses them.
-    lr0 = float(lr0)
-    batch = int(batch)
-    epochs = int(epochs)
-
-    # NOTE: no backticks anywhere in this function. The SDK ships it to the pod
-    # inside an unquoted bash heredoc, so backticks become command substitution
-    # and the trial dies with "import: command not found" before Python starts.
-    #
-    # The runtime image marks its environment externally managed (PEP 668), so
-    # the SDK's packages_to_install is silently refused. Install here instead,
-    # and swap ultralytics' opencv-python for the headless build: the runtime
-    # has no libxcb, so the GUI variant fails on importing cv2.
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-q", "--break-system-packages",
-         "ultralytics>=8.3.0", "boto3"],
-        check=True,
-    )
-    subprocess.run(
-        [sys.executable, "-m", "pip", "uninstall", "-y", "-q", "opencv-python"],
-        check=False,
-    )
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-q", "--break-system-packages",
-         "opencv-python-headless"],
-        check=True,
-    )
 
     import boto3
     from ultralytics import YOLO
 
+    lr0 = float(parameters["lr0"])
+    batch = int(parameters["batch"])
+    epochs = int(parameters["epochs"])
+
+    bucket = "kubeflow-yolo-dev-099139718958"
     root = Path("/tmp/yolo")
     raw = root / "raw"
     processed = root / "processed"
@@ -69,32 +37,27 @@ def objective(lr0: float, batch: int, epochs: int):
 
     s3 = boto3.client("s3", region_name="ca-central-1")
 
-    def dvc_key(md5: str) -> str:
-        return f"dvcstore/files/md5/{md5[:2]}/{md5[2:]}"
+    def dvc_key(md5):
+        return "dvcstore/files/md5/" + md5[:2] + "/" + md5[2:]
 
-    # data/raw.dvc pins the dataset; its .dir object maps hash -> filename
-    head = s3.get_object(
-        Bucket="kubeflow-yolo-dev-099139718958",
-        Key=dvc_key("0e94102a7a6b4424a0f1292c2f221072.dir"),
+    # data/raw.dvc pins the dataset; the .dir object maps hash -> filename
+    manifest = json.loads(
+        s3.get_object(
+            Bucket=bucket,
+            Key=dvc_key("0e94102a7a6b4424a0f1292c2f221072.dir"),
+        )["Body"].read()
     )
-    manifest = json.loads(head["Body"].read())
 
     def fetch(entry):
         target = raw / entry["relpath"]
-        if target.exists():
-            return
-        target.parent.mkdir(parents=True, exist_ok=True)
-        s3.download_file(
-            "kubeflow-yolo-dev-099139718958", dvc_key(entry["md5"]), str(target)
-        )
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            s3.download_file(bucket, dvc_key(entry["md5"]), str(target))
 
     with ThreadPoolExecutor(max_workers=16) as pool:
         list(pool.map(fetch, manifest))
 
     # 80/20 split, seeded so every trial sees the same data
-    import random
-    import shutil
-
     stems = sorted(
         p.stem for p in raw.iterdir()
         if p.suffix.lower() in {".jpeg", ".jpg", ".png"}
@@ -106,20 +69,23 @@ def objective(lr0: float, batch: int, epochs: int):
         for sub in ("images", "labels"):
             (processed / split / sub).mkdir(parents=True, exist_ok=True)
         for stem in names:
-            src_img = next(
-                p for p in raw.glob(f"{stem}.*")
+            img = next(
+                p for p in raw.glob(stem + ".*")
                 if p.suffix.lower() in {".jpeg", ".jpg", ".png"}
             )
-            shutil.copy(src_img, processed / split / "images" / src_img.name)
-            label = raw / f"{stem}.txt"
+            shutil.copy(img, processed / split / "images" / img.name)
+            label = raw / (stem + ".txt")
             if label.exists():
                 shutil.copy(label, processed / split / "labels" / label.name)
 
-    names = (raw / "classes.txt").read_text().split()
+    class_names = (raw / "classes.txt").read_text().split()
     data_yaml = root / "data.yaml"
     data_yaml.write_text(
-        f"path: {processed}\ntrain: train/images\nval: val/images\n"
-        f"nc: {len(names)}\nnames: {names}\n"
+        "path: " + str(processed) + "\n"
+        "train: train/images\n"
+        "val: val/images\n"
+        "nc: " + str(len(class_names)) + "\n"
+        "names: " + str(class_names) + "\n"
     )
 
     model = YOLO("yolo11n.pt")
@@ -139,34 +105,39 @@ def objective(lr0: float, batch: int, epochs: int):
 
     metrics = model.val(data=str(data_yaml), imgsz=640, device="cpu", plots=False)
 
-    # Katib's StdOut collector parses name=value, so the spacing matters.
-    print(f"mAP50={metrics.box.map50:.6f}")
-    print(f"mAP50-95={metrics.box.map:.6f}")
+    # Katib's StdOut collector parses name=value
+    print("mAP50=" + str(metrics.box.map50))
+    print("mAP50-95=" + str(metrics.box.map))
 
 
 if __name__ == "__main__":
-    client = OptimizerClient()
+    client = katib.KatibClient(namespace=NAMESPACE)
 
-    job_id = client.optimize(
-        trial_template=TrainJobTemplate(
-            runtime="torch-distributed",
-            trainer=CustomTrainer(
-                func=objective,
-                # packages are installed inside objective(); see the note there
-                resources_per_node={"cpu": "2", "memory": "6Gi"},
-                env={"YOLO_CONFIG_DIR": "/tmp/ultralytics",
-                     "MPLCONFIGDIR": "/tmp/matplotlib",
-                     "AWS_REGION": REGION},
-            ),
-        ),
-        search_space={
-            "lr0": Search.loguniform(1e-4, 1e-2),
-            "batch": Search.choice([4, 8]),
-            "epochs": Search.choice([3]),
+    client.tune(
+        name="yolo-sweep",
+        objective=objective,
+        parameters={
+            "lr0": katib.search.double(min=0.001, max=0.05),
+            "batch": katib.search.categorical(["4", "8"]),
+            "epochs": katib.search.categorical(["3"]),
         },
-        objectives=[Objective(metric="mAP50", direction="maximize")],
-        algorithm=RandomSearch(),
-        trial_config=TrialConfig(num_trials=4, parallel_trials=2, max_failed_trials=2),
+        objective_metric_name="mAP50",
+        additional_metric_names=["mAP50-95"],
+        objective_type="maximize",
+        algorithm_name="random",
+        max_trial_count=4,
+        parallel_trial_count=2,
+        max_failed_trial_count=2,
+        # opencv-python-headless first: ultralytics pulls the GUI build, which
+        # needs libxcb and is not present in the base image.
+        packages_to_install=["opencv-python-headless", "ultralytics", "boto3"],
+        resources_per_trial={"cpu": "2", "memory": "6Gi"},
+        env_per_trial={
+            "YOLO_CONFIG_DIR": "/tmp/ultralytics",
+            "MPLCONFIGDIR": "/tmp/matplotlib",
+            "AWS_REGION": "ca-central-1",
+        },
+        retain_trials=True,
     )
 
-    print(f"submitted: {job_id}")
+    print("submitted")
