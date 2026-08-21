@@ -55,6 +55,11 @@ locals {
   # S3
   # ##############################
   s3_bucket_name = "${local.project_prefix}-${data.aws_caller_identity.current.account_id}"
+  s3_bucket_prefix = [
+    "dvcstore/", # raw data
+    "pipeline/processed/",
+    "pipeline/models/",
+  ]
 
   # ##############################
   # Kubeflow

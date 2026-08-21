@@ -1,4 +1,24 @@
 # s3.tf
+#
+# Bucket layout:
+#
+#   dvcstore/                              DVC content-addressed store
+#     files/md5/<2>/<rest>                 every object, keyed by content hash
+#
+#   pipeline/                              written by kubeflow/pipelines
+#     processed/                           train/val split + data.yaml
+#     models/<run-id>/                     one directory per pipeline run
+#       best.pt                            trained weights
+#       metrics.json                       mAP50 and the run id
+#       model.tar.gz                       archive: weights + onnx + metrics
+#       model/                             KServe storageUri points here
+#         <model-name>/
+#           config.pbtxt                   Triton model configuration
+#           1/model.onnx                   the served graph
+#
+# Objects under pipeline/ are reproducible: a run can be repeated from the
+# dataset version in dvcstore/, so only dvcstore/ is irreplaceable.
+
 
 # ##############################
 # S3 bucket
@@ -7,6 +27,14 @@ resource "aws_s3_bucket" "project" {
   bucket = local.s3_bucket_name
 
   tags = local.project_tags
+}
+
+# prefixes keys
+resource "aws_s3_object" "prefixes" {
+  for_each = toset(local.s3_bucket_prefix)
+
+  bucket = aws_s3_bucket.project.id
+  key    = each.value
 }
 
 # Block all public access; 

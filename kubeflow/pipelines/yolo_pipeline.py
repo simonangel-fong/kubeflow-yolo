@@ -168,7 +168,13 @@ def train(
     pages = s3.get_paginator("list_objects_v2")
     for page in pages.paginate(Bucket=bucket, Prefix=data_prefix + "/"):
         for obj in page.get("Contents", []):
-            target = root / obj["Key"][len(data_prefix) + 1:]
+            relative = obj["Key"][len(data_prefix) + 1:]
+            # a key ending in "/" is a directory marker, and an empty relative
+            # path is the prefix object itself; restoring either as a file
+            # would shadow the directory the rest of the split needs
+            if not relative or relative.endswith("/"):
+                continue
+            target = root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             s3.download_file(bucket, obj["Key"], str(target))
 
@@ -248,7 +254,13 @@ def evaluate(
     pages = s3.get_paginator("list_objects_v2")
     for page in pages.paginate(Bucket=bucket, Prefix=prefix + "/"):
         for obj in page.get("Contents", []):
-            target = root / obj["Key"][len(prefix) + 1:]
+            relative = obj["Key"][len(prefix) + 1:]
+            # a key ending in "/" is a directory marker, and an empty relative
+            # path is the prefix object itself; restoring either as a file
+            # would shadow the directory the rest of the split needs
+            if not relative or relative.endswith("/"):
+                continue
+            target = root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             s3.download_file(bucket, obj["Key"], str(target))
 
