@@ -330,3 +330,11 @@ alongside, keyed by run id so runs never overwrite each other.
 - The train step sets `set_retry(num_retries=1)`: Karpenter can still
   consolidate a node out from under a long step, same failure that was killing
   Katib trials.
+
+
+
+```sh
+kubectl get workflows -n kubeflow-user-example-com --sort-by=.metadata.creationTimestamp
+
+
+```
