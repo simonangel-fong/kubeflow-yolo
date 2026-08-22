@@ -347,7 +347,10 @@ def register_model(
     best = Path("/tmp/best.pt")
     s3.download_file(src_bucket, src_key, str(best))
 
-    onnx = Path(YOLO(str(best)).export(format="onnx", imgsz=imgsz))
+    # Triton 2.34 bundles an onnxruntime that supports ai.onnx up to opset 19;
+    # ultralytics defaults to 20, which fails to load with "Opset 20 is under
+    # development". Pin it rather than tracking the runtime's default.
+    onnx = Path(YOLO(str(best)).export(format="onnx", imgsz=imgsz, opset=19))
 
     metrics = Path("/tmp/metrics.json")
     metrics.write_text(json.dumps({"mAP50": map50, "run_id": run_id}, indent=2))

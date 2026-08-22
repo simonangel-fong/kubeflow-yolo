@@ -1,0 +1,59 @@
+# Serve the trained YOLO model with KServe.
+#
+# storageUri is a Triton model repository, not a file, and the format is
+# `triton` rather than `onnx`: `onnx` selects a runtime that expects a bare
+# model, while every Triton example in the KServe docs pairs `name: triton`
+# with `protocolVersion: v2` and a repository URI.
+#
+#   <storageUri>/
+#     yolo-plate-detector/
+#       config.pbtxt
+#       1/model.onnx
+#
+# Point storageUri at the run you want to serve, then:
+#
+#   kubectl apply -f inferenceservice.yaml
+#   kubectl get inferenceservice -n kubeflow-user-example-com -w
+---
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: yolo-plate-detector
+  namespace: kubeflow-user-example-com
+  annotations:
+    # Knative scale-to-zero would release the node and pay the Karpenter
+    # provisioning wait again on the next request.
+    serving.kserve.io/deploymentMode: RawDeployment
+spec:
+  predictor:
+    # The storage-initializer reads S3 with the credentials on its
+    # ServiceAccount. default-editor carries the S3 role by EKS Pod Identity
+    # (infra/60-s3-iam.tf), so no access keys are needed anywhere.
+    serviceAccountName: default-editor
+
+    model:
+      modelFormat:
+        name: triton
+      protocolVersion: v2
+      storageUri: s3://kubeflow-yolo-dev-099139718958/pipeline/models/6b486017-6b1b-4802-9224-2ca733cad001/model
+
+      resources:
+        requests:
+          cpu: "1"
+          memory: 4Gi
+        limits:
+          cpu: "2"
+          memory: 8Gi
+
+    # Triton on CPU: the exported graph has a fixed batch of 1 and the model is
+    # small, so a GPU node is not worth its provisioning wait. To serve on GPU,
+    # add `nvidia.com/gpu: "1"` to both resource blocks and uncomment the
+    # placement below -- the gpu NodePool taints its nodes.
+    #
+    # nodeSelector:
+    #   workload-class: gpu
+    # tolerations:
+    #   - key: workload-class
+    #     operator: Equal
+    #     value: gpu
+    #     effect: NoSchedule
