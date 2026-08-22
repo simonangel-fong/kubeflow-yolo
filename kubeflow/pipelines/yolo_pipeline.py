@@ -491,6 +491,17 @@ def yolo_pipeline(
         effect="NoSchedule",
     )
 
+    # Dataloader workers pass tensors through shared memory, and /dev/shm is
+    # 64Mi in a container -- too small for `workers`, which surfaces as
+    # "unable to allocate shared memory" or a silently killed worker.
+    kubernetes.empty_dir_mount(
+        trained,
+        volume_name="dshm",
+        mount_path="/dev/shm",
+        medium="Memory",
+        size_limit="2Gi",
+    )
+
     scored = evaluate(
         model_uri=trained.output,
         processed_uri=prepare.output,
