@@ -33,6 +33,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dvc-dir-hash", default=None,
                         help="dataset version to train against, from data/raw.dvc")
     parser.add_argument("--experiment", default=EXPERIMENT)
+    parser.add_argument("--no-cache", action="store_true",
+                        help="re-execute every step; needed after the S3 output "
+                             "of a cached step has been deleted")
     parser.add_argument("--wait", action="store_true",
                         help="block until the run finishes")
     return parser.parse_args(argv)
@@ -60,7 +63,14 @@ def main(argv: list[str] | None = None) -> int:
     # object, so the Pipelines page stays empty. Upload it instead, and add a
     # version on every later submit, so each run links back to what it ran.
     version_name = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    pipeline_id = client.get_pipeline_id(PIPELINE)
+
+    # client.get_pipeline_id() lists without a namespace, so in multi-user mode
+    # it never sees a pipeline in a profile namespace and reports None -- which
+    # sends this down the create path and the upload 409s.
+    existing = client.list_pipelines(namespace=NAMESPACE, page_size=100).pipelines or []
+    pipeline_id = next(
+        (p.pipeline_id for p in existing if p.display_name == PIPELINE), None
+    )
 
     if pipeline_id is None:
         pipeline = client.upload_pipeline(
@@ -91,6 +101,9 @@ def main(argv: list[str] | None = None) -> int:
         pipeline_id=pipeline_id,
         version_id=version_id,
         params=arguments,
+        # KFP caches on inputs, not on whether the outputs still exist, so a
+        # step whose S3 output was deleted is still skipped as a cache hit
+        enable_caching=not args.no_cache,
     )
 
     print("run", run.run_id)
