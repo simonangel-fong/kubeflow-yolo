@@ -1,30 +1,31 @@
-# cert-manager installation
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform-cert-manager
+  name: platform-eso
   namespace: argocd
   labels:
     scope: platform
     capability: security
   annotations:
-    argocd.argoproj.io/sync-wave: "15"
+    argocd.argoproj.io/sync-wave: "30"
   finalizers:
     - argocd.argoproj.io/resources-finalizer
 spec:
-  project: default
+  project: platform
   source:
-    repoURL: https://charts.jetstack.io
-    chart: cert-manager
-    targetRevision: v1.21.1
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    targetRevision: 2.7.0
     helm:
-      releaseName: cert-manager
+      releaseName: external-secrets
       values: |
-        crds:
-          enabled: true
-          keep: true
+        installCRDs: true
+        replicaCount: 2
         nodeSelector:
           workload-class: platform
+        podDisruptionBudget:
+          enabled: true
+          minAvailable: 1
         tolerations:
           - key: workload-class
             operator: Equal
@@ -33,14 +34,22 @@ spec:
         webhook:
           nodeSelector:
             workload-class: platform
+          replicaCount: 2
+          podDisruptionBudget:
+            enabled: true
+            minAvailable: 1
           tolerations:
             - key: workload-class
               operator: Equal
               value: platform
               effect: NoSchedule
-        cainjector:
+        certController:
           nodeSelector:
             workload-class: platform
+          replicaCount: 2
+          podDisruptionBudget:
+            enabled: true
+            minAvailable: 1
           tolerations:
             - key: workload-class
               operator: Equal
@@ -48,11 +57,11 @@ spec:
               effect: NoSchedule
   destination:
     server: https://kubernetes.default.svc
-    namespace: cert-manager
+    namespace: external-secrets
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - ServerSideApply=true
       - CreateNamespace=true
+      - ServerSideApply=true

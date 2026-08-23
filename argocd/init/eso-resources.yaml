@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-eso-resources
+  namespace: argocd
+  labels:
+    scope: platform
+    capability: security
+  annotations:
+    argocd.argoproj.io/sync-wave: "31"
+  finalizers:
+    - argocd.argoproj.io/resources-finalizer
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/simonangel-fong/eks-multi-tenant-cluster
+    targetRevision: master
+    path: argocd/platform-capabilities/security/eso-resources
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-secrets
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

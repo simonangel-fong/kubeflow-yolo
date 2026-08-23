@@ -20,6 +20,13 @@ spec:
     helm:
       releaseName: istio-ingressgateway
       values: |
+        nodeSelector:
+          workload-class: platform
+        tolerations:
+          - key: workload-class
+            operator: Equal
+            value: platform
+            effect: NoSchedule
         service:
           type: LoadBalancer
           annotations:

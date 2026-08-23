@@ -21,6 +21,13 @@ spec:
       releaseName: istiod
       values: |
         pilot:
+          nodeSelector:
+            workload-class: platform
+          tolerations:
+            - key: workload-class
+              operator: Equal
+              value: platform
+              effect: NoSchedule
           resources:
             requests:
               cpu: 500m

@@ -38,10 +38,10 @@ locals {
   # EKS
   # ##############################
   eks_version            = "1.36"
-  eks_node_instance_type = "t3.large" # "m5a.large"
-  eks_node_count_desired = 2
-  eks_node_count_min     = 1
-  eks_node_count_max     = 3
+  eks_node_instance_type = "m5a.xlarge" # was t3.large; sized to host cert-manager + istio alongside karpenter/eso
+  eks_node_count_desired = 3
+  eks_node_count_min     = 2
+  eks_node_count_max     = 5
   eks_node_disk_size     = 50
 
   # ##############################

@@ -53,8 +53,8 @@ kubectl patch applications.argoproj.io 00-app-of-apps -n argocd --type merge -p 
 
 - [x] karpenter
 - [x] storageclass
-- [ ] cert-manager
-- istio-ambient
+- [x] cert-manager
+- [x] istio
 - albc
 - eso
 - e-dns
