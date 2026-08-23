@@ -1,0 +1,60 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: kubeflow-yolo-plate
+  namespace: kubeflow-user-example-com
+  annotations:
+    autoscaling.knative.dev/min-scale: "1"
+    autoscaling.knative.dev/max-scale: "3"
+    autoscaling.knative.dev/metric: "concurrency"
+    autoscaling.knative.dev/target: "2"
+spec:
+  predictor:
+    serviceAccountName: default-editor
+
+    containers:
+      - name: kserve-container
+        image: 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-kserve:v0.1.0-cpu
+        imagePullPolicy: IfNotPresent
+
+        env:
+          - name: MODEL_NAME
+            value: kubeflow-yolo-plate
+          - name: MODEL_DIR
+            value: /mnt/models
+          - name: STORAGE_URI
+            value: s3://kubeflow-yolo-dev-099139718958/pipeline/runs/30b11c6a-2cd0-47df-ac32-5c2eeecb8eb4/serve
+          - name: CONF_THRESHOLD
+            value: "0.25"
+          - name: IOU_THRESHOLD
+            value: "0.45"
+          - name: AWS_REGION
+            value: ca-central-1
+
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+
+        resources:
+          requests:
+            cpu: "1"
+            memory: 2Gi
+          limits:
+            cpu: "2"
+            memory: 4Gi
+
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 20
+
+        # the model route, not /healthz: no traffic until the ONNX session loads
+        readinessProbe:
+          httpGet:
+            path: /v1/models/kubeflow-yolo-plate
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 30

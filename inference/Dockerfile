@@ -1,5 +1,5 @@
 # Predictor image for the KServe InferenceService.
-#   docker build -f inference/Dockerfile -t simonangelfong/kubeflow-yolo-inference:v0.1.1-cpu .
+#   docker build -f inference/Dockerfile -t kubeflow-yolo-kserve:v0.1.0-cpu .
 
 FROM python:3.12-slim
 
@@ -14,8 +14,9 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY inference/src/ ./src/
-COPY models/ /mnt/models/
 
+# No weights baked in: KServe's storage-initializer fills /mnt/models from
+# STORAGE_URI, and docker-compose bind-mounts ./models there.
 ENV MODEL_DIR=/mnt/models
 ENV PYTHONUNBUFFERED=1
 

@@ -8,7 +8,7 @@ services:
     build:
       context: .
       dockerfile: inference/Dockerfile
-    image: simonangelfong/kubeflow-yolo-inference:v0.1.0-cpu
+    image: kubeflow-yolo-kserve:v0.1.0-cpu
 
     environment:
       MODEL_NAME: kubeflow-yolo-plate

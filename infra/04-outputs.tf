@@ -63,6 +63,14 @@ output "s3_bucket_arn" {
 }
 
 # ##############################
+# ECR
+# ##############################
+output "ecr_kserve_repository_url" {
+  description = "Registry URL for the KServe predictor image"
+  value       = aws_ecr_repository.kserve.repository_url
+}
+
+# ##############################
 # ArgoCD
 # ##############################
 output "argocd_namespace" {

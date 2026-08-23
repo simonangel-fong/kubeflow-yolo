@@ -12,5 +12,6 @@ A yolo project.
 - [Kubeflow Installation](./docs/02_kubeflow_install.md)
 - [Jupyter notebook](./docs/03_kubeflow_notebook.md)
 - [Kubeflow Pipeline](./docs/04_kubeflow_pipeline.md)
+- [Deploy with `KServe`](./docs/05_kubeflow_kserve.md)
 
 ---

@@ -2,8 +2,7 @@
 .git/
 data/
 runs/
-# models/ is NOT excluded: inference/Dockerfile bakes the exported model
-# repository into the predictor image. It stays gitignored.
+models/
 notebooks/
 docs/
 __pycache__/

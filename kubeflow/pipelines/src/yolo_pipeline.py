@@ -360,11 +360,6 @@ def register_model(
                     conf_threshold=CONF, iou_threshold=IOU):
         """
         Raw ONNX output -> detections in the original image's coordinates.
-
-        YOLO11 (1, 4+nc, anchors) needs thresholding and NMS; YOLO26
-        (1, max_det, 6) is [x1,y1,x2,y2,score,class] and NMS-free, but the
-        head emits max_det rows whatever their score, so it still needs the
-        confidence filter.
         """
         predictions = output[0]
 
@@ -428,9 +423,9 @@ def register_model(
             for box, confidence, class_id in zip(boxes, confidences, class_ids)
         ]
 
-    # ------------------------------------------------------------------
-    # 1. class names, from the dataset that produced the model
-    # ------------------------------------------------------------------
+    # ########################################
+    # 1. get class names from the dataset
+    # ########################################
     data_bucket, _, data_prefix = processed_uri.removeprefix(
         "s3://").partition("/")
     data_cfg = yaml.safe_load(
@@ -439,9 +434,9 @@ def register_model(
     )
     names = list(data_cfg["names"])
 
-    # ------------------------------------------------------------------
+    # ########################################
     # 2. export into the artifact layout: serve/{model.onnx,metadata.json}
-    # ------------------------------------------------------------------
+    # ########################################
     from ultralytics import YOLO
 
     src_bucket, _, src_key = model_uri.removeprefix("s3://").partition("/")
@@ -468,9 +463,9 @@ def register_model(
 
     print("exported", onnx, "opset", OPSET, "names", names)
 
-    # ------------------------------------------------------------------
+    # ########################################
     # 3. verify the export against the .pt before anything ships
-    # ------------------------------------------------------------------
+    # ########################################
     import onnxruntime as ort
 
     # a handful of val images, straight from the split this model trained on
@@ -542,9 +537,9 @@ def register_model(
             "export verification FAILED: " + str(mismatches) +
             " count mismatches, worst box delta " + str(round(worst, 2)) + "px")
 
-    # ------------------------------------------------------------------
+    # ########################################
     # 4. upload
-    # ------------------------------------------------------------------
+    # ########################################
     base = prefix.rstrip("/") + "/" + run_id
 
     # serve/ holds only what the predictor mounts: KServe pulls the whole
@@ -562,9 +557,9 @@ def register_model(
 
     storage_uri = "s3://" + bucket + "/" + serve
 
-    # ------------------------------------------------------------------
+    # ########################################
     # 5. register
-    # ------------------------------------------------------------------
+    # ########################################
     from model_registry import ModelRegistry
 
     registry = ModelRegistry(

@@ -51,7 +51,9 @@ python compile.py
 # compiled /home/jovyan/kubeflow-yolo/kubeflow/pipelines/src/yolo_pipeline.yaml
 
 python submit.py
-# run 3f9c1a72-...
+# Experiment details: /pipeline/#/experiments/details/3bd4ed4b-9171-4669-a333-3d4825bd3cbf
+# Run details: /pipeline/#/runs/details/30b11c6a-2cd0-47df-ac32-5c2eeecb8eb4
+# run 30b11c6a-2cd0-47df-ac32-5c2eeecb8eb4
 # arguments (defaults)
 
 # submit without cache
@@ -65,7 +67,17 @@ kubectl get workflows -n kubeflow-user-example-com --sort-by=.metadata.creationT
 kubectl logs -n kubeflow-user-example-com <pod> -c main
 ```
 
+- pipeline
+
 ![kf_pipeline01](./img/kf_pipeline01.png)
+
+- pipeline run
+
+![kf_pipeline_run01](./img/kf_pipeline_run01.png)
+
+- register
+
+![kf_register_model](./img/kf_register_model.png)
 
 ---
 
