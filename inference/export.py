@@ -1,5 +1,8 @@
 """
-Export trained YOLO weights to ONNX, then verify the export before it ships.
+Export trained YOLO weights into the serving artifact layout, then verify it.
+
+The layout and the export live in src/artifact.py; this is the CLI over it,
+plus the verification gate.
 
 ONNX carries the network and nothing else: ultralytics' letterbox, NMS and
 coordinate rescaling stay behind in the .pt wrapper and are reimplemented in
@@ -17,8 +20,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
-import shutil
 import sys
 from pathlib import Path
 
@@ -28,11 +29,14 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from src.artifact import (OPSET, export_model, model_path,  # noqa: E402
+                          read_metadata)
+
 TRAIN_CFG = ROOT / "train-job" / "configs" / "train.yaml"
 MODELS = ROOT / "models"
 VAL_IMAGES = ROOT / "data" / "processed" / "val" / "images"
 
-OPSET = 12
+DEFAULT_MODEL_NAME = "yolo-plate-detector"
 
 # Verification thresholds.
 MAX_BOX_DELTA_PX = 2.0
@@ -50,7 +54,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--weights", type=Path, default=None,
                         help="trained .pt to export; overrides --run")
     parser.add_argument("--out", type=Path, default=MODELS,
-                        help="destination directory for the .onnx")
+                        help="root of the model repository to write")
+    parser.add_argument("--model-name", default=DEFAULT_MODEL_NAME,
+                        help="model name; the directory served under --out")
     parser.add_argument("--skip-verify", action="store_true",
                         help="export without checking the result against the .pt")
     return parser.parse_args(argv)
@@ -71,12 +77,12 @@ def resolve_weights(args: argparse.Namespace, cfg: dict) -> tuple[Path, str]:
     return project / run / "weights" / "best.pt", run
 
 
-def output_stem(run: str, cfg: dict, imgsz: int) -> str:
+def run_label(run: str, cfg: dict, imgsz: int) -> str:
     """
-    Name the artifact after what produced it.
+    Describe what produced the artifact, for the metadata sidecar.
 
     A sweep already encodes images/epochs/imgsz in its run directory; a plain
-    run does not, so spell it out from the config and the split on disk.
+    run does not.
     """
     if "img" in run:
         return run
@@ -88,35 +94,6 @@ def output_stem(run: str, cfg: dict, imgsz: int) -> str:
         if (processed / s / "images").is_dir()
     )
     return f"{run}-{n_images}img-{cfg['epochs']}ep-{imgsz}px"
-
-
-# --------------------------------------------------------------------------
-# export
-# --------------------------------------------------------------------------
-
-def export_onnx(weights: Path, imgsz: int) -> tuple[Path, list[str]]:
-    """Export to ONNX. Returns (onnx_path, class_names)."""
-    from ultralytics import YOLO
-
-    model = YOLO(str(weights))
-    # Class ids are the dict keys; sort so list index == class id.
-    names = [model.names[i] for i in sorted(model.names)]
-
-    exported = model.export(
-        format="onnx",
-        imgsz=imgsz,
-        opset=OPSET,
-        simplify=True,
-        dynamic=False,   # fixed 1x3ximgszximgsz input
-    )
-    return Path(exported), names
-
-
-def write_metadata(onnx_path: Path, imgsz: int, names: list[str]) -> Path:
-    """The graph stores neither class names nor imgsz; the predictor needs both."""
-    sidecar = onnx_path.with_suffix(".metadata.json")
-    sidecar.write_text(json.dumps({"imgsz": imgsz, "names": names}, indent=2))
-    return sidecar
 
 
 # --------------------------------------------------------------------------
@@ -132,7 +109,6 @@ def verify(onnx_path: Path, weights: Path, imgsz: int, names: list[str]) -> bool
     loaded the file.
     """
     import cv2
-    import numpy as np
     import onnxruntime as ort
     from ultralytics import YOLO
 
@@ -211,17 +187,22 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"weights     {weights}")
     print(f"imgsz       {imgsz}")
+    print(f"opset       {OPSET}")
 
-    exported, names = export_onnx(weights, imgsz)
+    export_model(
+        weights=weights,
+        imgsz=imgsz,
+        out_root=args.out,
+        model_name=args.model_name,
+        extra_meta={"run": run_label(run, cfg, imgsz)},
+    )
 
-    args.out.mkdir(parents=True, exist_ok=True)
-    onnx_path = args.out / f"{output_stem(run, cfg, imgsz)}.onnx"
-    shutil.move(str(exported), onnx_path)
-    sidecar = write_metadata(onnx_path, imgsz, names)
+    onnx_path = model_path(args.out, args.model_name)
+    names = read_metadata(onnx_path)["names"]
 
     print(
         f"onnx        {onnx_path}  ({onnx_path.stat().st_size / 1e6:.1f} MB)")
-    print(f"metadata    {sidecar.name}  {names}")
+    print(f"metadata    imgsz={imgsz} names={names}")
 
     if args.skip_verify:
         print("verify      SKIPPED")

@@ -1,3 +1,4 @@
+# allow kfp access kube api with token
 apiVersion: kubeflow.org/v1alpha1
 kind: PodDefault
 metadata:

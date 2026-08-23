@@ -2,8 +2,8 @@
 .git/
 data/
 runs/
-# models/ is NOT excluded: inference/Dockerfile bakes the exported .onnx and
-# its metadata sidecar into the predictor image. It stays gitignored.
+# models/ is NOT excluded: inference/Dockerfile bakes the exported model
+# repository into the predictor image. It stays gitignored.
 notebooks/
 docs/
 __pycache__/

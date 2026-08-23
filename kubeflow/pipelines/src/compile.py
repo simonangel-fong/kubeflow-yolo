@@ -5,7 +5,7 @@ Compile the pipeline to yolo_pipeline.yaml.
 
 from pathlib import Path
 from kfp import compiler
-from yolo_pipeline import yolo_pipeline
+from kubeflow.pipelines.src.yolo_pipeline import yolo_pipeline
 
 OUTPUT = Path(__file__).parent / "yolo_pipeline.yaml"
 

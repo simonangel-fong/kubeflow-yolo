@@ -4,7 +4,6 @@ The ONNX model: locating it, loading it, running it.
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import onnxruntime as ort
 
+from src.artifact import MODEL_FILE, VERSION_DIR, metadata_path, read_metadata
 from src.inference import postprocess, preprocess
 
 # logger
@@ -24,8 +24,18 @@ BOX_CHANNELS = 4
 def find_model(model_dir: Path) -> Path:
     """
     Locate the .onnx under the mount.
+
+    Prefers the artifact layout (<name>/1/model.onnx), then a bare model.onnx,
+    then anything -- the last so a hand-placed model still serves.
     """
-    direct = model_dir / "model.onnx"
+    repos = sorted(model_dir.glob(f"*/{VERSION_DIR}/{MODEL_FILE}"))
+    if repos:
+        if len(repos) > 1:
+            logger.warning("%d model repositories under %s, using %s",
+                           len(repos), model_dir, repos[0].parent.parent.name)
+        return repos[0]
+
+    direct = model_dir / MODEL_FILE
     if direct.exists():
         return direct
 
@@ -40,24 +50,17 @@ def find_model(model_dir: Path) -> Path:
 
 def load_metadata(onnx_path: Path) -> tuple[int, list[str]]:
     """
-    Read imgsz and class names written alongside the model by export.py.
+    Read imgsz and class names from the sidecar beside the graph.
 
-    Returns (0, []) when there is no sidecar; the caller falls back to the
-    graph itself, so a model exported without one still serves -- just with
-    unlabelled classes.
+    Returns (0, []) when there is none; the caller falls back to the graph, so
+    the model still serves, just with unlabelled classes.
     """
-    sidecar = onnx_path.with_suffix(".metadata.json")
-    if not sidecar.exists():
-        siblings = sorted(onnx_path.parent.glob("*.metadata.json"))
-        if siblings:
-            sidecar = siblings[0]
-
-    if not sidecar.exists():
-        logger.warning("no metadata sidecar beside %s", onnx_path.name)
+    meta = read_metadata(onnx_path)
+    if not meta:
+        logger.warning("no metadata sidecar beside %s", onnx_path)
         return 0, []
 
-    meta = json.loads(sidecar.read_text())
-    logger.info("metadata from %s", sidecar.name)
+    logger.info("metadata from %s", metadata_path(onnx_path))
     return int(meta["imgsz"]), list(meta["names"])
 
 

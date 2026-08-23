@@ -48,11 +48,12 @@ Run it from inside the cluster; the predictor is a ClusterIP service.
   the GPU placement commented out if you want it.
 - **`RawDeployment`.** Avoids Knative scale-to-zero, which would release the
   node and pay the provisioning wait again on the next request.
-- **Opset is pinned to 19.** Triton 23.05 ships onnxruntime 1.15 (see
-  `TRITON_VERSION_MAP` in the server's `build.py`), which implements opset 19.
-  Ultralytics defaults to 20, which onnxruntime refuses with "Opset 20 is under
-  development". See `export_and_register` in
-  `kubeflow/pipelines/yolo_pipeline.py`.
+- **Opset is pinned to 19.** onnxruntime in the Triton runtime rejects
+  ultralytics' default opset 20 with "Opset 20 is under development".
+- **The export is verified before it registers.** `register_model` runs the
+  served pre/post-processing against the `.pt` on a sample of val images and
+  refuses to register when the boxes disagree by more than `max_box_delta_px`
+  (default 2px). `python -m inference.export` applies the same gate locally.
 - **Batch is fixed at 1.** `max_batch_size: 0` in `config.pbtxt`, because the
   export pins the batch dimension. Serving many requests at once means
   re-exporting with `dynamic=True`.

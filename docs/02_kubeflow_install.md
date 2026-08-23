@@ -399,10 +399,14 @@ overwrite each other:
 
 ```txt
 s3://<bucket>/pipeline/models/<run-id>/
-├── best.pt
 ├── metrics.json
-├── model.tar.gz          # archive
-└── model/model.onnx      # KServe storageUri
+├── model.tar.gz                        # archive: best.pt + onnx + metrics
+└── model/                              # KServe storageUri
+    └── yolo-plate-detector/
+        ├── config.pbtxt
+        └── 1/
+            ├── model.onnx
+            └── metadata.json           # imgsz, names, opset, provenance
 ```
 
 The model registers as `yolo-plate-detector`, version `<run-id>`.

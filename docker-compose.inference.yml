@@ -1,6 +1,6 @@
 # Local test of the predictor image, with a browser UI in front of it.
 #   docker compose -f docker-compose.inference.yml up --build
-#   curl localhost:8080/v1/models/yolo-car-plate     API directly
+#   curl localhost:8080/v1/models/yolo-plate-detector     API directly
 #   http://localhost:3000                            UI
 
 services:
@@ -11,7 +11,7 @@ services:
     image: simonangelfong/kubeflow-yolo-inference:v0.1.0-cpu
 
     environment:
-      MODEL_NAME: yolo-car-plate
+      MODEL_NAME: yolo-plate-detector
       MODEL_DIR: /mnt/models
       CONF_THRESHOLD: "0.25"
       IOU_THRESHOLD: "0.45"
@@ -31,7 +31,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/models/yolo-car-plate').status==200 else 1)",
+          "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/models/yolo-plate-detector').status==200 else 1)",
         ]
       interval: 10s
       timeout: 5s
