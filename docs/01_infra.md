@@ -58,8 +58,8 @@ kubectl patch applications.argoproj.io 00-app-of-apps -n argocd --type merge -p 
 - [x] cert-manager
 - [x] istio
 - [x] albc
-- eso
-- e-dns
+- [x] eso
+- [x] e-dns
 - dashboard
 - notebook
 - mlflow
