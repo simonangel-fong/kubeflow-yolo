@@ -1,0 +1,62 @@
+# aws load balancer controller - provisions ALB/NLB for Ingress and Service type=LoadBalancer
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-albc
+  namespace: argocd
+  labels:
+    scope: platform
+    capability: network
+  annotations:
+    argocd.argoproj.io/sync-wave: "14"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://aws.github.io/eks-charts
+    chart: aws-load-balancer-controller
+    # keep in sync with the IAM policy pinned in infra/30-eks-albc.tf
+    targetRevision: 3.4.1
+    helm:
+      releaseName: aws-load-balancer-controller
+      values: |
+        clusterName: kubeflow-yolo-dev
+        region: ca-central-1
+        serviceAccount:
+          create: true
+          name: aws-load-balancer-controller
+        replicaCount: 2
+        podDisruptionBudget:
+          maxUnavailable: 1
+        nodeSelector:
+          workload-class: platform
+        tolerations:
+          - key: workload-class
+            operator: Equal
+            value: platform
+            effect: NoSchedule
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: aws-load-balancer-controller
+                  topologyKey: kubernetes.io/hostname
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
