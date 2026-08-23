@@ -2,6 +2,11 @@
 
 [Back](../README.md)
 
+- [Kubeflow: Pipeline](#kubeflow-pipeline)
+  - [Pipeline Design](#pipeline-design)
+    - [Output layout](#output-layout)
+  - [Pipeline](#pipeline)
+
 ---
 
 ## Pipeline Design
@@ -16,6 +21,28 @@ prepare_data -> train -> evaluate -> register_model
 | `train`          | Fine-tunes `yolo11n.pt` on a GPU node, uploads `best.pt`                                |
 | `evaluate`       | Re-validates `best.pt`, logs mAP to the run's Metrics tab                               |
 | `register_model` | Exports ONNX, uploads the bundle, registers in Model Registry                           |
+
+---
+
+### Output layout
+
+```txt
+s3://<bucket>/pipeline/models/<run-id>/
+├── metrics.json                        # mAP50 and the run id
+├── model.tar.gz                        # archive: best.pt + model.onnx + metrics.json
+└── model/                              # registered storage_uri
+    └── kubeflow-yolo-plate/
+        ├── model.onnx
+        └── metadata.json               # imgsz, names, opset, run_id, mAP50
+```
+
+`model/` is what the predictor mounts: `find_model` picks up
+`<name>/model.onnx` and reads `metadata.json` beside it for the class names
+and `imgsz` the graph does not carry. `model.tar.gz` is an archive, not a
+servable path.
+
+The model registers as `kubeflow-yolo-plate`, version `<run-id>`, with the
+export verified against `best.pt` before it is registered.
 
 ---
 

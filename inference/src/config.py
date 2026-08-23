@@ -11,7 +11,7 @@ from pathlib import Path
 MODEL_DIR = Path(os.environ.get("MODEL_DIR", "/mnt/models"))
 
 # model name: endpoints /v1/models/{MODEL_NAME}, and the artifact directory
-MODEL_NAME = os.environ.get("MODEL_NAME", "yolo-plate-detector")
+MODEL_NAME = os.environ.get("MODEL_NAME", "kubeflow-yolo-plate")
 
 # Detection defaults; each request may override them per instance.
 CONF_THRESHOLD = float(os.environ.get("CONF_THRESHOLD", "0.25"))

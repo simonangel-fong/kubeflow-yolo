@@ -11,10 +11,10 @@
 #       best.pt                            trained weights
 #       metrics.json                       mAP50 and the run id
 #       model.tar.gz                       archive: weights + onnx + metrics
-#       model/                             KServe storageUri points here
+#       model/
 #         <model-name>/
-#           config.pbtxt                   Triton model configuration
-#           1/model.onnx                   the served graph
+#           model.onnx                     the served graph
+#           metadata.json                  imgsz, class names, opset
 #
 # Objects under pipeline/ are reproducible: a run can be repeated from the
 # dataset version in dvcstore/, so only dvcstore/ is irreplaceable.

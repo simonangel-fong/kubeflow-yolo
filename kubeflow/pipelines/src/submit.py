@@ -14,8 +14,8 @@ import kfp
 
 NAMESPACE = "kubeflow-user-example-com"
 PACKAGE = Path(__file__).parent / "yolo_pipeline.yaml"
-EXPERIMENT = "yolo-plate-detector"
-PIPELINE = "yolo-plate-detector"
+EXPERIMENT = "kubeflow-yolo-plate"
+PIPELINE = "kubeflow-yolo-plate"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

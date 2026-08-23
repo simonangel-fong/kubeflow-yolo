@@ -82,14 +82,14 @@ curl localhost:8080/healthz
 # {"status":"ok"}
 
 # model health
-curl localhost:8080/v1/models/yolo-car-plate
-# {"name":"yolo-car-plate","ready":true,"imgsz":640,"classes":["car_plate"]}
+curl localhost:8080/v1/models/kubeflow-yolo-plate
+# {"name":"kubeflow-yolo-plate","ready":true,"imgsz":640,"classes":["car_plate"]}
 
 # convert 1st val image into json to send
 python -c "import base64,json,glob;p=sorted(glob.glob('data/processed/val/images/*'))[0];b=base64.b64encode(open(p,'rb').read()).decode();json.dump({'instances':[{'image':{'b64':b}}]},open('req.json','w'))"
 
 # inference
-curl.exe -X POST localhost:8080/v1/models/yolo-car-plate:predict -H "Content-Type: application/json" -d "@req.json"
+curl.exe -X POST localhost:8080/v1/models/kubeflow-yolo-plate:predict -H "Content-Type: application/json" -d "@req.json"
 # {"predictions":[{"detections":[{"class_id":0,"class_name":"car_plate","confidence":0.8533,"box":{"x1":264.35,"y1":458.91,"x2":410.6,"y2":516.73}}],"count":1}]}
 ```
 

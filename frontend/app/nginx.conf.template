@@ -18,7 +18,7 @@ server {
     # Proxy the API so the browser sees one origin and CORS never applies.
     #
     # The upstream differs by environment -- "inference:8080" under compose,
-    # "yolo-car-plate-predictor.yolo-serving.svc.cluster.local:80" in the
+    # "kubeflow-yolo-plate-predictor.yolo-serving.svc.cluster.local:80" in the
     # cluster -- so it comes from PREDICTOR_UPSTREAM. nginx's entrypoint
     # renders /etc/nginx/templates/*.template into conf.d at container start.
     location /v1/ {

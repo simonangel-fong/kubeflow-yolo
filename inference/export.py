@@ -36,7 +36,7 @@ TRAIN_CFG = ROOT / "train-job" / "configs" / "train.yaml"
 MODELS = ROOT / "models"
 VAL_IMAGES = ROOT / "data" / "processed" / "val" / "images"
 
-DEFAULT_MODEL_NAME = "yolo-plate-detector"
+DEFAULT_MODEL_NAME = "kubeflow-yolo-plate"
 
 # Verification thresholds.
 MAX_BOX_DELTA_PX = 2.0
@@ -54,7 +54,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--weights", type=Path, default=None,
                         help="trained .pt to export; overrides --run")
     parser.add_argument("--out", type=Path, default=MODELS,
-                        help="root of the model repository to write")
+                        help="root the model directory is written under")
     parser.add_argument("--model-name", default=DEFAULT_MODEL_NAME,
                         help="model name; the directory served under --out")
     parser.add_argument("--skip-verify", action="store_true",

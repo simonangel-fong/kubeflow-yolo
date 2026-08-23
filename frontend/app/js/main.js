@@ -3,7 +3,7 @@
 // Nginx proxies /v1/ to the inference container, so requests are same-origin
 // and no CORS handling is needed on the Python side.
 
-const MODEL = "yolo-car-plate";
+const MODEL = "kubeflow-yolo-plate";
 const READY_URL = `/v1/models/${MODEL}`;
 const PREDICT_URL = `/v1/models/${MODEL}:predict`;
 

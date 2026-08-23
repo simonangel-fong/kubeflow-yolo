@@ -267,8 +267,8 @@ def evaluate(
 # ##############################
 @dsl.component(
     base_image="python:3.12",
-    packages_to_install=["ultralytics-opencv-headless", "onnx", "onnxslim",
-                         "onnxruntime", "boto3", "pyyaml", "model-registry"],
+    packages_to_install=["ultralytics-opencv-headless", "onnxruntime",
+                         "boto3", "pyyaml", "model-registry"],
 )
 def register_model(
     model_uri: str,
@@ -304,8 +304,8 @@ def register_model(
 
     s3 = boto3.client("s3", region_name=region)
 
-    # onnxruntime in the Triton runtime rejects ultralytics' default opset 20
-    # with "Opset 20 is under development".
+    # onnxruntime rejects ultralytics' default opset 20 with
+    # "Opset 20 is under development".
     OPSET = 19
     BOX_CHANNELS = 4
     CONF, IOU = 0.25, 0.45
@@ -412,43 +412,6 @@ def register_model(
         ]
 
     # ------------------------------------------------------------------
-    # copied from inference/src/artifact.py
-    # ------------------------------------------------------------------
-    def build_config_pbtxt(onnx_path, name):
-        """Describe the graph from the graph itself rather than hardcoding shapes."""
-        import onnx as onnx_mod
-
-        graph = onnx_mod.load(str(onnx_path), load_external_data=False).graph
-        nl = chr(10)
-
-        def spec(value):
-            dims = [
-                d.dim_value if d.HasField("dim_value") else -1
-                for d in value.type.tensor_type.shape.dim
-            ]
-            return nl.join([
-                "  {",
-                '    name: "' + value.name + '"',
-                "    data_type: TYPE_FP32",
-                "    dims: [" + ", ".join(str(d) for d in dims) + "]",
-                "  }",
-            ])
-
-        return nl.join([
-            'name: "' + name + '"',
-            'platform: "onnxruntime_onnx"',
-            # the exported graph has a fixed batch dimension, so batching is off
-            "max_batch_size: 0",
-            "input [",
-            ("," + nl).join(spec(v) for v in graph.input),
-            "]",
-            "output [",
-            ("," + nl).join(spec(v) for v in graph.output),
-            "]",
-            "",
-        ])
-
-    # ------------------------------------------------------------------
     # 1. class names, from the dataset that produced the model
     # ------------------------------------------------------------------
     data_bucket, _, data_prefix = processed_uri.removeprefix(
@@ -460,7 +423,7 @@ def register_model(
     names = list(data_cfg["names"])
 
     # ------------------------------------------------------------------
-    # 2. export into the artifact layout: <name>/config.pbtxt, <name>/1/*
+    # 2. export into the artifact layout: <name>/{model.onnx,metadata.json}
     # ------------------------------------------------------------------
     from ultralytics import YOLO
 
@@ -472,23 +435,20 @@ def register_model(
         format="onnx", imgsz=imgsz, opset=OPSET, simplify=True, dynamic=False))
 
     out_root = Path("/tmp/repo")
-    version = out_root / model_name / "1"
-    version.mkdir(parents=True, exist_ok=True)
+    target = out_root / model_name
+    target.mkdir(parents=True, exist_ok=True)
 
-    onnx = version / "model.onnx"
+    onnx = target / "model.onnx"
     shutil.move(str(exported), onnx)
 
     # the graph carries neither class names nor imgsz; the predictor needs both
-    (version / "metadata.json").write_text(json.dumps({
+    (target / "metadata.json").write_text(json.dumps({
         "imgsz": int(imgsz),
         "names": names,
         "opset": OPSET,
         "run_id": run_id,
         "mAP50": map50,
     }, indent=2))
-
-    (out_root / model_name / "config.pbtxt").write_text(
-        build_config_pbtxt(onnx, model_name))
 
     print("exported", onnx, "opset", OPSET, "names", names)
 
@@ -624,7 +584,7 @@ def yolo_pipeline(
     region: str = "ca-central-1",
     prefix: str = "pipeline/processed",
     model_prefix: str = "pipeline/models",
-    model_name: str = "yolo-plate-detector",
+    model_name: str = "kubeflow-yolo-plate",
     val_fraction: float = 0.2,
     split_seed: int = 0,
     epochs: int = 1,

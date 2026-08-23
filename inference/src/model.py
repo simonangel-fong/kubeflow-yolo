@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import onnxruntime as ort
 
-from src.artifact import MODEL_FILE, VERSION_DIR, metadata_path, read_metadata
+from src.artifact import MODEL_FILE, metadata_path, read_metadata
 from src.inference import postprocess, preprocess
 
 # logger
@@ -25,14 +25,14 @@ def find_model(model_dir: Path) -> Path:
     """
     Locate the .onnx under the mount.
 
-    Prefers the artifact layout (<name>/1/model.onnx), then a bare model.onnx,
+    Prefers the artifact layout (<name>/model.onnx), then a bare model.onnx,
     then anything -- the last so a hand-placed model still serves.
     """
-    repos = sorted(model_dir.glob(f"*/{VERSION_DIR}/{MODEL_FILE}"))
+    repos = sorted(model_dir.glob(f"*/{MODEL_FILE}"))
     if repos:
         if len(repos) > 1:
-            logger.warning("%d model repositories under %s, using %s",
-                           len(repos), model_dir, repos[0].parent.parent.name)
+            logger.warning("%d models under %s, using %s",
+                           len(repos), model_dir, repos[0].parent.name)
         return repos[0]
 
     direct = model_dir / MODEL_FILE
