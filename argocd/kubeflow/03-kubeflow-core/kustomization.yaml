@@ -1,0 +1,9 @@
+# kubeflow step 3: kubeflow namespace, cluster roles, and the istio resources
+# (kubeflow-gateway + auth policies) every later component binds to.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/kubeflow/community-distribution//common/kubeflow-namespace/base?ref=26.03.1
+  - https://github.com/kubeflow/community-distribution//common/kubeflow-roles/base?ref=26.03.1
+  - https://github.com/kubeflow/community-distribution//common/istio/kubeflow-istio-resources/base?ref=26.03.1
