@@ -1,0 +1,19 @@
+# strategic merge patch applied to the deployment istiod auto-provisions
+# for the istio-ingress Gateway; referenced via spec.infrastructure.parametersRef
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gw-options
+  namespace: istio-ingress
+data:
+  deployment: |
+    spec:
+      template:
+        spec:
+          nodeSelector:
+            workload-class: platform
+          tolerations:
+            - key: workload-class
+              operator: Equal
+              value: platform
+              effect: NoSchedule

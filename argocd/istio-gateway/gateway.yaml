@@ -9,6 +9,10 @@ metadata:
 spec:
   gatewayClassName: istio
   infrastructure:
+    parametersRef:
+      group: ""
+      kind: ConfigMap
+      name: gw-options
     annotations:
       service.beta.kubernetes.io/aws-load-balancer-name: kubeflow-yolo-dev
       service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Cluster=kubeflow-yolo-dev,Environment=dev,Project=kubeflow-yolo,ManagedBy=aws-load-balancer-controller
