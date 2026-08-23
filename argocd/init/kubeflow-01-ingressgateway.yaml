@@ -1,0 +1,38 @@
+# kubeflow step 1: upstream ingress gateway in istio-system.
+# Kubeflow's AuthorizationPolicies/NetworkPolicies hardcode ns/istio-system,
+# sa/istio-ingressgateway-service-account and app=istio-ingressgateway, so the
+# upstream gateway is kept rather than retargeting every policy.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow-01-ingressgateway
+  namespace: argocd
+  labels:
+    scope: kubeflow
+    capability: network
+  annotations:
+    argocd.argoproj.io/sync-wave: "30"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: argocd/kubeflow/01-ingressgateway
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
