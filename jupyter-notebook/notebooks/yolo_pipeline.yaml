@@ -1,0 +1,576 @@
+# PIPELINE DEFINITION
+# Name: yolo-pipeline
+# Inputs:
+#    batch: int [Default: 8.0]
+#    bucket: str [Default: 'kubeflow-yolo-dev-099139718958']
+#    dvc_dir_hash: str [Default: '0e94102a7a6b4424a0f1292c2f221072.dir']
+#    epochs: int [Default: 30.0]
+#    imgsz: int [Default: 640.0]
+#    min_map50: float [Default: 0.5]
+#    model_name: str [Default: 'yolo-plate-detector']
+#    model_prefix: str [Default: 'pipeline/models']
+#    prefix: str [Default: 'pipeline/processed']
+#    region: str [Default: 'ca-central-1']
+#    split_seed: int [Default: 0.0]
+#    val_fraction: float [Default: 0.2]
+#    weights: str [Default: 'yolo26n.pt']
+components:
+  comp-evaluate:
+    executorLabel: exec-evaluate
+    inputDefinitions:
+      parameters:
+        imgsz:
+          parameterType: NUMBER_INTEGER
+        model_uri:
+          parameterType: STRING
+        processed_uri:
+          parameterType: STRING
+        region:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+      parameters:
+        Output:
+          parameterType: NUMBER_DOUBLE
+  comp-prepare-data:
+    executorLabel: exec-prepare-data
+    inputDefinitions:
+      parameters:
+        bucket:
+          parameterType: STRING
+        dvc_dir_hash:
+          parameterType: STRING
+        prefix:
+          parameterType: STRING
+        region:
+          parameterType: STRING
+        split_seed:
+          parameterType: NUMBER_INTEGER
+        val_fraction:
+          parameterType: NUMBER_DOUBLE
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-register-model:
+    executorLabel: exec-register-model
+    inputDefinitions:
+      parameters:
+        bucket:
+          parameterType: STRING
+        imgsz:
+          parameterType: NUMBER_INTEGER
+        map50:
+          parameterType: NUMBER_DOUBLE
+        model_name:
+          parameterType: STRING
+        model_uri:
+          parameterType: STRING
+        prefix:
+          parameterType: STRING
+        region:
+          parameterType: STRING
+        run_id:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-train:
+    executorLabel: exec-train
+    inputDefinitions:
+      parameters:
+        batch:
+          parameterType: NUMBER_INTEGER
+        device:
+          parameterType: STRING
+        epochs:
+          parameterType: NUMBER_INTEGER
+        imgsz:
+          parameterType: NUMBER_INTEGER
+        prefix:
+          parameterType: STRING
+        processed_uri:
+          parameterType: STRING
+        region:
+          parameterType: STRING
+        run_id:
+          parameterType: STRING
+        weights:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-evaluate:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - evaluate
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'ultralytics-opencv-headless'\
+          \ 'boto3' 'pyyaml'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.17.0' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef evaluate(\n    model_uri: str,\n    processed_uri: str,\n   \
+          \ region: str,\n    imgsz: int,\n    metrics: Output[Metrics],\n) -> float:\n\
+          \    import os\n    from pathlib import Path\n\n    import boto3\n    import\
+          \ yaml\n\n    os.environ[\"YOLO_CONFIG_DIR\"] = \"/tmp/ultralytics\"\n \
+          \   os.environ[\"MPLCONFIGDIR\"] = \"/tmp/matplotlib\"\n\n    from ultralytics\
+          \ import YOLO\n\n    s3 = boto3.client(\"s3\", region_name=region)\n\n \
+          \   # the val split\n    bucket, _, prefix = processed_uri.removeprefix(\"\
+          s3://\").partition(\"/\")\n    root = Path(\"/tmp/data\")\n    pages = s3.get_paginator(\"\
+          list_objects_v2\")\n    for page in pages.paginate(Bucket=bucket, Prefix=prefix\
+          \ + \"/\"):\n        for obj in page.get(\"Contents\", []):\n          \
+          \  relative = obj[\"Key\"][len(prefix) + 1:]\n            if not relative\
+          \ or relative.endswith(\"/\"):\n                continue\n            target\
+          \ = root / relative\n            target.parent.mkdir(parents=True, exist_ok=True)\n\
+          \            s3.download_file(bucket, obj[\"Key\"], str(target))\n\n   \
+          \ data_yaml = root / \"data.yaml\"\n    cfg = yaml.safe_load(data_yaml.read_text())\n\
+          \    cfg[\"path\"] = str(root)\n    data_yaml.write_text(yaml.safe_dump(cfg,\
+          \ sort_keys=False))\n\n    # the trained weights\n    model_bucket, _, model_key\
+          \ = model_uri.removeprefix(\"s3://\").partition(\"/\")\n    best = Path(\"\
+          /tmp/best.pt\")\n    s3.download_file(model_bucket, model_key, str(best))\n\
+          \n    result = YOLO(str(best)).val(\n        data=str(data_yaml),\n    \
+          \    imgsz=imgsz,\n        device=\"cpu\",\n        plots=False,\n     \
+          \   # without an explicit project ultralytics writes to a cwd it cannot\
+          \ use\n        project=\"/tmp/val\",\n        name=\"eval\",\n        exist_ok=True,\n\
+          \    )\n\n    values = {\n        \"mAP50\": float(result.box.map50),\n\
+          \        \"mAP50-95\": float(result.box.map),\n        \"precision\": float(result.box.mp),\n\
+          \        \"recall\": float(result.box.mr),\n    }\n    for name, value in\
+          \ values.items():\n        metrics.log_metric(name, value)\n        print(name\
+          \ + \"=\" + str(value))\n\n    return values[\"mAP50\"]\n\n"
+        image: python:3.12
+        resources:
+          memoryLimit: 4.294967296
+          resourceMemoryLimit: 4Gi
+    exec-prepare-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - prepare_data
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'boto3' 'pyyaml'\
+          \  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.17.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef prepare_data(\n    bucket: str,\n    dvc_dir_hash: str,\n   \
+          \ region: str,\n    prefix: str,\n    val_fraction: float,\n    split_seed:\
+          \ int,\n) -> str:\n    import json\n    import random\n    from concurrent.futures\
+          \ import ThreadPoolExecutor\n    from pathlib import Path\n\n    import\
+          \ boto3\n    import yaml\n\n    s3 = boto3.client(\"s3\", region_name=region)\n\
+          \n    def dvc_key(md5: str) -> str:\n        # DVC shards its content-addressed\
+          \ store by the first two hex chars\n        return \"dvcstore/files/md5/\"\
+          \ + md5[:2] + \"/\" + md5[2:]\n\n    # the .dir object lists {\"md5\": ...,\
+          \ \"relpath\": ...} for every file\n    manifest = json.loads(\n       \
+          \ s3.get_object(Bucket=bucket, Key=dvc_key(dvc_dir_hash))[\"Body\"].read()\n\
+          \    )\n    by_relpath = {e[\"relpath\"]: e[\"md5\"] for e in manifest}\n\
+          \n    suffixes = {\".jpeg\", \".jpg\", \".png\"}\n    # images and labels\
+          \ pair by basename: foo.jpeg <-> foo.txt\n    images = {Path(r).stem: r\
+          \ for r in by_relpath\n              if Path(r).suffix.lower() in suffixes}\n\
+          \n    stems = sorted(images)\n    # seeded, so two runs split the same way\
+          \ and their metrics compare\n    random.Random(split_seed).shuffle(stems)\n\
+          \    cut = int(len(stems) * (1 - val_fraction))\n\n    def copy(args):\n\
+          \        \"\"\"Server-side copy: the object never travels through this pod.\"\
+          \"\"\n        src_key, dst_key = args\n        s3.copy_object(\n       \
+          \     Bucket=bucket,\n            CopySource={\"Bucket\": bucket, \"Key\"\
+          : src_key},\n            Key=dst_key,\n        )\n\n    jobs = []\n    counts\
+          \ = {}\n    for split, names in ((\"train\", stems[:cut]), (\"val\", stems[cut:])):\n\
+          \        for stem in names:\n            image = images[stem]\n        \
+          \    jobs.append((dvc_key(by_relpath[image]),\n                        \
+          \ prefix + \"/\" + split + \"/images/\" + Path(image).name))\n         \
+          \   label = stem + \".txt\"\n            # an image with no label file is\
+          \ a legitimate negative sample\n            if label in by_relpath:\n  \
+          \              jobs.append((dvc_key(by_relpath[label]),\n              \
+          \               prefix + \"/\" + split + \"/labels/\" + label))\n      \
+          \  counts[split] = len(names)\n\n    if not counts[\"train\"] or not counts[\"\
+          val\"]:\n        raise RuntimeError(\"empty split: \" + str(counts))\n\n\
+          \    with ThreadPoolExecutor(max_workers=16) as pool:\n        list(pool.map(copy,\
+          \ jobs))\n\n    class_names = (\n        s3.get_object(Bucket=bucket, Key=dvc_key(by_relpath[\"\
+          classes.txt\"]))[\"Body\"]\n        .read().decode().split()\n    )\n  \
+          \  # `path` is filled in by the training step, which knows its local download\
+          \ dir\n    s3.put_object(\n        Bucket=bucket,\n        Key=prefix +\
+          \ \"/data.yaml\",\n        Body=yaml.safe_dump(\n            {\n       \
+          \         \"train\": \"train/images\",\n                \"val\": \"val/images\"\
+          ,\n                \"nc\": len(class_names),\n                \"names\"\
+          : class_names,\n            },\n            sort_keys=False,\n        ).encode(),\n\
+          \    )\n\n    uri = \"s3://\" + bucket + \"/\" + prefix\n    print(\"split\"\
+          , counts, \"classes\", class_names, \"->\", uri)\n    return uri\n\n"
+        image: python:3.12
+    exec-register-model:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - register_model
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'ultralytics-opencv-headless'\
+          \ 'onnx' 'onnxslim' 'boto3' 'model-registry'  &&  python3 -m pip install\
+          \ --quiet --no-warn-script-location 'kfp==2.17.0' '--no-deps' 'typing-extensions>=3.7.4,<5;\
+          \ python_version<\"3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef register_model(\n    model_uri: str,\n    map50: float,\n   \
+          \ bucket: str,\n    region: str,\n    prefix: str,\n    run_id: str,\n \
+          \   imgsz: int,\n    model_name: str,\n) -> str:\n    import json\n    import\
+          \ os\n    import tarfile\n    from pathlib import Path\n\n    import boto3\n\
+          \n    os.environ[\"YOLO_CONFIG_DIR\"] = \"/tmp/ultralytics\"\n    os.environ[\"\
+          MPLCONFIGDIR\"] = \"/tmp/matplotlib\"\n\n    from ultralytics import YOLO\n\
+          \n    s3 = boto3.client(\"s3\", region_name=region)\n\n    # 1. export to\
+          \ onnx\n    src_bucket, _, src_key = model_uri.removeprefix(\"s3://\").partition(\"\
+          /\")\n    best = Path(\"/tmp/best.pt\")\n    s3.download_file(src_bucket,\
+          \ src_key, str(best))\n\n    onnx = Path(YOLO(str(best)).export(format=\"\
+          onnx\", imgsz=imgsz, opset=19))\n\n    metrics = Path(\"/tmp/metrics.json\"\
+          )\n    metrics.write_text(json.dumps({\"mAP50\": map50, \"run_id\": run_id},\
+          \ indent=2))\n\n    # 2. upload\n    base = prefix.rstrip(\"/\") + \"/\"\
+          \ + run_id\n    repo = base + \"/model\"\n    s3.upload_file(str(onnx),\
+          \ bucket, repo + \"/\" + model_name + \"/1/model.onnx\")\n\n    import onnx\
+          \ as onnx_mod\n\n    graph = onnx_mod.load(str(onnx), load_external_data=False).graph\n\
+          \    nl = chr(10)\n\n    def spec(value) -> str:\n        dims = [\n   \
+          \         d.dim_value if d.HasField(\"dim_value\") else -1\n           \
+          \ for d in value.type.tensor_type.shape.dim\n        ]\n        return nl.join([\n\
+          \            \"  {\",\n            '    name: \"' + value.name + '\"',\n\
+          \            \"    data_type: TYPE_FP32\",\n            \"    dims: [\"\
+          \ + \", \".join(str(d) for d in dims) + \"]\",\n            \"  }\",\n \
+          \       ])\n\n    config = nl.join([\n        'name: \"' + model_name +\
+          \ '\"',\n        'platform: \"onnxruntime_onnx\"',\n        # the exported\
+          \ graph has a fixed batch dimension, so batching is off\n        \"max_batch_size:\
+          \ 0\",\n        \"input [\",\n        (\",\" + nl).join(spec(v) for v in\
+          \ graph.input),\n        \"]\",\n        \"output [\",\n        (\",\" +\
+          \ nl).join(spec(v) for v in graph.output),\n        \"]\",\n        \"\"\
+          ,\n    ])\n    s3.put_object(\n        Bucket=bucket,\n        Key=repo\
+          \ + \"/\" + model_name + \"/config.pbtxt\",\n        Body=config.encode(),\n\
+          \    )\n\n    # the tarball is an archive, not the servable path\n    bundle\
+          \ = Path(\"/tmp/model.tar.gz\")\n    with tarfile.open(bundle, \"w:gz\"\
+          ) as tar:\n        for item in (best, onnx, metrics):\n            tar.add(item,\
+          \ arcname=item.name)\n    s3.upload_file(str(bundle), bucket, base + \"\
+          /model.tar.gz\")\n    s3.upload_file(str(metrics), bucket, base + \"/metrics.json\"\
+          )\n\n    storage_uri = \"s3://\" + bucket + \"/\" + repo\n\n    # 3. register\n\
+          \    from model_registry import ModelRegistry\n\n    registry = ModelRegistry(\n\
+          \        server_address=\"http://model-registry-service.kubeflow-user-example-com.svc.cluster.local\"\
+          ,\n        port=8080,\n        author=\"kfp\",\n        is_secure=False,\n\
+          \    )\n    registry.register_model(\n        model_name,\n        storage_uri,\n\
+          \        model_format_name=\"onnx\",\n        model_format_version=\"1\"\
+          ,\n        version=run_id,\n        description=\"yolo26n license-plate\
+          \ detector\",\n        metadata={\"mAP50\": map50, \"imgsz\": imgsz, \"\
+          run_id\": run_id},\n    )\n\n    print(\"registered\", model_name, run_id,\
+          \ \"->\", storage_uri)\n    return storage_uri\n\n"
+        image: python:3.12
+    exec-train:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'ultralytics-opencv-headless'\
+          \ 'boto3' 'pyyaml'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.17.0' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train(\n    processed_uri: str,\n    region: str,\n    prefix:\
+          \ str,\n    run_id: str,\n    epochs: int,\n    batch: int,\n    imgsz:\
+          \ int,\n    weights: str,\n    device: str,\n) -> str:\n    import os\n\
+          \    from pathlib import Path\n\n    import boto3\n    import yaml\n\n \
+          \   # env var\n    os.environ[\"YOLO_CONFIG_DIR\"] = \"/tmp/ultralytics\"\
+          \n    os.environ[\"MPLCONFIGDIR\"] = \"/tmp/matplotlib\"\n\n    from ultralytics\
+          \ import YOLO\n\n    bucket, _, data_prefix = processed_uri.removeprefix(\"\
+          s3://\").partition(\"/\")\n    s3 = boto3.client(\"s3\", region_name=region)\n\
+          \n    # split in local path\n    root = Path(\"/tmp/data\")\n    pages =\
+          \ s3.get_paginator(\"list_objects_v2\")\n    for page in pages.paginate(Bucket=bucket,\
+          \ Prefix=data_prefix + \"/\"):\n        for obj in page.get(\"Contents\"\
+          , []):\n            relative = obj[\"Key\"][len(data_prefix) + 1:]\n   \
+          \         if not relative or relative.endswith(\"/\"):\n               \
+          \ continue\n            target = root / relative\n            target.parent.mkdir(parents=True,\
+          \ exist_ok=True)\n            s3.download_file(bucket, obj[\"Key\"], str(target))\n\
+          \n    # `path` must be absolute and is only known now, after the download\n\
+          \    data_yaml = root / \"data.yaml\"\n    cfg = yaml.safe_load(data_yaml.read_text())\n\
+          \    cfg[\"path\"] = str(root)\n    data_yaml.write_text(yaml.safe_dump(cfg,\
+          \ sort_keys=False))\n\n    results = YOLO(weights).train(\n        data=str(data_yaml),\n\
+          \        epochs=epochs,\n        batch=batch,\n        imgsz=imgsz,\n  \
+          \      device=device,\n        workers=4 if device != \"cpu\" else 2,\n\
+          \        project=\"/tmp/runs\",\n        name=\"train\",\n        exist_ok=True,\n\
+          \        plots=False,\n    )\n\n    best = Path(results.save_dir) / \"weights\"\
+          \ / \"best.pt\"\n    key = prefix.rstrip(\"/\") + \"/\" + run_id + \"/best.pt\"\
+          \n    s3.upload_file(str(best), bucket, key)\n\n    uri = \"s3://\" + bucket\
+          \ + \"/\" + key\n    print(\"uploaded\", uri)\n    return uri\n\n"
+        image: python:3.12
+        resources:
+          accelerator:
+            count: '1'
+            resourceCount: '1'
+            resourceType: nvidia.com/gpu
+            type: nvidia.com/gpu
+          cpuLimit: 3.0
+          cpuRequest: 2.0
+          memoryLimit: 12.884901888
+          memoryRequest: 8.589934592
+          resourceCpuLimit: '3'
+          resourceCpuRequest: '2'
+          resourceMemoryLimit: 12Gi
+          resourceMemoryRequest: 8Gi
+pipelineInfo:
+  name: yolo-pipeline
+root:
+  dag:
+    tasks:
+      evaluate:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-evaluate
+        dependentTasks:
+        - prepare-data
+        - train
+        inputs:
+          parameters:
+            imgsz:
+              componentInputParameter: imgsz
+            model_uri:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: train
+            processed_uri:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: prepare-data
+            region:
+              componentInputParameter: region
+        taskInfo:
+          name: evaluate
+      prepare-data:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-prepare-data
+        inputs:
+          parameters:
+            bucket:
+              componentInputParameter: bucket
+            dvc_dir_hash:
+              componentInputParameter: dvc_dir_hash
+            prefix:
+              componentInputParameter: prefix
+            region:
+              componentInputParameter: region
+            split_seed:
+              componentInputParameter: split_seed
+            val_fraction:
+              componentInputParameter: val_fraction
+        taskInfo:
+          name: prepare-data
+      register-model:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-register-model
+        dependentTasks:
+        - evaluate
+        - train
+        inputs:
+          parameters:
+            bucket:
+              componentInputParameter: bucket
+            imgsz:
+              componentInputParameter: imgsz
+            map50:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: evaluate
+            model_name:
+              componentInputParameter: model_name
+            model_uri:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: train
+            prefix:
+              componentInputParameter: model_prefix
+            region:
+              componentInputParameter: region
+            run_id:
+              runtimeValue:
+                constant: '{{$.pipeline_job_uuid}}'
+        taskInfo:
+          name: register-model
+      train:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train
+        dependentTasks:
+        - prepare-data
+        inputs:
+          parameters:
+            batch:
+              componentInputParameter: batch
+            device:
+              runtimeValue:
+                constant: '0'
+            epochs:
+              componentInputParameter: epochs
+            imgsz:
+              componentInputParameter: imgsz
+            prefix:
+              componentInputParameter: model_prefix
+            processed_uri:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: prepare-data
+            region:
+              componentInputParameter: region
+            run_id:
+              runtimeValue:
+                constant: '{{$.pipeline_job_uuid}}'
+            weights:
+              componentInputParameter: weights
+        retryPolicy:
+          backoffDuration: 0s
+          backoffFactor: 2.0
+          backoffMaxDuration: 3600s
+          maxRetryCount: 2
+        taskInfo:
+          name: train
+  inputDefinitions:
+    parameters:
+      batch:
+        defaultValue: 8.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      bucket:
+        defaultValue: kubeflow-yolo-dev-099139718958
+        isOptional: true
+        parameterType: STRING
+      dvc_dir_hash:
+        defaultValue: 0e94102a7a6b4424a0f1292c2f221072.dir
+        isOptional: true
+        parameterType: STRING
+      epochs:
+        defaultValue: 30.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      imgsz:
+        defaultValue: 640.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      min_map50:
+        defaultValue: 0.5
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      model_name:
+        defaultValue: yolo-plate-detector
+        isOptional: true
+        parameterType: STRING
+      model_prefix:
+        defaultValue: pipeline/models
+        isOptional: true
+        parameterType: STRING
+      prefix:
+        defaultValue: pipeline/processed
+        isOptional: true
+        parameterType: STRING
+      region:
+        defaultValue: ca-central-1
+        isOptional: true
+        parameterType: STRING
+      split_seed:
+        defaultValue: 0.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      val_fraction:
+        defaultValue: 0.2
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      weights:
+        defaultValue: yolo26n.pt
+        isOptional: true
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.17.0
+---
+platforms:
+  kubernetes:
+    deploymentSpec:
+      executors:
+        exec-train:
+          emptyDirMounts:
+          - medium: Memory
+            mountPath: /dev/shm
+            sizeLimit: 2Gi
+            volumeName: dshm
+          nodeSelector:
+            labels:
+              workload-class: gpu
+          tolerations:
+          - effect: NoSchedule
+            key: workload-class
+            operator: Equal
+            value: gpu
