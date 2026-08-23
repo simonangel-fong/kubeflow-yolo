@@ -21,6 +21,47 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: kubeflow
+  ignoreDifferences:
+    # Aggregated ClusterRoles: git declares an aggregationRule with empty
+    # rules; the RBAC controller populates .rules. Scoped by name so a real
+    # drift in any other ClusterRole is still reported.
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kubeflow-admin
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kubeflow-edit
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kubeflow-view
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kubeflow-istio-admin
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: poddefaults-webhook-kubeflow-poddefaults-admin
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: poddefaults-webhook-kubeflow-poddefaults-edit
+      jsonPointers:
+        - /rules
+    # CRD status/conversion is written by the apiserver
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: profiles.kubeflow.org
+      jqPathExpressions:
+        - .spec.conversion
+        - .status
   syncPolicy:
     automated:
       prune: true
