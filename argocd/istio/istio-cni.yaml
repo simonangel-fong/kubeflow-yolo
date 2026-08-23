@@ -22,7 +22,6 @@ spec:
     helm:
       releaseName: istio-cni
       values: |
-        profile: default
         cni:
           # EKS AL2023 nodes use the standard CNI paths
           cniBinDir: /opt/cni/bin
