@@ -52,6 +52,12 @@ spec:
               enabled: true
               bucket: kubeflow-yolo-dev-099139718958
               path: mlflow
+          # MLflow 3.5+ ships DNS-rebinding protection that validates the Host
+          # header; the kubelet probes hit the pod IP and the gateway forwards
+          # the external host, none of which are in the default allow-list.
+          # Access is already gated by the istio gateway + oauth2-proxy.
+          extraFlags:
+            - disableSecurityMiddleware
           extraEnvVars:
             AWS_DEFAULT_REGION: ca-central-1
           resources:
