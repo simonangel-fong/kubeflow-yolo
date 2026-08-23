@@ -27,19 +27,17 @@ prepare_data -> train -> evaluate -> register_model
 ### Output layout
 
 ```txt
-s3://<bucket>/pipeline/models/<run-id>/
-├── metrics.json                        # mAP50 and the run id
-├── model.tar.gz                        # archive: best.pt + model.onnx + metrics.json
-└── model/                              # registered storage_uri
-    └── kubeflow-yolo-plate/
-        ├── model.onnx
-        └── metadata.json               # imgsz, names, opset, run_id, mAP50
+s3://<bucket>/pipeline/runs/<run-id>/
+├── train/best.pt                       # trained weights
+├── eval/metrics.json                   # mAP50 and the run id
+└── serve/                              # registered storage_uri
+    ├── model.onnx
+    └── metadata.json                   # imgsz, names, opset, run_id, mAP50
 ```
 
-`model/` is what the predictor mounts: `find_model` picks up
-`<name>/model.onnx` and reads `metadata.json` beside it for the class names
-and `imgsz` the graph does not carry. `model.tar.gz` is an archive, not a
-servable path.
+`serve/` is what the predictor mounts, and holds nothing else: KServe pulls
+the whole prefix, so the weights and metrics stay outside it. `metadata.json`
+carries the class names and `imgsz` the graph does not.
 
 The model registers as `kubeflow-yolo-plate`, version `<run-id>`, with the
 export verified against `best.pt` before it is registered.

@@ -176,7 +176,7 @@ def train(
 
     # output
     best = Path(results.save_dir) / "weights" / "best.pt"
-    key = prefix.rstrip("/") + "/" + run_id + "/best.pt"
+    key = prefix.rstrip("/") + "/" + run_id + "/train/best.pt"
     s3.upload_file(str(best), bucket, key)
 
     uri = "s3://" + bucket + "/" + key
@@ -292,7 +292,6 @@ def register_model(
     import json
     import os
     import shutil
-    import tarfile
     from pathlib import Path
 
     import boto3
@@ -423,7 +422,7 @@ def register_model(
     names = list(data_cfg["names"])
 
     # ------------------------------------------------------------------
-    # 2. export into the artifact layout: <name>/{model.onnx,metadata.json}
+    # 2. export into the artifact layout: serve/{model.onnx,metadata.json}
     # ------------------------------------------------------------------
     from ultralytics import YOLO
 
@@ -434,15 +433,14 @@ def register_model(
     exported = Path(YOLO(str(best)).export(
         format="onnx", imgsz=imgsz, opset=OPSET, simplify=True, dynamic=False))
 
-    out_root = Path("/tmp/repo")
-    target = out_root / model_name
-    target.mkdir(parents=True, exist_ok=True)
+    out_root = Path("/tmp/serve")
+    out_root.mkdir(parents=True, exist_ok=True)
 
-    onnx = target / "model.onnx"
+    onnx = out_root / "model.onnx"
     shutil.move(str(exported), onnx)
 
     # the graph carries neither class names nor imgsz; the predictor needs both
-    (target / "metadata.json").write_text(json.dumps({
+    (out_root / "metadata.json").write_text(json.dumps({
         "imgsz": int(imgsz),
         "names": names,
         "opset": OPSET,
@@ -524,29 +522,24 @@ def register_model(
             " count mismatches, worst box delta " + str(round(worst, 2)) + "px")
 
     # ------------------------------------------------------------------
-    # 4. upload the repository as exported
+    # 4. upload
     # ------------------------------------------------------------------
     base = prefix.rstrip("/") + "/" + run_id
-    repo = base + "/model"
 
+    # serve/ holds only what the predictor mounts: KServe pulls the whole
+    # prefix, so the weights and metrics stay outside it.
+    serve = base + "/serve"
     for path in sorted(out_root.rglob("*")):
         if path.is_file():
             s3.upload_file(str(path), bucket,
-                           repo + "/" + path.relative_to(out_root).as_posix())
+                           serve + "/" + path.relative_to(out_root).as_posix())
 
     metrics = Path("/tmp/metrics.json")
     metrics.write_text(json.dumps(
         {"mAP50": map50, "run_id": run_id}, indent=2))
+    s3.upload_file(str(metrics), bucket, base + "/eval/metrics.json")
 
-    # the tarball is an archive, not the servable path
-    bundle = Path("/tmp/model.tar.gz")
-    with tarfile.open(bundle, "w:gz") as tar:
-        for item in (best, onnx, metrics):
-            tar.add(item, arcname=item.name)
-    s3.upload_file(str(bundle), bucket, base + "/model.tar.gz")
-    s3.upload_file(str(metrics), bucket, base + "/metrics.json")
-
-    storage_uri = "s3://" + bucket + "/" + repo
+    storage_uri = "s3://" + bucket + "/" + serve
 
     # ------------------------------------------------------------------
     # 5. register
@@ -583,7 +576,7 @@ def yolo_pipeline(
     dvc_dir_hash: str = "0e94102a7a6b4424a0f1292c2f221072.dir",
     region: str = "ca-central-1",
     prefix: str = "pipeline/processed",
-    model_prefix: str = "pipeline/models",
+    runs_prefix: str = "pipeline/runs",
     model_name: str = "kubeflow-yolo-plate",
     val_fraction: float = 0.2,
     split_seed: int = 0,
@@ -611,7 +604,7 @@ def yolo_pipeline(
         train(
             processed_uri=prepare.output,
             region=region,
-            prefix=model_prefix,
+            prefix=runs_prefix,
             run_id=dsl.PIPELINE_JOB_ID_PLACEHOLDER,
             epochs=epochs,
             batch=batch,
@@ -659,7 +652,7 @@ def yolo_pipeline(
         map50=scored.outputs["Output"],
         bucket=bucket,
         region=region,
-        prefix=model_prefix,
+        prefix=runs_prefix,
         run_id=dsl.PIPELINE_JOB_ID_PLACEHOLDER,
         imgsz=imgsz,
         model_name=model_name,

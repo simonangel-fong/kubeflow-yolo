@@ -58,7 +58,7 @@ locals {
   s3_bucket_prefix = [
     "dvcstore/", # raw data
     "pipeline/processed/",
-    "pipeline/models/",
+    "pipeline/runs/",
   ]
 
   # ##############################

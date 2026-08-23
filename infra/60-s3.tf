@@ -7,14 +7,12 @@
 #
 #   pipeline/                              written by kubeflow/pipelines
 #     processed/                           train/val split + data.yaml
-#     models/<run-id>/                     one directory per pipeline run
-#       best.pt                            trained weights
-#       metrics.json                       mAP50 and the run id
-#       model.tar.gz                       archive: weights + onnx + metrics
-#       model/
-#         <model-name>/
-#           model.onnx                     the served graph
-#           metadata.json                  imgsz, class names, opset
+#     runs/<run-id>/                       one directory per pipeline run
+#       train/best.pt                      trained weights
+#       eval/metrics.json                  mAP50 and the run id
+#       serve/                             registered storage_uri
+#         model.onnx                       the served graph
+#         metadata.json                    imgsz, class names, opset
 #
 # Objects under pipeline/ are reproducible: a run can be repeated from the
 # dataset version in dvcstore/, so only dvcstore/ is irreplaceable.
