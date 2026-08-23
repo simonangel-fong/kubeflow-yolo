@@ -60,7 +60,7 @@ kubectl patch applications.argoproj.io 00-app-of-apps -n argocd --type merge -p 
 - [x] albc
 - [x] eso
 - [x] e-dns
-- dashboard
+- [ ] dashboard
 - notebook
 - mlflow
 - kf hub
