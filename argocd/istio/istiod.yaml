@@ -1,0 +1,71 @@
+# istiod - control plane
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-istiod
+  namespace: argocd
+  labels:
+    scope: platform
+    capability: network
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: istiod
+    targetRevision: 1.30.3
+    helm:
+      releaseName: istiod
+      values: |
+        pilot:
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+          autoscaleMin: 2
+          autoscaleMax: 5
+        global:
+          proxy:
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: "2"
+                memory: 1Gi
+        meshConfig:
+          accessLogFile: /dev/stdout
+          defaultConfig:
+            holdApplicationUntilProxyStarts: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: istio-sidecar-injector
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
+        - .webhooks[].failurePolicy
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istio-validator-istio-system
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
+        - .webhooks[].failurePolicy
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

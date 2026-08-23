@@ -1,13 +1,14 @@
+# istio installation - parent app, syncs the child Applications in argocd/istio
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform-storage-classes
+  name: platform-istio
   namespace: argocd
   labels:
     scope: platform
-    capability: storage
+    capability: network
   annotations:
-    argocd.argoproj.io/sync-wave: "10"
+    argocd.argoproj.io/sync-wave: "16"
   finalizers:
     - argocd.argoproj.io/resources-finalizer
 spec:
@@ -15,14 +16,23 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/storageclass
+    path: argocd/istio
+    directory:
+      recurse: true
+      include: "*.yaml"
   destination:
     server: https://kubernetes.default.svc
-    namespace: kube-system
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - Replace=true
-      - Force=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
