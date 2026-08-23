@@ -39,6 +39,10 @@ spec:
           autoscaleMax: 5
         global:
           proxy:
+            # injected containers must set this for namespaces enforcing
+            # PodSecurity "restricted" (kubeflow)
+            seccompProfile:
+              type: RuntimeDefault
             resources:
               requests:
                 cpu: 100m
