@@ -1,0 +1,8 @@
+# kubeflow step 4: central dashboard (+ profile controller, poddefaults webhook)
+# and the default user profile namespace.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/kubeflow/community-distribution//applications/dashboard/overlays/istio?ref=26.03.1
+  - https://github.com/kubeflow/community-distribution//common/user-namespace/base?ref=26.03.1

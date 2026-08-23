@@ -1,0 +1,53 @@
+# kubeflow step 4: central dashboard, profile controller, poddefaults webhook.
+# The poddefaults webhook issues its serving cert from a self-signed Issuer via
+# the cert-manager installed in argocd/init/cert-manager.yaml.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow-04-dashboard
+  namespace: argocd
+  labels:
+    scope: kubeflow
+    capability: ml-platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "33"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: argocd/kubeflow/04-dashboard
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
+  ignoreDifferences:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: poddefaults-webhook-kubeflow-poddefaults-admin
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: poddefaults-webhook-kubeflow-poddefaults-edit
+      jsonPointers:
+        - /rules
+    # cert-manager's CA injector writes caBundle into the webhook config
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
