@@ -1,0 +1,8 @@
+# kubeflow step 5: Kubeflow Pipelines (multi-user, cert-manager variant).
+# Uses the cert-manager env so webhook certs come from the cert-manager in
+# argocd/init, not a bundled copy. Storage: MySQL + SeaweedFS on gp3 (default SC).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/kubeflow/community-distribution//applications/pipeline/overlays?ref=26.03.1
