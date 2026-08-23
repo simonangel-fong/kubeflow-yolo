@@ -565,7 +565,7 @@ def register_model(
         model_format_name="onnx",
         model_format_version="1",
         version=run_id,
-        description="YOLO11n license-plate detector",
+        description="YOLO26n license-plate detector",
         metadata={"mAP50": map50, "imgsz": imgsz, "run_id": run_id,
                   "opset": OPSET, "verified_px": round(worst, 2)},
     )
@@ -590,7 +590,7 @@ def yolo_pipeline(
     epochs: int = 1,
     batch: int = 8,
     imgsz: int = 640,
-    weights: str = "yolo11n.pt",
+    weights: str = "yolo26n.pt",
     min_map50: float = 0.5,
     # export gate: images to check, and how far a box may drift from the .pt
     verify_images: int = 8,

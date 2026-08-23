@@ -39,7 +39,7 @@ pip install -r requirements.venv.txt
 
 **Model**:
 
-- `yolo11n.pt`: the smallest variant, pretrained.
+- `yolo26n.pt`: the smallest variant, pretrained.
 
 ---
 

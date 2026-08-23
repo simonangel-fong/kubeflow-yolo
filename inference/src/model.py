@@ -17,7 +17,7 @@ from src.inference import postprocess, preprocess
 # logger
 logger = logging.getLogger("yolo-predictor.model")
 
-# YOLO11 head emits (batch, 4 + num_classes, anchors); the 4 are box channels.
+# YOLO26 head emits (batch, 4 + num_classes, anchors); the 4 are box channels.
 BOX_CHANNELS = 4
 
 

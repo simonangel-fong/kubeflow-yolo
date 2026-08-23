@@ -18,7 +18,7 @@ prepare_data -> train -> evaluate -> register_model
 | Step             | Does                                                                                    |
 | ---------------- | --------------------------------------------------------------------------------------- |
 | `prepare_data`   | Reads the DVC-tracked dataset from S3, splits train/val server-side, writes `data.yaml` |
-| `train`          | Fine-tunes `yolo11n.pt` on a GPU node, uploads `best.pt`                                |
+| `train`          | Fine-tunes `yolo26n.pt` on a GPU node, uploads `best.pt`                                |
 | `evaluate`       | Re-validates `best.pt`, logs mAP to the run's Metrics tab                               |
 | `register_model` | Exports ONNX, uploads the bundle, registers in Model Registry                           |
 

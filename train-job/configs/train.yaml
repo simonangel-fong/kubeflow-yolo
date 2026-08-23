@@ -1,6 +1,6 @@
 # Training hyperparameters(local, CPU).
 
-model: yolo11n.pt
+model: yolo26n.pt
 epochs: 10
 imgsz: 640
 batch: 8

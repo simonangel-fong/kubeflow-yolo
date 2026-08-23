@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import numpy as np
 
-# YOLO11 head emits (batch, 4 + num_classes, num_anchors): xywh then per-class scores.
+# YOLO26 head emits (batch, 4 + num_classes, num_anchors): xywh then per-class scores.
 BOX_CHANNELS = 4
 
 
@@ -95,7 +95,7 @@ def postprocess(
     """
     Raw ONNX output -> detections in the original image's pixel coordinates.
 
-    `output` is (1, 4 + nc, anchors) as YOLO11 emits it.
+    `output` is (1, 4 + nc, anchors) as26 emits it.
     """
     predictions = output[0].T                     # (anchors, 4 + nc)
     boxes_xywh = predictions[:, :BOX_CHANNELS]
