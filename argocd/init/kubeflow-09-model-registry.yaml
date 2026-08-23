@@ -1,0 +1,41 @@
+# kubeflow step 9: model registry (per-user namespace) + model catalog (cluster-wide).
+# Both Postgres-backed; PVCs land on the default gp3 StorageClass.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow-09-model-registry
+  namespace: argocd
+  labels:
+    scope: kubeflow
+    capability: ml-platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "38"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: argocd/kubeflow/09-model-registry
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
+  ignoreDifferences:
+    - kind: PersistentVolumeClaim
+      jqPathExpressions:
+        - .spec.volumeName
+        - .spec.volumeMode
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

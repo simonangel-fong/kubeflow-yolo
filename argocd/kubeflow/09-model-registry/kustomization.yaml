@@ -1,0 +1,8 @@
+# kubeflow step 9: model registry (per-user-namespace, Postgres-backed) and
+# model catalog (cluster-wide singleton in the kubeflow namespace).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/kubeflow/community-distribution//applications/hub/overlays/model-registry?ref=26.03.1
+  - https://github.com/kubeflow/community-distribution//applications/hub/overlays/model-catalog?ref=26.03.1
