@@ -141,8 +141,11 @@ def verify(onnx_path: Path, weights: Path, imgsz: int, names: list[str]) -> bool
                              image.shape[:2], names, CONF, IOU)
 
         # reference path
+        # rect=False: predict() defaults to rectangular inference, padding only
+        # to a stride multiple. The export is locked to a square imgsz x imgsz
+        # input, so without this the two paths see different images.
         expected = reference.predict(image_path, imgsz=imgsz, conf=CONF, iou=IOU,
-                                     device="cpu", verbose=False)[0]
+                                     device="cpu", verbose=False, rect=False)[0]
         exp_boxes = expected.boxes.xyxy.cpu().numpy()
         exp_confs = expected.boxes.conf.cpu().numpy()
 

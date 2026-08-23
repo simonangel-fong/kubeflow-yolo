@@ -95,26 +95,47 @@ def postprocess(
     """
     Raw ONNX output -> detections in the original image's pixel coordinates.
 
-    `output` is (1, 4 + nc, anchors) as26 emits it.
+    Two head formats, told apart by the output shape:
+
+    YOLO11  (1, 4 + nc, anchors)  xywh + per-class scores over every anchor.
+                                  Needs thresholding and NMS here.
+    YOLO26  (1, max_det, 6)       [x1, y1, x2, y2, score, class_id], already
+                                  top-k'd and NMS-free. Only thresholding is
+                                  left -- the head emits max_det rows whatever
+                                  their score.
     """
-    predictions = output[0].T                     # (anchors, 4 + nc)
-    boxes_xywh = predictions[:, :BOX_CHANNELS]
-    class_scores = predictions[:, BOX_CHANNELS:]
+    predictions = output[0]
 
-    confidences = class_scores.max(axis=1)
-    class_ids = class_scores.argmax(axis=1)
+    if predictions.ndim == 2 and predictions.shape[1] == 6:
+        boxes = predictions[:, :BOX_CHANNELS].copy()
+        confidences = predictions[:, 4]
+        class_ids = predictions[:, 5].astype(int)
 
-    # Drop the low-confidence anchors before NMS -- with 3549 anchors at 416px
-    # this is what keeps the O(n^2) suppression cheap.
-    mask = confidences >= conf_threshold
-    if not mask.any():
-        return []
+        mask = confidences >= conf_threshold
+        if not mask.any():
+            return []
+        boxes, confidences = boxes[mask], confidences[mask]
+        class_ids = class_ids[mask]
+    else:
+        predictions = predictions.T               # (anchors, 4 + nc)
+        boxes_xywh = predictions[:, :BOX_CHANNELS]
+        class_scores = predictions[:, BOX_CHANNELS:]
 
-    boxes = xywh_to_xyxy(boxes_xywh[mask])
-    confidences, class_ids = confidences[mask], class_ids[mask]
+        confidences = class_scores.max(axis=1)
+        class_ids = class_scores.argmax(axis=1)
 
-    keep = nms(boxes, confidences, iou_threshold)
-    boxes, confidences, class_ids = boxes[keep], confidences[keep], class_ids[keep]
+        # Drop the low-confidence anchors before NMS -- with 3549 anchors at
+        # 416px this is what keeps the O(n^2) suppression cheap.
+        mask = confidences >= conf_threshold
+        if not mask.any():
+            return []
+
+        boxes = xywh_to_xyxy(boxes_xywh[mask])
+        confidences, class_ids = confidences[mask], class_ids[mask]
+
+        keep = nms(boxes, confidences, iou_threshold)
+        boxes, confidences = boxes[keep], confidences[keep]
+        class_ids = class_ids[keep]
 
     # Undo the letterbox: remove padding, then divide out the resize.
     pad_x, pad_y = pads

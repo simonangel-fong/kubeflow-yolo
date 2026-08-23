@@ -17,7 +17,8 @@ from src.inference import postprocess, preprocess
 # logger
 logger = logging.getLogger("yolo-predictor.model")
 
-# YOLO26 head emits (batch, 4 + num_classes, anchors); the 4 are box channels.
+# YOLO11 head emits (batch, 4 + num_classes, anchors); the 4 are box channels.
+# YOLO26 emits (batch, max_det, 6) and carries no class count in its shape.
 BOX_CHANNELS = 4
 
 
@@ -95,8 +96,13 @@ class Detector:
                 # Static export shape is (1, 3, H, W); H is the trained imgsz.
                 imgsz = int(spec.shape[2])
             if not names:
-                num_classes = session.get_outputs()[0].shape[1] - BOX_CHANNELS
-                names = [str(i) for i in range(num_classes)]
+                shape = session.get_outputs()[0].shape
+                if len(shape) == 3 and shape[2] == 6:
+                    # YOLO26: the class count is not recoverable from the graph
+                    names = []
+                else:
+                    names = [str(i)
+                             for i in range(shape[1] - BOX_CHANNELS)]
 
             self.session = session
             self.input_name = spec.name

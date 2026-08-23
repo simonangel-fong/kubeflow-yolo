@@ -6,6 +6,7 @@
   - [Pipeline Design](#pipeline-design)
     - [Output layout](#output-layout)
   - [Pipeline](#pipeline)
+    - [Arguments](#arguments)
 
 ---
 
@@ -20,7 +21,7 @@ prepare_data -> train -> evaluate -> register_model
 | `prepare_data`   | Reads the DVC-tracked dataset from S3, splits train/val server-side, writes `data.yaml` |
 | `train`          | Fine-tunes `yolo26n.pt` on a GPU node, uploads `best.pt`                                |
 | `evaluate`       | Re-validates `best.pt`, logs mAP to the run's Metrics tab                               |
-| `register_model` | Exports ONNX, uploads the bundle, registers in Model Registry                           |
+| `register_model` | Exports ONNX, verifies it against `best.pt`, registers in Model Registry                |
 
 ---
 
@@ -35,32 +36,50 @@ s3://<bucket>/pipeline/runs/<run-id>/
     └── metadata.json                   # imgsz, names, opset, run_id, mAP50
 ```
 
-`serve/` is what the predictor mounts, and holds nothing else: KServe pulls
-the whole prefix, so the weights and metrics stay outside it. `metadata.json`
-carries the class names and `imgsz` the graph does not.
-
-The model registers as `kubeflow-yolo-plate`, version `<run-id>`, with the
-export verified against `best.pt` before it is registered.
+The model registers as `kubeflow-yolo-plate`, version `<run-id>`.
 
 ---
 
 ## Pipeline
 
 ```sh
-pip install kfp
+pip install kfp kfp-kubernetes
 
-cd ~/kubeflow-yolo/kubeflow/pipelines
+cd ~/kubeflow-yolo/kubeflow/pipelines/src
+# compile manifest file: yolo_pipeline.yaml
 python compile.py
-# compiled /home/jovyan/kubeflow-yolo/kubeflow/pipelines/yolo_pipeline.yaml
+# compiled /home/jovyan/kubeflow-yolo/kubeflow/pipelines/src/yolo_pipeline.yaml
 
 python submit.py
 # run 3f9c1a72-...
 # arguments (defaults)
 
-# override hyperparameters
-python submit.py --epochs 10 --lr0 0.005
+# submit without cache
+python submit.py --no-cache
+
+# wait until the unfinished run completed.
+python submit.py --wait
 
 # confirm
 kubectl get workflows -n kubeflow-user-example-com --sort-by=.metadata.creationTimestamp
 kubectl logs -n kubeflow-user-example-com <pod> -c main
+```
+
+---
+
+### Arguments
+
+| Argument       | Default              |
+| -------------- | -------------------- |
+| `epochs`       | `1`                  |
+| `batch`        | `8`                  |
+| `imgsz`        | `640`                |
+| `split_seed`   | `0`                  |
+| `dvc_dir_hash` | `0e94102a...072.dir` |
+
+- example
+
+```sh
+python submit.py --epochs 10 --batch 16
+python submit.py --dvc-dir-hash <hash>      # train against another dataset version
 ```

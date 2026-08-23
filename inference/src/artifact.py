@@ -17,8 +17,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-# onnxruntime rejects ultralytics' default opset 20 with
-# "Opset 20 is under development".
 OPSET = 19
 
 MODEL_FILE = "model.onnx"

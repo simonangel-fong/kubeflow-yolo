@@ -303,8 +303,6 @@ def register_model(
 
     s3 = boto3.client("s3", region_name=region)
 
-    # onnxruntime rejects ultralytics' default opset 20 with
-    # "Opset 20 is under development".
     OPSET = 19
     BOX_CHANNELS = 4
     CONF, IOU = 0.25, 0.45
@@ -360,31 +358,51 @@ def register_model(
 
     def postprocess(output, scale, pads, original_shape, names,
                     conf_threshold=CONF, iou_threshold=IOU):
-        """Raw ONNX output -> detections in the original image's coordinates."""
-        predictions = output[0].T
-        boxes_xywh = predictions[:, :BOX_CHANNELS]
-        class_scores = predictions[:, BOX_CHANNELS:]
+        """
+        Raw ONNX output -> detections in the original image's coordinates.
 
-        confidences = class_scores.max(axis=1)
-        class_ids = class_scores.argmax(axis=1)
+        YOLO11 (1, 4+nc, anchors) needs thresholding and NMS; YOLO26
+        (1, max_det, 6) is [x1,y1,x2,y2,score,class] and NMS-free, but the
+        head emits max_det rows whatever their score, so it still needs the
+        confidence filter.
+        """
+        predictions = output[0]
 
-        mask = confidences >= conf_threshold
-        if not mask.any():
-            return []
+        if predictions.ndim == 2 and predictions.shape[1] == 6:
+            boxes = predictions[:, :BOX_CHANNELS].copy()
+            confidences = predictions[:, 4]
+            class_ids = predictions[:, 5].astype(int)
 
-        sel = boxes_xywh[mask]
-        boxes = np.empty_like(sel)
-        half_w, half_h = sel[:, 2] / 2, sel[:, 3] / 2
-        boxes[:, 0] = sel[:, 0] - half_w
-        boxes[:, 1] = sel[:, 1] - half_h
-        boxes[:, 2] = sel[:, 0] + half_w
-        boxes[:, 3] = sel[:, 1] + half_h
+            mask = confidences >= conf_threshold
+            if not mask.any():
+                return []
+            boxes, confidences = boxes[mask], confidences[mask]
+            class_ids = class_ids[mask]
+        else:
+            predictions = predictions.T
+            boxes_xywh = predictions[:, :BOX_CHANNELS]
+            class_scores = predictions[:, BOX_CHANNELS:]
 
-        confidences, class_ids = confidences[mask], class_ids[mask]
+            confidences = class_scores.max(axis=1)
+            class_ids = class_scores.argmax(axis=1)
 
-        keep = nms(boxes, confidences, iou_threshold)
-        boxes, confidences = boxes[keep], confidences[keep]
-        class_ids = class_ids[keep]
+            mask = confidences >= conf_threshold
+            if not mask.any():
+                return []
+
+            sel = boxes_xywh[mask]
+            boxes = np.empty_like(sel)
+            half_w, half_h = sel[:, 2] / 2, sel[:, 3] / 2
+            boxes[:, 0] = sel[:, 0] - half_w
+            boxes[:, 1] = sel[:, 1] - half_h
+            boxes[:, 2] = sel[:, 0] + half_w
+            boxes[:, 3] = sel[:, 1] + half_h
+
+            confidences, class_ids = confidences[mask], class_ids[mask]
+
+            keep = nms(boxes, confidences, iou_threshold)
+            boxes, confidences = boxes[keep], confidences[keep]
+            class_ids = class_ids[keep]
 
         # undo the letterbox: remove padding, then divide out the resize
         pad_x, pad_y = pads
@@ -491,8 +509,11 @@ def register_model(
                              image.shape[:2], names, CONF, IOU)
 
         # reference path
+        # rect=False: predict() defaults to rectangular inference, padding only
+        # to a stride multiple; the export is locked to a square input.
         expected = reference.predict(str(local), imgsz=imgsz, conf=CONF,
-                                     iou=IOU, device="cpu", verbose=False)[0]
+                                     iou=IOU, device="cpu", verbose=False,
+                                     rect=False)[0]
         exp_boxes = expected.boxes.xyxy.cpu().numpy()
 
         if len(actual) != len(exp_boxes):
