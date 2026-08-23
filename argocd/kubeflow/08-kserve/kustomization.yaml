@@ -1,0 +1,10 @@
+# kubeflow step 8: KServe controller + models web app.
+# Webhook/CRD certs come from cert-manager (argocd/init); the upstream overlay
+# already retargets the inject-ca-from annotations to the kubeflow namespace.
+# Serving routes via knative-serving/knative-local-gateway (step 7).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/kubeflow/community-distribution//applications/kserve/kserve?ref=26.03.1
+  - https://github.com/kubeflow/community-distribution//applications/kserve/models-web-app/overlays/kubeflow?ref=26.03.1

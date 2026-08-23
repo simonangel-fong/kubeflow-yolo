@@ -1,0 +1,60 @@
+# kubeflow step 8: KServe controller + models web app.
+# 17 CRDs, 8 webhooks, 3 cert-manager Certificates issued from a self-signed
+# Issuer in the kubeflow namespace. Requires knative-serving (step 7).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow-08-kserve
+  namespace: argocd
+  labels:
+    scope: kubeflow
+    capability: ml-platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "37"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: argocd/kubeflow/08-kserve
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
+  ignoreDifferences:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kubeflow-kserve-admin
+      jsonPointers:
+        - /rules
+    # cert-manager's ca-injector writes caBundle into the webhook configs
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
+    # ...and into the conversion webhook of the CRDs annotated inject-ca-from
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - .spec.conversion.webhook.clientConfig.caBundle
+        - .status
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+      # 17 CRDs: let them establish before the CRs that use them
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
