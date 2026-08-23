@@ -1,17 +1,17 @@
-# kubeflow step 1: upstream ingress gateway in istio-system.
-# Kubeflow's AuthorizationPolicies/NetworkPolicies hardcode ns/istio-system,
-# sa/istio-ingressgateway-service-account and app=istio-ingressgateway, so the
-# upstream gateway is kept rather than retargeting every policy.
+# kubeflow step 11: project profile (tenant).
+# prune: false — Argo owns the Profile CR, not the user resources (notebooks,
+# InferenceServices, experiments) that the profile controller creates inside
+# the tenant namespace.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubeflow-01-ingressgateway
+  name: kubeflow-tenant
   namespace: argocd
   labels:
     scope: kubeflow
-    capability: network
+    capability: ml-platform
   annotations:
-    argocd.argoproj.io/sync-wave: "30"
+    argocd.argoproj.io/sync-wave: "39"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -19,13 +19,13 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/kubeflow/01-ingressgateway
+    path: argocd/kubeflow/tenant
   destination:
     server: https://kubernetes.default.svc
-    namespace: istio-system
+    namespace: kubeflow
   syncPolicy:
     automated:
-      prune: true
+      prune: false
       selfHeal: true
     syncOptions:
       - CreateNamespace=false

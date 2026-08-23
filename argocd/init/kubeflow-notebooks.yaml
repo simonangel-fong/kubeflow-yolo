@@ -1,16 +1,16 @@
-# kubeflow step 8: KServe controller + models web app.
-# 17 CRDs, 8 webhooks, 3 cert-manager Certificates issued from a self-signed
-# Issuer in the kubeflow namespace. Requires knative-serving (step 7).
+# kubeflow step 6: notebooks v1 (Jupyter, volumes, tensorboards, pvcviewer).
+# pvcviewer's webhook cert comes from a self-signed Issuer via the cert-manager
+# in argocd/init.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubeflow-08-kserve
+  name: kubeflow-notebooks
   namespace: argocd
   labels:
     scope: kubeflow
     capability: ml-platform
   annotations:
-    argocd.argoproj.io/sync-wave: "37"
+    argocd.argoproj.io/sync-wave: "35"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -18,17 +18,23 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/kubeflow/08-kserve
+    path: argocd/kubeflow/notebooks
   destination:
     server: https://kubernetes.default.svc
     namespace: kubeflow
   ignoreDifferences:
     - group: rbac.authorization.k8s.io
       kind: ClusterRole
-      name: kubeflow-kserve-admin
+      name: notebook-controller-kubeflow-notebooks-admin
       jsonPointers:
         - /rules
-    # cert-manager's ca-injector writes caBundle into the webhook configs
+    # apiserver drops preserveUnknownFields in apiextensions/v1
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: notebooks.kubeflow.org
+      jsonPointers:
+        - /spec/preserveUnknownFields
+    # cert-manager's CA injector writes caBundle into the pvcviewer webhooks
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
       jqPathExpressions:
@@ -37,12 +43,6 @@ spec:
       kind: ValidatingWebhookConfiguration
       jqPathExpressions:
         - .webhooks[].clientConfig.caBundle
-    # ...and into the conversion webhook of the CRDs annotated inject-ca-from
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      jqPathExpressions:
-        - .spec.conversion.webhook.clientConfig.caBundle
-        - .status
   syncPolicy:
     automated:
       prune: true
@@ -50,8 +50,6 @@ spec:
     syncOptions:
       - CreateNamespace=false
       - ServerSideApply=true
-      # 17 CRDs: let them establish before the CRs that use them
-      - SkipDryRunOnMissingResource=true
     retry:
       limit: 5
       backoff:

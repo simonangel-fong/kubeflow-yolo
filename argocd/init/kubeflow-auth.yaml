@@ -1,17 +1,16 @@
-# kubeflow step 11: project profile (tenant).
-# prune: false — Argo owns the Profile CR, not the user resources (notebooks,
-# InferenceServices, experiments) that the profile controller creates inside
-# the tenant namespace.
+# kubeflow step 2: oauth2-proxy + dex.
+# Requires meshConfig.extensionProviders[oauth2-proxy] on istiod
+# (see argocd/istio/istiod.yaml) for the ext-authz filter to resolve.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubeflow-11-profile
+  name: kubeflow-auth
   namespace: argocd
   labels:
     scope: kubeflow
-    capability: ml-platform
+    capability: security
   annotations:
-    argocd.argoproj.io/sync-wave: "40"
+    argocd.argoproj.io/sync-wave: "31"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -19,13 +18,13 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/kubeflow/11-profile
+    path: argocd/kubeflow/auth
   destination:
     server: https://kubernetes.default.svc
-    namespace: kubeflow
+    namespace: oauth2-proxy
   syncPolicy:
     automated:
-      prune: false
+      prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=false

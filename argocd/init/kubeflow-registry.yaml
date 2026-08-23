@@ -3,13 +3,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubeflow-09-model-registry
+  name: kubeflow-registry
   namespace: argocd
   labels:
     scope: kubeflow
     capability: ml-platform
   annotations:
-    argocd.argoproj.io/sync-wave: "38"
+    argocd.argoproj.io/sync-wave: "37"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -17,7 +17,7 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/kubeflow/09-model-registry
+    path: argocd/kubeflow/registry
   destination:
     server: https://kubernetes.default.svc
     namespace: kubeflow

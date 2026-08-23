@@ -1,16 +1,17 @@
-# kubeflow step 6: notebooks v1 (Jupyter, volumes, tensorboards, pvcviewer).
-# pvcviewer's webhook cert comes from a self-signed Issuer via the cert-manager
-# in argocd/init.
+# kubeflow step 10: Katib (hyperparameter tuning), multi-user variant.
+# 3 CRDs, 2 webhooks, cert from a self-signed Issuer via the cert-manager in
+# argocd/init. MySQL PVC 10Gi on the default gp3 SC. All resources land in the
+# kubeflow namespace, so prune is safe here.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubeflow-06-notebooks
+  name: kubeflow-katib
   namespace: argocd
   labels:
     scope: kubeflow
     capability: ml-platform
   annotations:
-    argocd.argoproj.io/sync-wave: "35"
+    argocd.argoproj.io/sync-wave: "38"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -18,23 +19,17 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/kubeflow/06-notebooks
+    path: argocd/kubeflow/katib
   destination:
     server: https://kubernetes.default.svc
     namespace: kubeflow
   ignoreDifferences:
     - group: rbac.authorization.k8s.io
       kind: ClusterRole
-      name: notebook-controller-kubeflow-notebooks-admin
+      name: kubeflow-katib-admin
       jsonPointers:
         - /rules
-    # apiserver drops preserveUnknownFields in apiextensions/v1
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      name: notebooks.kubeflow.org
-      jsonPointers:
-        - /spec/preserveUnknownFields
-    # cert-manager's CA injector writes caBundle into the pvcviewer webhooks
+    # cert-manager's ca-injector writes caBundle into the katib webhooks
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
       jqPathExpressions:
@@ -43,6 +38,10 @@ spec:
       kind: ValidatingWebhookConfiguration
       jqPathExpressions:
         - .webhooks[].clientConfig.caBundle
+    - kind: PersistentVolumeClaim
+      jqPathExpressions:
+        - .spec.volumeName
+        - .spec.volumeMode
   syncPolicy:
     automated:
       prune: true

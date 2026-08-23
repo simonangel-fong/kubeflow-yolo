@@ -1,15 +1,16 @@
-# kubeflow step 5: Kubeflow Pipelines (multi-user).
-# 133 resources incl. MySQL + SeaweedFS PVCs (20Gi each) on the default gp3 SC.
+# kubeflow step 8: KServe controller + models web app.
+# 17 CRDs, 8 webhooks, 3 cert-manager Certificates issued from a self-signed
+# Issuer in the kubeflow namespace. Requires knative-serving (step 7).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubeflow-05-pipelines
+  name: kubeflow-serving
   namespace: argocd
   labels:
     scope: kubeflow
     capability: ml-platform
   annotations:
-    argocd.argoproj.io/sync-wave: "34"
+    argocd.argoproj.io/sync-wave: "36"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -17,22 +18,17 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/kubeflow/05-pipelines
+    path: argocd/kubeflow/serving
   destination:
     server: https://kubernetes.default.svc
     namespace: kubeflow
   ignoreDifferences:
     - group: rbac.authorization.k8s.io
       kind: ClusterRole
-      name: kubeflow-pipelines-edit
+      name: kubeflow-kserve-admin
       jsonPointers:
         - /rules
-    - group: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: kubeflow-pipelines-view
-      jsonPointers:
-        - /rules
-    # cert-manager's CA injector writes caBundle into webhook configs
+    # cert-manager's ca-injector writes caBundle into the webhook configs
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
       jqPathExpressions:
@@ -41,11 +37,12 @@ spec:
       kind: ValidatingWebhookConfiguration
       jqPathExpressions:
         - .webhooks[].clientConfig.caBundle
-    # PVCs get volumeName/storage bound by the provisioner
-    - kind: PersistentVolumeClaim
+    # ...and into the conversion webhook of the CRDs annotated inject-ca-from
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
       jqPathExpressions:
-        - .spec.volumeName
-        - .spec.volumeMode
+        - .spec.conversion.webhook.clientConfig.caBundle
+        - .status
   syncPolicy:
     automated:
       prune: true
@@ -53,6 +50,8 @@ spec:
     syncOptions:
       - CreateNamespace=false
       - ServerSideApply=true
+      # 17 CRDs: let them establish before the CRs that use them
+      - SkipDryRunOnMissingResource=true
     retry:
       limit: 5
       backoff:

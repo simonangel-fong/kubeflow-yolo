@@ -1,17 +1,15 @@
-# kubeflow step 10: Katib (hyperparameter tuning), multi-user variant.
-# 3 CRDs, 2 webhooks, cert from a self-signed Issuer via the cert-manager in
-# argocd/init. MySQL PVC 10Gi on the default gp3 SC. All resources land in the
-# kubeflow namespace, so prune is safe here.
+# kubeflow step 5: Kubeflow Pipelines (multi-user).
+# 133 resources incl. MySQL + SeaweedFS PVCs (20Gi each) on the default gp3 SC.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubeflow-10-katib
+  name: kubeflow-pipelines
   namespace: argocd
   labels:
     scope: kubeflow
     capability: ml-platform
   annotations:
-    argocd.argoproj.io/sync-wave: "39"
+    argocd.argoproj.io/sync-wave: "34"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -19,17 +17,22 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/kubeflow/10-katib
+    path: argocd/kubeflow/pipelines
   destination:
     server: https://kubernetes.default.svc
     namespace: kubeflow
   ignoreDifferences:
     - group: rbac.authorization.k8s.io
       kind: ClusterRole
-      name: kubeflow-katib-admin
+      name: kubeflow-pipelines-edit
       jsonPointers:
         - /rules
-    # cert-manager's ca-injector writes caBundle into the katib webhooks
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kubeflow-pipelines-view
+      jsonPointers:
+        - /rules
+    # cert-manager's CA injector writes caBundle into webhook configs
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
       jqPathExpressions:
@@ -38,6 +41,7 @@ spec:
       kind: ValidatingWebhookConfiguration
       jqPathExpressions:
         - .webhooks[].clientConfig.caBundle
+    # PVCs get volumeName/storage bound by the provisioner
     - kind: PersistentVolumeClaim
       jqPathExpressions:
         - .spec.volumeName

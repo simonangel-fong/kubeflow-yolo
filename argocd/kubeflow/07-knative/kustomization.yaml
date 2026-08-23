@@ -1,9 +1,0 @@
-# kubeflow step 7: Knative Serving + cluster-local gateway.
-# KServe prerequisite: its InferenceServices are Knative Services routed via
-# knative-serving/knative-local-gateway.
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-resources:
-  - https://github.com/kubeflow/community-distribution//common/knative/knative-serving/overlays/gateways?ref=26.03.1
-  - https://github.com/kubeflow/community-distribution//common/istio/cluster-local-gateway/base?ref=26.03.1

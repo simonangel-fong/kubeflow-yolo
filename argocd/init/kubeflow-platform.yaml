@@ -1,14 +1,15 @@
-# kubeflow step 7: Knative Serving + cluster-local gateway (KServe prerequisite).
+# Serving infrastructure: upstream ingress gateway (istio-system) +
+# Knative Serving + cluster-local gateway. Prerequisite for everything else.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubeflow-07-knative
+  name: kubeflow-platform
   namespace: argocd
   labels:
     scope: kubeflow
     capability: ml-platform
   annotations:
-    argocd.argoproj.io/sync-wave: "36"
+    argocd.argoproj.io/sync-wave: "30"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -16,7 +17,7 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/kubeflow/07-knative
+    path: argocd/kubeflow/platform
   destination:
     server: https://kubernetes.default.svc
     namespace: knative-serving
