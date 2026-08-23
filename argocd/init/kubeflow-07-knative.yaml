@@ -31,15 +31,26 @@ spec:
       name: knative-serving-aggregated-addressable-resolver
       jsonPointers:
         - /rules
-    # knative's own webhook controller writes caBundle into its webhook configs
+    # Knative's webhook controller rewrites these at runtime: git ships a single
+    # placeholder rule and no caBundle; the controller populates the real rule
+    # set (10 rules), the CA bundle and the reinvocation/failure policies.
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
       jqPathExpressions:
         - .webhooks[].clientConfig.caBundle
+        - .webhooks[].rules
+        - .webhooks[].reinvocationPolicy
+        - .webhooks[].failurePolicy
+        - .webhooks[].namespaceSelector
+        - .webhooks[].objectSelector
     - group: admissionregistration.k8s.io
       kind: ValidatingWebhookConfiguration
       jqPathExpressions:
         - .webhooks[].clientConfig.caBundle
+        - .webhooks[].rules
+        - .webhooks[].failurePolicy
+        - .webhooks[].namespaceSelector
+        - .webhooks[].objectSelector
     # knative operator writes defaults into its configmaps
     - kind: ConfigMap
       namespace: knative-serving
