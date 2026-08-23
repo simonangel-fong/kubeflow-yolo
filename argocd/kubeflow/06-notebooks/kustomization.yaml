@@ -1,0 +1,7 @@
+# kubeflow step 6: notebooks (v1) — Jupyter web app, notebook controller,
+# PVC viewer, volumes web app, tensorboard controller + web app.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/kubeflow/community-distribution//applications/notebooks-v1/overlays/istio?ref=26.03.1
