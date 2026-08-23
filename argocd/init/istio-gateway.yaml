@@ -1,0 +1,36 @@
+# istio ingress gateway resources - Gateway CR + wildcard Certificate.
+# istiod auto-provisions the gateway Deployment/Service from the Gateway CR.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-istio-gateway-resources
+  namespace: argocd
+  labels:
+    scope: platform
+    capability: network
+  annotations:
+    argocd.argoproj.io/sync-wave: "18"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: argocd/istio-gateway
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-ingress
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
