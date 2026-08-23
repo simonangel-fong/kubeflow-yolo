@@ -65,6 +65,8 @@ kubectl get workflows -n kubeflow-user-example-com --sort-by=.metadata.creationT
 kubectl logs -n kubeflow-user-example-com <pod> -c main
 ```
 
+![kf_pipeline01](./img/kf_pipeline01.png)
+
 ---
 
 ### Arguments
