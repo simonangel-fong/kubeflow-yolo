@@ -33,6 +33,13 @@ spec:
       name: poddefaults-webhook-kubeflow-poddefaults-edit
       jsonPointers:
         - /rules
+    # git carries `preserveUnknownFields: false`, which the apiserver drops in
+    # apiextensions/v1, so the field can never round-trip.
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: profiles.kubeflow.org
+      jsonPointers:
+        - /spec/preserveUnknownFields
     # cert-manager's CA injector writes caBundle into the webhook config
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
