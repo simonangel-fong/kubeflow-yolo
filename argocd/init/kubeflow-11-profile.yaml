@@ -1,0 +1,38 @@
+# kubeflow step 11: project profile (tenant).
+# prune: false — Argo owns the Profile CR, not the user resources (notebooks,
+# InferenceServices, experiments) that the profile controller creates inside
+# the tenant namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow-11-profile
+  namespace: argocd
+  labels:
+    scope: kubeflow
+    capability: ml-platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "40"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: argocd/kubeflow/11-profile
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

@@ -1,0 +1,18 @@
+# Project profile (tenant). A Profile creates the namespace, ServiceAccount,
+# RBAC bindings and Istio AuthorizationPolicy scoped to its owner.
+apiVersion: kubeflow.org/v1beta1
+kind: Profile
+metadata:
+  name: kubeflow-yolo
+spec:
+  owner:
+    kind: User
+    name: simonangelfong@gmail.com
+  # Caps the tenant so a runaway job cannot claim every GPU node Karpenter
+  # is willing to provision. Adjust to taste.
+  resourceQuotaSpec:
+    hard:
+      requests.cpu: "32"
+      requests.memory: 128Gi
+      requests.nvidia.com/gpu: "2"
+      persistentvolumeclaims: "20"
