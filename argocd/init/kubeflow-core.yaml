@@ -1,4 +1,7 @@
-# kubeflow step 3: namespace, cluster roles, kubeflow-gateway + auth policies.
+# Kubeflow essential layer: auth (oauth2-proxy + dex), namespaces/roles,
+# kubeflow-gateway, and the central dashboard. Everything needed for a
+# working UI; the feature components (pipelines, notebooks, serving,
+# registry, katib) sync after this.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +11,7 @@ metadata:
     scope: kubeflow
     capability: ml-platform
   annotations:
-    argocd.argoproj.io/sync-wave: "32"
+    argocd.argoproj.io/sync-wave: "31"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -21,8 +24,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kubeflow
   ignoreDifferences:
-    # These four declare an aggregationRule with empty rules; the RBAC
-    # controller populates .rules, so git can never match the live object.
+    # Aggregated ClusterRoles: git declares an aggregationRule with empty
+    # rules; the RBAC controller populates .rules, so git never matches.
     - group: rbac.authorization.k8s.io
       kind: ClusterRole
       name: kubeflow-admin
@@ -43,6 +46,21 @@ spec:
       name: kubeflow-istio-admin
       jsonPointers:
         - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: poddefaults-webhook-kubeflow-poddefaults-admin
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: poddefaults-webhook-kubeflow-poddefaults-edit
+      jsonPointers:
+        - /rules
+    # cert-manager's CA injector writes caBundle into the poddefaults webhook
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
   syncPolicy:
     automated:
       prune: true
