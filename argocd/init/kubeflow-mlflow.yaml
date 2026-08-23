@@ -1,4 +1,8 @@
-# MLflow tracking server (Postgres + S3 artifacts). Tracking only.
+# MLflow tracking server (community-charts). Tracking only: the Kubeflow
+# Model Registry stays authoritative for models.
+# Postgres creds come from the ESO-delivered mlflow-postgres secret via
+# backendStore.existingDatabaseSecret; S3 uses Pod Identity on the SA, so no
+# credentials are committed.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -13,10 +17,46 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
-    targetRevision: master
-    path: argocd/kubeflow/mlflow
+  sources:
+    - repoURL: https://community-charts.github.io/helm-charts
+      chart: mlflow
+      targetRevision: 1.11.5
+      helm:
+        releaseName: mlflow
+        values: |
+          serviceAccount:
+            create: true
+            name: mlflow
+          backendStore:
+            databaseMigration: true
+            databaseConnectionCheck: true
+            postgres:
+              enabled: true
+              host: mlflow-postgres.kubeflow.svc.cluster.local
+              port: 5432
+              database: mlflow
+              driver: psycopg2
+            existingDatabaseSecret:
+              name: mlflow-postgres
+              usernameKey: username
+              passwordKey: password
+          artifactRoot:
+            s3:
+              enabled: true
+              bucket: kubeflow-yolo-dev-099139718958
+              path: mlflow
+          extraEnvVars:
+            AWS_DEFAULT_REGION: ca-central-1
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+    # Postgres StatefulSet + VirtualService + NetworkPolicies
+    - repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+      targetRevision: master
+      path: argocd/kubeflow/mlflow
   destination:
     server: https://kubernetes.default.svc
     namespace: kubeflow
