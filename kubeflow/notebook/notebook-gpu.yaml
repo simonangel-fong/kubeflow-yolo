@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: yolo-gpu-workspace
+  name: notebook-gpu-pvc
   namespace: kubeflow-user-example-com
 spec:
   accessModes:
@@ -15,10 +15,11 @@ spec:
 apiVersion: kubeflow.org/v1
 kind: Notebook
 metadata:
-  name: yolo-gpu
+  name: notebook-gpu
   namespace: kubeflow-user-example-com
   labels:
-    app: yolo-gpu
+    app: notebook-gpu
+    kfp-api-token: "true"
 spec:
   template:
     spec:
@@ -61,16 +62,14 @@ spec:
           volumeMounts:
             - name: workspace
               mountPath: /home/jovyan
-            # Dataloader workers share memory through /dev/shm, which defaults
-            # to 64Mi in a container and is the usual cause of a silent
-            # "DataLoader worker killed" during training.
+            # Dataloader workers share memory through /dev/shm.
             - name: dshm
               mountPath: /dev/shm
 
       volumes:
         - name: workspace
           persistentVolumeClaim:
-            claimName: yolo-gpu-workspace
+            claimName: notebook-gpu-pvc
         - name: dshm
           emptyDir:
             medium: Memory

@@ -1,8 +1,3 @@
-# Mounts a ServiceAccount token the notebook can present to the Kubeflow
-# Pipelines API. Without it kfp.Client() has no credentials: the notebook's
-# default token has the wrong audience, and the request is rejected.
-#
-# Applies to any pod in the namespace labelled `kfp-api-token: "true"`.
 apiVersion: kubeflow.org/v1alpha1
 kind: PodDefault
 metadata:
@@ -23,8 +18,6 @@ spec:
           - serviceAccountToken:
               path: token
               expirationSeconds: 7200
-              # The API validates this audience; a default token carries the
-              # cluster audience instead and is refused.
               audience: pipelines.kubeflow.org
   volumeMounts:
     - name: volume-kf-pipeline-token
