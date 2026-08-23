@@ -52,6 +52,26 @@ spec:
                 memory: 1Gi
         meshConfig:
           accessLogFile: /dev/stdout
+          # oauth2-proxy external authz for kubeflow. Upstream ships this as a
+          # patch to the istio ConfigMap; that patch is excluded here because
+          # istiod is installed from this chart, so define the provider inline.
+          extensionProviders:
+            - name: oauth2-proxy
+              envoyExtAuthzHttp:
+                service: oauth2-proxy.oauth2-proxy.svc.cluster.local
+                port: 80
+                headersToDownstreamOnDeny:
+                  - content-type
+                  - set-cookie
+                headersToUpstreamOnAllow:
+                  - authorization
+                  - path
+                  - x-auth-request-email
+                  - x-auth-request-groups
+                  - x-auth-request-user
+                includeRequestHeadersInCheck:
+                  - authorization
+                  - cookie
           defaultConfig:
             holdApplicationUntilProxyStarts: true
   destination:

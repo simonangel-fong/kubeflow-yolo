@@ -22,6 +22,20 @@ resources:
   - https://github.com/kubeflow/community-distribution//common/user-namespace/base?ref=26.03.1
 
 patches:
+  # kubeflow-gateway selects `istio: ingressgateway`, the label the legacy
+  # ingressgateway Deployment carried. This cluster runs a Gateway API gateway
+  # (argocd/istio-gateway), whose pods are labelled by gateway-name instead,
+  # so repoint the selector at the pods that actually exist.
+  - patch: |-
+      - op: replace
+        path: /spec/selector
+        value:
+          gateway.networking.k8s.io/gateway-name: istio-ingress
+    target:
+      group: networking.istio.io
+      kind: Gateway
+      name: kubeflow-gateway
+      namespace: kubeflow
   # The m2m-dex-and-eks overlay ships a placeholder issuer; substitute this
   # cluster's OIDC issuer (aws eks describe-cluster ... identity.oidc.issuer).
   - patch: |-
