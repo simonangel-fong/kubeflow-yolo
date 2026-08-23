@@ -68,3 +68,11 @@ kubectl patch applications.argoproj.io 00-app-of-apps -n argocd --type merge -p 
 - kf kserve
 - user ns
 - frontend
+
+---
+
+```sh
+kubectl -n istio-ingress port-forward svc/istio-ingress-istio 8080:80
+
+
+```
