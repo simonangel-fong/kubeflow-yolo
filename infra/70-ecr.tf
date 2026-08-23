@@ -60,6 +60,10 @@ resource "aws_ecr_repository" "app" {
   #   encryption_type = "KMS"
   #   kms_key         = aws_kms_key.yolo.arn
   # }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_ecr_lifecycle_policy" "app" {
