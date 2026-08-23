@@ -1,21 +1,20 @@
-# Kubeflow: KServe
+# Kubeflow: Deployment
 
 [Back](../README.md)
 
-- [Kubeflow: KServe](#kubeflow-kserve)
-  - [Serving](#serving)
+- [Kubeflow: Deployment](#kubeflow-deployment)
+  - [KServe](#kserve)
     - [Endpoints](#endpoints)
-  - [Image](#image)
     - [Build and test locally](#build-and-test-locally)
     - [Push to ECR](#push-to-ecr)
-  - [Deploy](#deploy)
-  - [Predict](#predict)
-  - [Update the model](#update-the-model)
-  - [Troubleshooting](#troubleshooting)
+    - [Deploy KServe](#deploy-kserve)
+  - [Frontend](#frontend)
+    - [Build app image and push](#build-app-image-and-push)
+    - [Deploy app](#deploy-app)
 
 ---
 
-## Serving
+## KServe
 
 ```txt
 s3://<bucket>/pipeline/runs/<run-id>/serve/  ->  storage-initializer  ->  /mnt/models  ->  predictor
@@ -33,8 +32,6 @@ s3://<bucket>/pipeline/runs/<run-id>/serve/  ->  storage-initializer  ->  /mnt/m
 
 ---
 
-## Image
-
 ### Build and test locally
 
 `./models` bind-mounts onto `/mnt/models`, the same layout the
@@ -48,6 +45,8 @@ curl localhost:8081/v1/models/kubeflow-yolo-plate
 # http://localhost:3000     UI
 ```
 
+- local test
+
 ![local_smoke_test](./img/local_smoke_test.png)
 
 ---
@@ -55,13 +54,19 @@ curl localhost:8081/v1/models/kubeflow-yolo-plate
 ### Push to ECR
 
 ```sh
-terraform -chdir=infra output -raw ecr_kserve_repository_url
-# 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-kserve
+terraform -chdir=infra output
+# ecr_repository_urls = {
+#   "frontend" = "099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend"
+#   "kserve" = "099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-kserve"
+# }
 
+# login
 aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin 099139718958.dkr.ecr.ca-central-1.amazonaws.com
 
+# build
 docker build -f inference/Dockerfile -t kubeflow-yolo-kserve:v0.1.0-cpu .
 docker tag kubeflow-yolo-kserve:v0.1.0-cpu 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-kserve:v0.1.0-cpu
+# push
 docker push 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-kserve:v0.1.0-cpu
 
 # confirm
@@ -70,83 +75,94 @@ aws ecr list-images --repository-name kubeflow-yolo-kserve --region ca-central-1
 
 ---
 
-## Deploy
+### Deploy KServe
+
+- Pick a version in registered model
+
+![kf_register_model02](./img/kf_register_model02.png)
 
 ```sh
-# list all run
-aws s3 ls s3://kubeflow-yolo-dev-099139718958/pipeline/runs/
-# PRE 30b11c6a-2cd0-47df-ac32-5c2eeecb8eb4/
-# PRE e5ce38bd-9e24-4b98-af7f-6957d79f1449/
-# PRE ef97a3f4-5b5c-4a38-bcf2-ca247accfba2/
-# 2026-08-22 23:16:18          0 
-
-# enable ecr access
+# enable kserve ecr access
 kubectl patch cm config-deployment -n knative-serving --type merge \
   -p '{"data":{"registries-skipping-tag-resolving":"kind.local,ko.local,dev.local,099139718958.dkr.ecr.ca-central-1.amazonaws.com"}}'
 
 kubectl rollout restart deploy/controller -n knative-serving
+# deployment.apps/controller restarted
 
-kubectl delete inferenceservice kubeflow-yolo-plate -n kubeflow-user-example-com
+# kubectl delete inferenceservice kubeflow-yolo-plate -n kubeflow-user-example-com
 kubectl apply -f kubeflow/kserve/inferenceservice.yaml
 # inferenceservice.serving.kserve.io/kubeflow-yolo-plate created
 
 kubectl get inferenceservice kubeflow-yolo-plate -n kubeflow-user-example-com
 # NAME                  URL                                                                        READY   PREV   LATEST   PREVROLLEDOUTREVISION   LATESTREADYREVISION                   AGE
 # kubeflow-yolo-plate   http://example.com/serving/kubeflow-user-example-com/kubeflow-yolo-plate   True           100                              kubeflow-yolo-plate-predictor-00001   37s
-```
 
----
+# confirm
+kubectl get svc -n kubeflow-user-example-com
+# NAME                                          TYPE           CLUSTER-IP       EXTERNAL-IP                                            PORT(S)                                     AGE
+# kubeflow-yolo-plate                           ExternalName   <none>           knative-local-gateway.istio-system.svc.cluster.local   <none>                                      27m
+# kubeflow-yolo-plate-predictor                 ExternalName   <none>           knative-local-gateway.istio-system.svc.cluster.local   80/TCP                                      27m
+# kubeflow-yolo-plate-predictor-00001           ClusterIP      172.20.230.208   <none>                                                 80/TCP,443/TCP                              27m
 
-## Predict
+# test svc
+kubectl port-forward -n kubeflow-user-example-com   deploy/kubeflow-yolo-plate-predictor-00001-deployment 8082:8080
 
-```sh
-kubectl port-forward -n kubeflow-user-example-com svc/kubeflow-yolo-plate-predictor 8082:80
-
+# test model load
 curl localhost:8082/v1/models/kubeflow-yolo-plate
 # {"name":"kubeflow-yolo-plate","ready":true,"imgsz":640,"classes":["car_plate"]}
-
-python -c "import base64,json,sys; print(json.dumps({'instances':[{'image':{'b64':base64.b64encode(open(sys.argv[1],'rb').read()).decode()},'conf':0.25}]}))" data/sample.jpg > /tmp/payload.json
-
-curl -s -X POST localhost:8082/v1/models/kubeflow-yolo-plate:predict   -H 'Content-Type: application/json' -d @/tmp/payload.json | python -m json.tool
-# {"predictions":[{"detections":[{"class_name":"car_plate","confidence":0.91,...}],"count":1}]}
 ```
 
-Through the gateway instead:
+- KServe endpoint
+
+![kf_kserve_endpoint](./img/kf_kserve_endpoint.png)
+
+---
+
+## Frontend
+
+### Build app image and push
 
 ```sh
-kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80
-curl -H "Host: kubeflow-yolo-plate.kubeflow-user-example-com.example.com"   localhost:8080/v1/models/kubeflow-yolo-plate
+terraform -chdir=infra output
+# ecr_repository_urls = {
+#   "frontend" = "099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend"
+#   "kserve" = "099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-kserve"
+# }
+
+# build
+docker build -f frontend/Dockerfile -t 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v0.1.2 .
+# push
+docker push 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v0.1.2
+# restart
+kubectl rollout restart deploy/kubeflow-yolo-ui -n kubeflow-user-example-com
+# deployment.apps/kubeflow-yolo-ui restarted
+
+# confirm
+aws ecr list-images --repository-name kubeflow-yolo-frontend --region ca-central-1
 ```
 
 ---
 
-## Update the model
-
-Only `STORAGE_URI` changes. Knative keeps the old revision serving until the new
-one passes readiness.
+### Deploy app
 
 ```sh
-kubectl set env -n kubeflow-user-example-com inferenceservice/kubeflow-yolo-plate   STORAGE_URI=s3://kubeflow-yolo-dev-099139718958/pipeline/runs/<new-run-id>/serve
+# deploy frontend
+kubectl apply -f frontend/k8s/deployment.yaml
+# deployment.apps/kubeflow-yolo-ui created
+# service/kubeflow-yolo-ui created
 
-kubectl get revisions -n kubeflow-user-example-com
+# confirm
+kubectl get po -n kubeflow-user-example-com -l app=kubeflow-yolo-ui
+# NAME                               READY   STATUS    RESTARTS   AGE
+# kubeflow-yolo-ui-b6f64d8f5-457cb   2/2     Running   0          2m2s
+
+kubectl get service/kubeflow-yolo-ui -n kubeflow-user-example-comom
+# NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+# kubeflow-yolo-ui   ClusterIP   172.20.60.224   <none>        80/TCP    41s
+
+# test
+kubectl port-forward -n kubeflow-user-example-com svc/kubeflow-yolo-ui 3000:80
+# http://localhost:3000
 ```
 
-A new image is a `kubectl set image` on the same isvc, after pushing the tag.
-
----
-
-## Troubleshooting
-
-```sh
-# an S3 failure shows here first
-kubectl logs -n kubeflow-user-example-com   -l serving.kserve.io/inferenceservice=kubeflow-yolo-plate -c storage-initializer
-```
-
-| Symptom                                    | Cause                                                          |
-| ------------------------------------------ | -------------------------------------------------------------- |
-| `ImagePullBackOff`                         | node role lacks ECR pull, or the tag was never pushed          |
-| init `NoCredentialsError` / `AccessDenied` | Pod Identity association missing, or the isvc names another SA |
-| init hangs, then fails on egress           | Istio sidecar started after the init container                 |
-| 503 `no .onnx under /mnt/models`           | `STORAGE_URI` points at the run prefix, not its `serve/` child |
-| 503 but `/healthz` is 200                  | ONNX load failed; the readiness body carries the exception     |
-| detections labelled `"0"`                  | `metadata.json` did not come down beside `model.onnx`          |
+![](./img/kf_app_deploy01.png)

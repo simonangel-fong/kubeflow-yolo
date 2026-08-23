@@ -24,7 +24,12 @@ server {
     location /v1/ {
         proxy_pass http://${PREDICTOR_UPSTREAM};
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
+
+        # The upstream's own hostname, not $host. Istio routes on Host, and the
+        # browser's "localhost:3000" matches no service -- the sidecar then
+        # sends it via PassthroughCluster with no mTLS identity, and the
+        # predictor answers "RBAC: access denied".
+        proxy_set_header Host ${PREDICTOR_UPSTREAM};
         proxy_set_header X-Real-IP $remote_addr;
 
         # A cold CPU inference on a large image takes a few hundred ms; the

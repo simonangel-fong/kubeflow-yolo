@@ -50,11 +50,10 @@ cd ~/kubeflow-yolo/kubeflow/pipelines/src
 python compile.py
 # compiled /home/jovyan/kubeflow-yolo/kubeflow/pipelines/src/yolo_pipeline.yaml
 
-python submit.py
-# Experiment details: /pipeline/#/experiments/details/3bd4ed4b-9171-4669-a333-3d4825bd3cbf
-# Run details: /pipeline/#/runs/details/30b11c6a-2cd0-47df-ac32-5c2eeecb8eb4
-# run 30b11c6a-2cd0-47df-ac32-5c2eeecb8eb4
-# arguments (defaults)
+python submit.py --epochs 50 --batch 16
+# Run details: /pipeline/#/runs/details/1647e571-4cb8-414b-8340-24a72d4b82dc
+# run 1647e571-4cb8-414b-8340-24a72d4b82dc
+# arguments {'epochs': 50, 'batch': 16}
 
 # submit without cache
 python submit.py --no-cache
@@ -77,7 +76,7 @@ kubectl logs -n kubeflow-user-example-com <pod> -c main
 
 - register
 
-![kf_register_model](./img/kf_register_model.png)
+![kf_register_model01](./img/kf_register_model01.png)
 
 ---
 

@@ -48,3 +48,21 @@ kubectl patch applications.argoproj.io 00-app-of-apps -n argocd --type merge -p 
 ```
 
 ---
+
+## Components
+
+- karpenter
+- storageclass
+- cert-manager
+- istio-ambient
+- albc
+- eso
+- e-dns
+- dashboard
+- notebook
+- mlflow
+- kf hub
+- kf pipeline
+- kf kserve
+- user ns
+- frontend

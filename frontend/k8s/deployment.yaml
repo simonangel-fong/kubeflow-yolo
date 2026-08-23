@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeflow-yolo-ui
+  namespace: kubeflow-user-example-com
+  labels:
+    app: kubeflow-yolo-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubeflow-yolo-ui
+  template:
+    metadata:
+      labels:
+        app: kubeflow-yolo-ui
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: default-editor
+
+      containers:
+        - name: nginx
+          image: 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v0.1.2
+          imagePullPolicy: IfNotPresent
+
+          env:
+            - name: PREDICTOR_UPSTREAM
+              value: kubeflow-yolo-plate-predictor-00001-private.kubeflow-user-example-com.svc.cluster.local:80
+
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+
+          readinessProbe:
+            httpGet:
+              path: /index.html
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /index.html
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+
+          # Read-only root, so every path nginx writes needs an emptyDir:
+          # the proxy cache, /run/nginx.pid, and conf.d where the entrypoint
+          # renders default.conf.template.
+          volumeMounts:
+            - name: cache
+              mountPath: /var/cache/nginx
+            - name: run
+              mountPath: /run
+            - name: conf
+              mountPath: /etc/nginx/conf.d
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        # emptyDir volumes are root-owned without this; uid 101 could not write.
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+
+      volumes:
+        - name: cache
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+        - name: conf
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubeflow-yolo-ui
+  namespace: kubeflow-user-example-com
+  labels:
+    app: kubeflow-yolo-ui
+spec:
+  type: ClusterIP
+  selector:
+    app: kubeflow-yolo-ui
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP

@@ -42,10 +42,12 @@
 # }
 
 # ##############################
-# ECR: KServe image
+# ECR: application images
 # ##############################
-resource "aws_ecr_repository" "kserve" {
-  name = "${local.project_name}-kserve"
+resource "aws_ecr_repository" "app" {
+  for_each = toset(local.ecr_repositories)
+
+  name = "${local.project_name}-${each.key}"
 
   # allow terraform destroy
   force_delete = true
@@ -60,8 +62,10 @@ resource "aws_ecr_repository" "kserve" {
   # }
 }
 
-resource "aws_ecr_lifecycle_policy" "kserve" {
-  repository = aws_ecr_repository.kserve.name
+resource "aws_ecr_lifecycle_policy" "app" {
+  for_each = aws_ecr_repository.app
+
+  repository = each.value.name
 
   policy = jsonencode({
     rules = [

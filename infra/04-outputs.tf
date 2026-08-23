@@ -65,9 +65,9 @@ output "s3_bucket_arn" {
 # ##############################
 # ECR
 # ##############################
-output "ecr_kserve_repository_url" {
-  description = "Registry URL for the KServe predictor image"
-  value       = aws_ecr_repository.kserve.repository_url
+output "ecr_repository_urls" {
+  description = "Registry URL per application image repository"
+  value       = { for k, r in aws_ecr_repository.app : k => r.repository_url }
 }
 
 # ##############################

@@ -62,6 +62,11 @@ locals {
   ]
 
   # ##############################
+  # ECR
+  # ##############################
+  ecr_repositories = ["kserve", "frontend"]
+
+  # ##############################
   # Kubeflow
   # ##############################
   kubeflow_profile_namespace       = "kubeflow-user-example-com"
