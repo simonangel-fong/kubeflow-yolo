@@ -1,5 +1,4 @@
-# kubeflow step 5: Kubeflow Pipelines (multi-user).
-# 133 resources incl. MySQL + SeaweedFS PVCs (20Gi each) on the default gp3 SC.
+# Kubeflow Pipelines (multi-user). MySQL + SeaweedFS PVCs on gp3.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -41,7 +40,7 @@ spec:
       kind: ValidatingWebhookConfiguration
       jqPathExpressions:
         - .webhooks[].clientConfig.caBundle
-    # PVCs get volumeName/storage bound by the provisioner
+    # bound by the provisioner
     - kind: PersistentVolumeClaim
       jqPathExpressions:
         - .spec.volumeName

@@ -1,7 +1,4 @@
-# kubeflow step 10: Katib (hyperparameter tuning), multi-user variant.
-# 3 CRDs, 2 webhooks, cert from a self-signed Issuer via the cert-manager in
-# argocd/init. MySQL PVC 10Gi on the default gp3 SC. All resources land in the
-# kubeflow namespace, so prune is safe here.
+# Katib hyperparameter tuning (multi-user).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -29,7 +26,7 @@ spec:
       name: kubeflow-katib-admin
       jsonPointers:
         - /rules
-    # cert-manager's ca-injector writes caBundle into the katib webhooks
+    # cert-manager injects caBundle
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
       jqPathExpressions:

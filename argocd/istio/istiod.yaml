@@ -21,7 +21,7 @@ spec:
       releaseName: istiod
       values: |
         pilot:
-          # required with istio-cni: stop injecting the privileged istio-init
+          # with istio-cni: stop injecting privileged istio-init
           cni:
             enabled: true
           nodeSelector:
@@ -39,8 +39,7 @@ spec:
           autoscaleMax: 5
         global:
           proxy:
-            # injected containers must set this for namespaces enforcing
-            # PodSecurity "restricted" (kubeflow)
+            # required by PodSecurity "restricted"
             seccompProfile:
               type: RuntimeDefault
             resources:

@@ -1,7 +1,4 @@
-# kubeflow step 11: project profile (tenant).
-# prune: false — Argo owns the Profile CR, not the user resources (notebooks,
-# InferenceServices, experiments) that the profile controller creates inside
-# the tenant namespace.
+# Project tenant: Profile + LimitRange.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

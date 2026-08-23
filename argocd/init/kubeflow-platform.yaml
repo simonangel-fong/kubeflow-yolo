@@ -1,5 +1,4 @@
-# Serving infrastructure: upstream ingress gateway (istio-system) +
-# Knative Serving + cluster-local gateway. Prerequisite for everything else.
+# Serving infra: ingressgateway, Knative, cluster-local gateway.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -32,9 +31,7 @@ spec:
       name: knative-serving-aggregated-addressable-resolver
       jsonPointers:
         - /rules
-    # Knative's webhook controller rewrites these at runtime: git ships a single
-    # placeholder rule and no caBundle; the controller populates the real rule
-    # set (10 rules), the CA bundle and the reinvocation/failure policies.
+    # Knative's webhook controller rewrites rules/caBundle/policies at runtime
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
       jqPathExpressions:

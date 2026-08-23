@@ -1,5 +1,4 @@
-# strategic merge patch applied to the deployment istiod auto-provisions
-# for the istio-ingress Gateway; referenced via spec.infrastructure.parametersRef
+# Patches the deployment istiod auto-provisions for the istio-ingress Gateway.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,9 +10,7 @@ data:
       template:
         metadata:
           labels:
-            # kubeflow-gateway (networking.istio.io) selects istio=ingressgateway;
-            # Gateway API pods don't carry it by default, so the kubeflow
-            # VirtualServices would bind to a gateway with no workload.
+            # kubeflow-gateway selects istio=ingressgateway
             istio: ingressgateway
         spec:
           nodeSelector:

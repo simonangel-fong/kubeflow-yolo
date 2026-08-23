@@ -1,0 +1,9 @@
+# MLflow tracking server. Postgres backend, S3 artifacts via Pod Identity.
+# Tracking only: Kubeflow Model Registry stays authoritative for models.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - postgres.yaml
+  - server.yaml
+  - routing.yaml

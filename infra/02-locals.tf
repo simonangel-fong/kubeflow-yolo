@@ -59,6 +59,7 @@ locals {
     "dvcstore/", # raw data
     "pipeline/processed/",
     "pipeline/runs/",
+    "mlflow/", # mlflow tracking artifacts
   ]
 
   # ##############################
@@ -119,5 +120,12 @@ locals {
   # ##############################
   albc_namespace       = "kube-system"
   albc_service_account = "aws-load-balancer-controller"
+
+  # ##############################
+  # MLflow
+  # ##############################
+  mlflow_namespace       = "kubeflow"
+  mlflow_service_account = "mlflow"
+  mlflow_s3_prefix       = "mlflow/"
 
 }

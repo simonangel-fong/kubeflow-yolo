@@ -1,10 +1,6 @@
-# Serving infrastructure Kubeflow depends on:
-#   - the upstream ingress gateway in istio-system. Every Kubeflow
-#     AuthorizationPolicy/NetworkPolicy/Gateway hardcodes ns/istio-system,
-#     sa/istio-ingressgateway-service-account and app=istio-ingressgateway,
-#     so the upstream gateway is kept rather than retargeting every policy.
-#   - Knative Serving + cluster-local gateway, required by KServe.
-# istiod, istio-cni and cert-manager come from argocd/init, NOT from here.
+# Serving infra: upstream ingressgateway (Kubeflow policies hardcode
+# ns/istio-system + sa/istio-ingressgateway-service-account), Knative, and the
+# cluster-local gateway KServe needs. istiod/cert-manager come from argocd/init.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

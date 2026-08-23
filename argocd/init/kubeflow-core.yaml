@@ -1,7 +1,4 @@
-# Kubeflow essential layer: auth (oauth2-proxy + dex), namespaces/roles,
-# kubeflow-gateway, and the central dashboard. Everything needed for a
-# working UI; the feature components (pipelines, notebooks, serving,
-# registry, katib) sync after this.
+# Kubeflow essentials: auth, namespaces/roles, gateway, dashboard.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -24,8 +21,7 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kubeflow
   ignoreDifferences:
-    # Aggregated ClusterRoles: git declares an aggregationRule with empty
-    # rules; the RBAC controller populates .rules, so git never matches.
+    # aggregationRule: controller populates .rules
     - group: rbac.authorization.k8s.io
       kind: ClusterRole
       name: kubeflow-admin

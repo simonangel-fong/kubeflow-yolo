@@ -1,6 +1,4 @@
-# kubeflow step 6: notebooks v1 (Jupyter, volumes, tensorboards, pvcviewer).
-# pvcviewer's webhook cert comes from a self-signed Issuer via the cert-manager
-# in argocd/init.
+# Notebooks v1: jupyter, volumes, tensorboards, pvcviewer.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -28,7 +26,7 @@ spec:
       name: notebook-controller-kubeflow-notebooks-admin
       jsonPointers:
         - /rules
-    # apiserver drops preserveUnknownFields in apiextensions/v1
+    # apiserver drops preserveUnknownFields in v1
     - group: apiextensions.k8s.io
       kind: CustomResourceDefinition
       name: notebooks.kubeflow.org

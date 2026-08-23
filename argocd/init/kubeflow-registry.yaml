@@ -1,5 +1,4 @@
-# kubeflow step 9: model registry (per-user namespace) + model catalog (cluster-wide).
-# Both Postgres-backed; PVCs land on the default gp3 StorageClass.
+# Model registry (tenant) + model catalog (cluster-wide).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

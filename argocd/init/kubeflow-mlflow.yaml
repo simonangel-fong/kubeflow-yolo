@@ -1,14 +1,14 @@
-# istio: parent app for argocd/istio children.
+# MLflow tracking server (Postgres + S3 artifacts). Tracking only.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform-istio
+  name: kubeflow-mlflow
   namespace: argocd
   labels:
-    scope: platform
-    capability: network
+    scope: kubeflow
+    capability: ml-platform
   annotations:
-    argocd.argoproj.io/sync-wave: "16"
+    argocd.argoproj.io/sync-wave: "40"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -16,20 +16,23 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/istio
-    directory:
-      recurse: true
-      include: "*.yaml"
+    path: argocd/kubeflow/mlflow
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: kubeflow
+  ignoreDifferences:
+    # bound by the provisioner
+    - kind: PersistentVolumeClaim
+      jqPathExpressions:
+        - .spec.volumeName
+        - .spec.volumeMode
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
+      - CreateNamespace=false
       - ServerSideApply=true
-      - ApplyOutOfSyncOnly=true
     retry:
       limit: 5
       backoff:

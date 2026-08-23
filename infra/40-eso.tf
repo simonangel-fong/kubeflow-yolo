@@ -21,6 +21,7 @@ data "aws_iam_policy_document" "eso_read" {
     ]
     resources = [
       aws_secretsmanager_secret.eso_cloudflare.arn,
+      aws_secretsmanager_secret.mlflow_postgres.arn,
     ]
   }
 }

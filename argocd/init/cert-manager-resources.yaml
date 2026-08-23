@@ -1,4 +1,4 @@
-# cert-manager resources - ClusterIssuers, synced after cert-manager CRDs exist
+# cert-manager ClusterIssuers.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

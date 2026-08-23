@@ -1,4 +1,4 @@
-# eso resources - ClusterSecretStore + ExternalSecrets, after ESO CRDs exist
+# ESO: ClusterSecretStore + ExternalSecrets.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

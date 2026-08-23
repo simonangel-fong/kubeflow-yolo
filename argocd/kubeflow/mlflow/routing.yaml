@@ -1,0 +1,82 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mlflow
+  namespace: kubeflow
+spec:
+  gateways:
+    - kubeflow/kubeflow-gateway
+  hosts:
+    - "*"
+  http:
+    - match:
+        - uri:
+            prefix: /mlflow/
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: mlflow.kubeflow.svc.cluster.local
+            port:
+              number: 5000
+---
+# Only the ingress gateway may reach mlflow; same shape as the other
+# kubeflow NetworkPolicies.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mlflow
+  namespace: kubeflow
+spec:
+  podSelector:
+    matchLabels:
+      app: mlflow
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values:
+                  - istio-system
+        - podSelector: {}
+---
+# Training jobs in tenant namespaces log to mlflow, so they need egress in.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mlflow-from-tenants
+  namespace: kubeflow
+spec:
+  podSelector:
+    matchLabels:
+      app: mlflow
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values:
+                  - kubeflow-yolo
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mlflow-postgres
+  namespace: kubeflow
+spec:
+  podSelector:
+    matchLabels:
+      app: mlflow-postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: mlflow

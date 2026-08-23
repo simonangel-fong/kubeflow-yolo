@@ -1,4 +1,4 @@
-# aws load balancer controller - provisions ALB/NLB for Ingress and Service type=LoadBalancer
+# AWS Load Balancer Controller.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

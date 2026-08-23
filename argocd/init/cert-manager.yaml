@@ -1,4 +1,4 @@
-# cert-manager installation
+# cert-manager.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

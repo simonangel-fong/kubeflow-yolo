@@ -1,9 +1,5 @@
-# kubeflow step 9: model registry (per-tenant, Postgres-backed) and model
-# catalog (cluster-wide singleton in the kubeflow namespace).
-#
-# The upstream model-registry overlay hardcodes namespace:
-# kubeflow-user-example-com (the demo profile). It is retargeted below at the
-# project tenant created in step 11. model-catalog stays in kubeflow.
+# Model registry (per-tenant) + model catalog (cluster-wide singleton).
+# registry.yaml is vendored: the upstream overlay hardcodes the demo namespace.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

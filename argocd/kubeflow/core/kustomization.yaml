@@ -1,29 +1,18 @@
-# Kubeflow essential layer: everything required for a working UI.
-#   - oauth2-proxy + dex (the ext-authz filter calls oauth2-proxy over mTLS,
-#     so both namespaces must be in the mesh; upstream does not label them)
-#   - kubeflow/kubeflow-system namespaces, cluster roles
-#   - kubeflow-gateway + auth policies every component binds to
-#   - central dashboard, profile controller, poddefaults webhook
-# The demo profile (common/user-namespace, user@example.com) is deliberately
-# NOT included; the project tenant is argocd/kubeflow/tenant.
+# Kubeflow essentials: auth, namespaces/roles, gateway, dashboard.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  # auth
   - https://github.com/kubeflow/community-distribution//common/oauth2-proxy/overlays/m2m-dex-and-eks?ref=26.03.1
   - https://github.com/kubeflow/community-distribution//common/dex/overlays/oauth2-proxy?ref=26.03.1
-  # namespaces, roles, istio resources
   - https://github.com/kubeflow/community-distribution//common/kubeflow-namespace/base?ref=26.03.1
   - https://github.com/kubeflow/community-distribution//common/kubeflow-roles/base?ref=26.03.1
   - https://github.com/kubeflow/community-distribution//common/istio/kubeflow-istio-resources/base?ref=26.03.1
-  # dashboard
   - https://github.com/kubeflow/community-distribution//applications/dashboard/overlays/istio?ref=26.03.1
 
 patches:
-  # Replace the demo account (user@example.com, whose password is the
-  # well-known "12341234") with the project owner. The password still comes
-  # from DEX_USER_PASSWORD in the dex-passwords secret; no hash is committed.
+  # Demo account user@example.com -> project owner; password still from
+  # DEX_USER_PASSWORD, no hash committed.
   - patch: |-
       apiVersion: v1
       kind: ConfigMap

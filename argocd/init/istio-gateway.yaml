@@ -1,5 +1,4 @@
-# istio ingress gateway resources - Gateway CR + wildcard Certificate.
-# istiod auto-provisions the gateway Deployment/Service from the Gateway CR.
+# Gateway API Gateway + wildcard Certificate; istiod auto-provisions the pod.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

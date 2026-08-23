@@ -1,4 +1,4 @@
-# kubernetes gateway api crds - required before any Gateway CR; not bundled with istio
+# Gateway API CRDs (not bundled with istio).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
