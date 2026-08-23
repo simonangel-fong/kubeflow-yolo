@@ -7,11 +7,11 @@ metadata:
     scope: platform
     capability: security
   annotations:
-    argocd.argoproj.io/sync-wave: "30"
+    argocd.argoproj.io/sync-wave: "12"
   finalizers:
-    - argocd.argoproj.io/resources-finalizer
+    - resources-finalizer.argocd.argoproj.io
 spec:
-  project: platform
+  project: default
   source:
     repoURL: https://charts.external-secrets.io
     chart: external-secrets
@@ -20,6 +20,9 @@ spec:
       releaseName: external-secrets
       values: |
         installCRDs: true
+        serviceAccount:
+          create: true
+          name: external-secrets
         replicaCount: 2
         nodeSelector:
           workload-class: platform

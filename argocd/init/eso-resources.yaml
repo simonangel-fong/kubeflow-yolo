@@ -1,3 +1,4 @@
+# eso resources - ClusterSecretStore + ExternalSecrets, after ESO CRDs exist
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -7,15 +8,15 @@ metadata:
     scope: platform
     capability: security
   annotations:
-    argocd.argoproj.io/sync-wave: "31"
+    argocd.argoproj.io/sync-wave: "13"
   finalizers:
-    - argocd.argoproj.io/resources-finalizer
+    - resources-finalizer.argocd.argoproj.io
 spec:
-  project: platform
+  project: default
   source:
-    repoURL: https://github.com/simonangel-fong/eks-multi-tenant-cluster
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/platform-capabilities/security/eso-resources
+    path: argocd/eso-resources
   destination:
     server: https://kubernetes.default.svc
     namespace: external-secrets
@@ -25,3 +26,10 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

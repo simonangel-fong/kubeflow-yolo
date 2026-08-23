@@ -15,6 +15,8 @@ terraform -chdir=infra apply -auto-approve
 terraform -chdir=infra refresh
 terraform -chdir=infra output
 
+terraform -chdir=infra import 
+
 terraform -chdir=infra destroy -auto-approve
 ```
 
