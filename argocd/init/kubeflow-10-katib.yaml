@@ -1,0 +1,57 @@
+# kubeflow step 10: Katib (hyperparameter tuning), multi-user variant.
+# 3 CRDs, 2 webhooks, cert from a self-signed Issuer via the cert-manager in
+# argocd/init. MySQL PVC 10Gi on the default gp3 SC. All resources land in the
+# kubeflow namespace, so prune is safe here.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow-10-katib
+  namespace: argocd
+  labels:
+    scope: kubeflow
+    capability: ml-platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "39"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: argocd/kubeflow/10-katib
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow
+  ignoreDifferences:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kubeflow-katib-admin
+      jsonPointers:
+        - /rules
+    # cert-manager's ca-injector writes caBundle into the katib webhooks
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
+    - kind: PersistentVolumeClaim
+      jqPathExpressions:
+        - .spec.volumeName
+        - .spec.volumeMode
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

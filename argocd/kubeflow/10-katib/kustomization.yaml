@@ -1,0 +1,7 @@
+# kubeflow step 10: Katib (hyperparameter tuning), multi-user variant.
+# Webhook certs come from the cert-manager in argocd/init.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/kubeflow/community-distribution//applications/katib/upstream/installs/katib-with-kubeflow?ref=26.03.1
