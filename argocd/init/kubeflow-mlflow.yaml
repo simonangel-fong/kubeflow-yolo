@@ -27,6 +27,13 @@ spec:
           serviceAccount:
             create: true
             name: mlflow
+          # the kubeflow namespace enforces PodSecurity "restricted"; the chart
+          # sets everything except seccompProfile
+          podSecurityContext:
+            fsGroup: 1001
+            fsGroupChangePolicy: OnRootMismatch
+            seccompProfile:
+              type: RuntimeDefault
           backendStore:
             databaseMigration: true
             databaseConnectionCheck: true
