@@ -1,0 +1,48 @@
+# istio cni - programs pod iptables from a privileged DaemonSet so injected
+# workloads no longer need the NET_ADMIN/NET_RAW istio-init container.
+# Required for namespaces enforcing PodSecurity "restricted" (e.g. kubeflow).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-istio-cni
+  namespace: argocd
+  labels:
+    scope: platform
+    capability: network
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: cni
+    targetRevision: 1.30.3
+    helm:
+      releaseName: istio-cni
+      values: |
+        profile: default
+        cni:
+          # EKS AL2023 nodes use the standard CNI paths
+          cniBinDir: /opt/cni/bin
+          cniConfDir: /etc/cni/net.d
+          # run on every node, including tainted ones
+          tolerations:
+            - operator: Exists
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
