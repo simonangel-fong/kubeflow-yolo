@@ -14,6 +14,7 @@ import onnxruntime as ort
 
 from src.inference import postprocess, preprocess
 
+# logger
 logger = logging.getLogger("yolo-predictor.model")
 
 # YOLO11 head emits (batch, 4 + num_classes, anchors); the 4 are box channels.
@@ -47,8 +48,6 @@ def load_metadata(onnx_path: Path) -> tuple[int, list[str]]:
     """
     sidecar = onnx_path.with_suffix(".metadata.json")
     if not sidecar.exists():
-        # MLflow renames the model to model.onnx but logs the sidecar under its
-        # original stem, so the two no longer line up. Only one is ever logged.
         siblings = sorted(onnx_path.parent.glob("*.metadata.json"))
         if siblings:
             sidecar = siblings[0]

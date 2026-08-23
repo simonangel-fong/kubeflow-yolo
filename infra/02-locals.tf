@@ -38,7 +38,7 @@ locals {
   # EKS
   # ##############################
   eks_version            = "1.36"
-  eks_node_instance_type = "m5a.large"
+  eks_node_instance_type = "t3.large" # "m5a.large"
   eks_node_count_desired = 2
   eks_node_count_min     = 1
   eks_node_count_max     = 3

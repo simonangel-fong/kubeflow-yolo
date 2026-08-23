@@ -1,13 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform-storage-classes
+  name: platform-karpenter-nodes
   namespace: argocd
   labels:
     scope: platform
-    capability: storage
+    capability: compute
   annotations:
-    argocd.argoproj.io/sync-wave: "20"
+    argocd.argoproj.io/sync-wave: "11"
   finalizers:
     - argocd.argoproj.io/resources-finalizer
 spec:
@@ -15,7 +15,9 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/storage/storage-classes
+    path: argocd/karpenter
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
@@ -24,9 +26,5 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      # StorageClass.parameters is immutable, so both patch and replace fail
-      # once the class exists. Force makes ArgoCD delete and recreate it.
-      # Bound PVCs and their data are unaffected: the class is only read when
-      # a volume is provisioned, not while a PV is in use.
-      - Replace=true
-      - Force=true
+      - ServerSideApply=true
+      - CreateNamespace=true

@@ -1,13 +1,7 @@
 """
-Submit the pipeline to KFP.
-
+Submit the pipeline to KFP:
     python compile.py && python submit.py
     python submit.py --epochs 50 --batch 16     # override hyperparameters
-
-`kfp.Client()` takes no arguments: inside the cluster it reads the token from
-KF_PIPELINES_SA_TOKEN_PATH and defaults to the in-cluster ml-pipeline-ui
-service. That needs the kfp-api-token PodDefault applied and the caller pod
-labelled `kfp-api-token: "true"` -- see kubeflow/notebook/.
 """
 
 from __future__ import annotations
@@ -59,15 +53,10 @@ def main(argv: list[str] | None = None) -> int:
     }
     arguments = {k: v for k, v in overrides.items() if v is not None}
 
-    # Submitting the package directly runs it but never creates a Pipeline
-    # object, so the Pipelines page stays empty. Upload it instead, and add a
-    # version on every later submit, so each run links back to what it ran.
     version_name = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 
-    # client.get_pipeline_id() lists without a namespace, so in multi-user mode
-    # it never sees a pipeline in a profile namespace and reports None -- which
-    # sends this down the create path and the upload 409s.
-    existing = client.list_pipelines(namespace=NAMESPACE, page_size=100).pipelines or []
+    existing = client.list_pipelines(
+        namespace=NAMESPACE, page_size=100).pipelines or []
     pipeline_id = next(
         (p.pipeline_id for p in existing if p.display_name == PIPELINE), None
     )
@@ -94,15 +83,15 @@ def main(argv: list[str] | None = None) -> int:
         version_id = version.pipeline_version_id
         print("added version", version_name, "to", PIPELINE)
 
-    experiment = client.create_experiment(name=args.experiment, namespace=NAMESPACE)
+    experiment = client.create_experiment(
+        name=args.experiment, namespace=NAMESPACE)
     run = client.run_pipeline(
         experiment_id=experiment.experiment_id,
-        job_name="yolo-" + ("-".join(str(v) for v in arguments.values()) or "default"),
+        job_name="yolo-" + ("-".join(str(v)
+                            for v in arguments.values()) or "default"),
         pipeline_id=pipeline_id,
         version_id=version_id,
         params=arguments,
-        # KFP caches on inputs, not on whether the outputs still exist, so a
-        # step whose S3 output was deleted is still skipped as a cache hit
         enable_caching=not args.no_cache,
     )
 

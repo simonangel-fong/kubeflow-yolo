@@ -7,7 +7,6 @@ metadata:
     scope: platform
     capability: compute
   annotations:
-    # after karpenter-nodes (11), so the gpu NodePool exists first
     argocd.argoproj.io/sync-wave: "12"
   finalizers:
     - argocd.argoproj.io/resources-finalizer
@@ -19,9 +18,8 @@ spec:
     targetRevision: 0.20.0
     helm:
       releaseName: nvidia-device-plugin
+      # nvidia plugin installed only in gpu node
       values: |
-        # Advertises nvidia.com/gpu on GPU nodes. Without it a pod requesting
-        # a GPU stays Pending forever, since no node reports the resource.
         nodeSelector:
           workload-class: gpu
 

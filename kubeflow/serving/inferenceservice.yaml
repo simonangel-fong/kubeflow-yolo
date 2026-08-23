@@ -12,7 +12,7 @@
 #
 # Point storageUri at the run you want to serve, then:
 #
-#   kubectl apply -f inferenceservice.yaml
+#   kubectl apply -f kubeflow/serving/inferenceservice.yaml
 #   kubectl get inferenceservice -n kubeflow-user-example-com -w
 ---
 apiVersion: serving.kserve.io/v1beta1
@@ -35,7 +35,7 @@ spec:
       modelFormat:
         name: triton
       protocolVersion: v2
-      storageUri: s3://kubeflow-yolo-dev-099139718958/pipeline/models/6b486017-6b1b-4802-9224-2ca733cad001/model
+      storageUri: s3://kubeflow-yolo-dev-099139718958/pipeline/models/9f90157d-cfeb-4bf9-b44e-c310baae093b/model
 
       resources:
         requests:

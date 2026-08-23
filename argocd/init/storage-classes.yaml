@@ -1,13 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform-karpenter-nodes
+  name: platform-storage-classes
   namespace: argocd
   labels:
     scope: platform
-    capability: compute
+    capability: storage
   annotations:
-    argocd.argoproj.io/sync-wave: "11"
+    argocd.argoproj.io/sync-wave: "20"
   finalizers:
     - argocd.argoproj.io/resources-finalizer
 spec:
@@ -15,9 +15,7 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo
     targetRevision: master
-    path: argocd/compute/karpenter-nodes
-    directory:
-      recurse: true
+    path: argocd/storage/storage-classes
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
@@ -26,5 +24,5 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      - ServerSideApply=true
-      - CreateNamespace=true
+      - Replace=true
+      - Force=true

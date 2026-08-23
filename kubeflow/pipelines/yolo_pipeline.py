@@ -1,28 +1,20 @@
 """
-KFP pipeline for the YOLO license-plate model.
-
+KFP pipeline:
     prepare_data -> train -> evaluate -> register_model
 
-Each step reads and writes S3 directly with boto3 and passes S3 URIs as
-strings, so no data travels through the KFP artifact store. Credentials come
-from EKS Pod Identity on default-editor (infra/60-s3-iam.tf); nothing is
-mounted and nothing is read from the environment.
-
-Steps are lightweight components: the function body ships as source and pip
-installs its own dependencies at runtime, so the edit loop is a recompile with
-no image build.
-
-Compile with compile.py; developed and first proven in
-jupyter-notebook/notebooks/05-kf-pipeline.ipynb.
+Pipeline compiled with compile.py
 """
 
 from kfp import dsl
 from kfp.dsl import Metrics, Output
 
-# tolerations and nodeSelector are not in core kfp
+# allow k8s in with kfp
 from kfp import kubernetes
 
 
+# ##############################
+# Pipeline step: prepare_data
+# ##############################
 @dsl.component(base_image="python:3.12", packages_to_install=["boto3", "pyyaml"])
 def prepare_data(
     bucket: str,
@@ -42,11 +34,10 @@ def prepare_data(
 
     s3 = boto3.client("s3", region_name=region)
 
+    # get dvc data
     def dvc_key(md5: str) -> str:
-        # DVC shards its content-addressed store by the first two hex chars
         return "dvcstore/files/md5/" + md5[:2] + "/" + md5[2:]
 
-    # the .dir object lists {"md5": ..., "relpath": ...} for every file
     manifest = json.loads(
         s3.get_object(Bucket=bucket, Key=dvc_key(dvc_dir_hash))["Body"].read()
     )
@@ -58,7 +49,7 @@ def prepare_data(
               if Path(r).suffix.lower() in suffixes}
 
     stems = sorted(images)
-    # seeded, so two runs split the same way and their metrics compare
+    # random seeded
     random.Random(split_seed).shuffle(stems)
     cut = int(len(stems) * (1 - val_fraction))
 
@@ -92,7 +83,8 @@ def prepare_data(
         list(pool.map(copy, jobs))
 
     class_names = (
-        s3.get_object(Bucket=bucket, Key=dvc_key(by_relpath["classes.txt"]))["Body"]
+        s3.get_object(Bucket=bucket, Key=dvc_key(
+            by_relpath["classes.txt"]))["Body"]
         .read().decode().split()
     )
     # `path` is filled in by the training step, which knows its local download dir
@@ -115,11 +107,12 @@ def prepare_data(
     return uri
 
 
+# ##############################
+# Pipeline step: train
+# ##############################
 @dsl.component(
     base_image="python:3.12",
-    # headless opencv needs no libgl1, which a plain python image lacks;
-    # numpy<2 keeps the torch/numpy ABI bridge intact
-    packages_to_install=["ultralytics", "opencv-python-headless", "numpy<2", "boto3", "pyyaml"],
+    packages_to_install=["ultralytics-opencv-headless", "boto3", "pyyaml"],
 )
 def train(
     processed_uri: str,
@@ -133,28 +126,12 @@ def train(
     device: str,
 ) -> str:
     import os
-    import subprocess
-    import sys
     from pathlib import Path
 
     import boto3
     import yaml
 
-    # ultralytics depends on GUI opencv and installs it over the headless build,
-    # and libGL.so.1 is absent from a plain python image. Put headless back
-    # before the first `import cv2`, which `import ultralytics` triggers.
-    subprocess.run(
-        [sys.executable, "-m", "pip", "uninstall", "-y", "-q",
-         "opencv-python", "opencv-contrib-python"],
-        check=False,
-    )
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-q", "--force-reinstall",
-         "opencv-python-headless", "numpy<2"],
-        check=True,
-    )
-
-    # the restricted PSS namespace runs an arbitrary UID with no writable HOME
+    # env var
     os.environ["YOLO_CONFIG_DIR"] = "/tmp/ultralytics"
     os.environ["MPLCONFIGDIR"] = "/tmp/matplotlib"
 
@@ -163,35 +140,33 @@ def train(
     bucket, _, data_prefix = processed_uri.removeprefix("s3://").partition("/")
     s3 = boto3.client("s3", region_name=region)
 
-    # pull the split down: ultralytics reads from a local directory
+    # pull the split down to a local directory
     root = Path("/tmp/data")
     pages = s3.get_paginator("list_objects_v2")
     for page in pages.paginate(Bucket=bucket, Prefix=data_prefix + "/"):
         for obj in page.get("Contents", []):
             relative = obj["Key"][len(data_prefix) + 1:]
-            # a key ending in "/" is a directory marker, and an empty relative
-            # path is the prefix object itself; restoring either as a file
-            # would shadow the directory the rest of the split needs
             if not relative or relative.endswith("/"):
                 continue
             target = root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             s3.download_file(bucket, obj["Key"], str(target))
 
-    # `path` must be absolute and is only known now, after the download
+    # configure data config file
     data_yaml = root / "data.yaml"
     cfg = yaml.safe_load(data_yaml.read_text())
     cfg["path"] = str(root)
     data_yaml.write_text(yaml.safe_dump(cfg, sort_keys=False))
 
+    # ##############################
+    # train
+    # ##############################
     results = YOLO(weights).train(
         data=str(data_yaml),
         epochs=epochs,
         batch=batch,
         imgsz=imgsz,
         device=device,
-        # dataloader workers share memory through /dev/shm, which is 64Mi in a
-        # container; more workers than that supports kills them silently
         workers=4 if device != "cpu" else 2,
         project="/tmp/runs",
         name="train",
@@ -199,19 +174,23 @@ def train(
         plots=False,
     )
 
+    # output
     best = Path(results.save_dir) / "weights" / "best.pt"
-    # run-scoped, so concurrent runs cannot overwrite each other
     key = prefix.rstrip("/") + "/" + run_id + "/best.pt"
     s3.upload_file(str(best), bucket, key)
 
     uri = "s3://" + bucket + "/" + key
     print("uploaded", uri)
+
     return uri
 
 
+# ##############################
+# Pipeline step: evaluate
+# ##############################
 @dsl.component(
     base_image="python:3.12",
-    packages_to_install=["ultralytics", "opencv-python-headless", "numpy<2", "boto3", "pyyaml"],
+    packages_to_install=["ultralytics-opencv-headless", "boto3", "pyyaml"],
 )
 def evaluate(
     model_uri: str,
@@ -221,25 +200,10 @@ def evaluate(
     metrics: Output[Metrics],
 ) -> float:
     import os
-    import subprocess
-    import sys
     from pathlib import Path
 
     import boto3
     import yaml
-
-    # ultralytics installs GUI opencv over the headless build, and libGL.so.1
-    # is absent from a plain python image; put headless back before importing
-    subprocess.run(
-        [sys.executable, "-m", "pip", "uninstall", "-y", "-q",
-         "opencv-python", "opencv-contrib-python"],
-        check=False,
-    )
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-q", "--force-reinstall",
-         "opencv-python-headless", "numpy<2"],
-        check=True,
-    )
 
     os.environ["YOLO_CONFIG_DIR"] = "/tmp/ultralytics"
     os.environ["MPLCONFIGDIR"] = "/tmp/matplotlib"
@@ -255,9 +219,6 @@ def evaluate(
     for page in pages.paginate(Bucket=bucket, Prefix=prefix + "/"):
         for obj in page.get("Contents", []):
             relative = obj["Key"][len(prefix) + 1:]
-            # a key ending in "/" is a directory marker, and an empty relative
-            # path is the prefix object itself; restoring either as a file
-            # would shadow the directory the rest of the split needs
             if not relative or relative.endswith("/"):
                 continue
             target = root / relative
@@ -274,6 +235,9 @@ def evaluate(
     best = Path("/tmp/best.pt")
     s3.download_file(model_bucket, model_key, str(best))
 
+    # ##############################
+    # evaluate
+    # ##############################
     result = YOLO(str(best)).val(
         data=str(data_yaml),
         imgsz=imgsz,
@@ -298,10 +262,13 @@ def evaluate(
     return values["mAP50"]
 
 
+# ##############################
+# Pipeline step: register_model
+# ##############################
 @dsl.component(
     base_image="python:3.12",
-    packages_to_install=["ultralytics", "opencv-python-headless", "numpy<2",
-                         "onnx", "onnxslim", "onnxruntime", "boto3", "model-registry"],
+    packages_to_install=["ultralytics-opencv-headless", "onnx", "onnxslim",
+                         "boto3", "model-registry"],
 )
 def register_model(
     model_uri: str,
@@ -315,25 +282,10 @@ def register_model(
 ) -> str:
     import json
     import os
-    import subprocess
-    import sys
     import tarfile
     from pathlib import Path
 
     import boto3
-
-    # ultralytics installs GUI opencv over the headless build, and libGL.so.1
-    # is absent from a plain python image; put headless back before importing
-    subprocess.run(
-        [sys.executable, "-m", "pip", "uninstall", "-y", "-q",
-         "opencv-python", "opencv-contrib-python"],
-        check=False,
-    )
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-q", "--force-reinstall",
-         "opencv-python-headless", "numpy<2"],
-        check=True,
-    )
 
     os.environ["YOLO_CONFIG_DIR"] = "/tmp/ultralytics"
     os.environ["MPLCONFIGDIR"] = "/tmp/matplotlib"
@@ -347,22 +299,19 @@ def register_model(
     best = Path("/tmp/best.pt")
     s3.download_file(src_bucket, src_key, str(best))
 
-    # Triton 2.34 bundles an onnxruntime that supports ai.onnx up to opset 19;
-    # ultralytics defaults to 20, which fails to load with "Opset 20 is under
-    # development". Pin it rather than tracking the runtime's default.
+    # Triton 23.05 ships onnxruntime 1.15, which implements opset 19.
     onnx = Path(YOLO(str(best)).export(format="onnx", imgsz=imgsz, opset=19))
 
     metrics = Path("/tmp/metrics.json")
-    metrics.write_text(json.dumps({"mAP50": map50, "run_id": run_id}, indent=2))
+    metrics.write_text(json.dumps(
+        {"mAP50": map50, "run_id": run_id}, indent=2))
 
     # 2. upload
     base = prefix.rstrip("/") + "/" + run_id
 
-    # KServe hands storageUri to Triton as a model repository, whose required
-    # layout is <repo>/<model-name>/config.pbtxt and <repo>/<model-name>/1/model.onnx
-    # (triton-inference-server/server docs/user_guide/model_repository.md).
     repo = base + "/model"
-    s3.upload_file(str(onnx), bucket, repo + "/" + model_name + "/1/model.onnx")
+    s3.upload_file(str(onnx), bucket, repo + "/" +
+                   model_name + "/1/model.onnx")
 
     # describe the graph from the graph itself rather than hardcoding shapes
     import onnx as onnx_mod
@@ -435,6 +384,9 @@ def register_model(
     return storage_uri
 
 
+# ##############################
+# Create pipeline
+# ##############################
 @dsl.pipeline
 def yolo_pipeline(
     bucket: str = "kubeflow-yolo-dev-099139718958",
@@ -451,6 +403,7 @@ def yolo_pipeline(
     weights: str = "yolo11n.pt",
     min_map50: float = 0.5,
 ):
+    # prepare_data step
     prepare = prepare_data(
         bucket=bucket,
         dvc_dir_hash=dvc_dir_hash,
@@ -460,6 +413,7 @@ def yolo_pipeline(
         split_seed=split_seed,
     )
 
+    # train
     trained = (
         train(
             processed_uri=prepare.output,
@@ -473,30 +427,22 @@ def yolo_pipeline(
             # ultralytics device index, not a boolean
             device="0",
         )
-        # sized to fit a g5.xlarge (4 vCPU / 16Gi), the only instance the gpu
-        # NodePool provisions, leaving headroom for kubelet and daemonsets
         .set_cpu_request("2")
         .set_cpu_limit("3")
         .set_memory_request("8Gi")
         .set_memory_limit("12Gi")
         .set_accelerator_type("nvidia.com/gpu")
         .set_accelerator_limit(1)
-        # Karpenter must provision a g5.xlarge first, so the pod is Pending for
-        # a few minutes; a retry also covers consolidation mid-run
         .set_retry(num_retries=2)
     )
 
-    # the gpu NodePool taints its nodes, so without a matching toleration
-    # Karpenter will not place the pod
+    # train model with gpu node
     kubernetes.add_node_selector(trained, "workload-class", "gpu")
     kubernetes.add_toleration(
         trained, key="workload-class", operator="Equal", value="gpu",
         effect="NoSchedule",
     )
 
-    # Dataloader workers pass tensors through shared memory, and /dev/shm is
-    # 64Mi in a container -- too small for `workers`, which surfaces as
-    # "unable to allocate shared memory" or a silently killed worker.
     kubernetes.empty_dir_mount(
         trained,
         volume_name="dshm",
@@ -505,6 +451,7 @@ def yolo_pipeline(
         size_limit="2Gi",
     )
 
+    # evaluate
     scored = evaluate(
         model_uri=trained.output,
         processed_uri=prepare.output,
@@ -512,9 +459,7 @@ def yolo_pipeline(
         imgsz=imgsz,
     ).set_memory_limit("4Gi")
 
-    # gate: only register a model that clears the threshold. Commented out
-    # while the pipeline is being proven -- current mAP50 is far below it.
-    # with dsl.If(scored.outputs["Output"] >= min_map50):
+    # register model
     register_model(
         model_uri=trained.output,
         map50=scored.outputs["Output"],

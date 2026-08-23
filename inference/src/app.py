@@ -17,19 +17,21 @@ from src.config import CONF_THRESHOLD, IOU_THRESHOLD, MODEL_DIR, MODEL_NAME
 from src.model import Detector
 from src.schema import DecodeError, PredictRequest, decode_image
 
+# logging
 logging.basicConfig(level=logging.INFO)
 
-# One session, loaded at startup. onnxruntime sessions are thread-safe for
-# inference, so every request shares it.
+# construct detector per onnxruntime session
 detector = Detector()
 
 
+# lifespan
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     detector.load(MODEL_DIR)
     yield
 
 
+# construct fastapi
 app = FastAPI(title="YOLO car-plate predictor", lifespan=lifespan)
 
 
@@ -43,13 +45,13 @@ def require_model(name: str) -> None:
 
 @app.get("/healthz")
 def healthz() -> dict[str, str]:
-    """Liveness. Answers even when the model failed to load."""
+    """Liveness."""
     return {"status": "ok"}
 
 
 @app.get("/v1/models/{name}")
 def model_ready(name: str) -> dict[str, Any]:
-    """Readiness. 503 carrying the load error until the model is up."""
+    """Readiness. 200 when model is up; otherwise, 503."""
     require_model(name)
     return {
         "name": name,

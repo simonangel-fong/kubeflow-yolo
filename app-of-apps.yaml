@@ -11,16 +11,10 @@ spec:
   source:
     repoURL: https://github.com/simonangel-fong/kubeflow-yolo.git
     targetRevision: master
-    path: argocd
+    path: argocd/init
     directory:
       recurse: true
-      include: "*.yaml" # Ignore README/docs dropped alongside the manifests.
-      # The child Applications own what lives in these directories. Without the
-      # exclude, recursion applies those manifests here too, so the root and its
-      # children both own the same objects — and the root then fails outright on
-      # immutable fields like StorageClass.parameters.
-      # NOTE: include matches filenames only; directory scoping needs exclude.
-      exclude: "{compute/karpenter-nodes/*,storage/storage-classes/*}"
+      include: "*.yaml"
 
   destination:
     server: https://kubernetes.default.svc
@@ -28,7 +22,7 @@ spec:
 
   syncPolicy:
     automated:
-      prune: true # Remove child Applications deleted from git.
+      prune: true # Remove child Applications
       selfHeal: true
     syncOptions:
       - CreateNamespace=true

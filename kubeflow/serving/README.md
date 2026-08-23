@@ -2,15 +2,16 @@
 
 Serves the model the pipeline registered, using KServe.
 
-`modelFormat: onnx` auto-selects `kserve-tritonserver` — the only runtime in
-this cluster registered for onnx (`kubectl get clusterservingruntimes`).
+`modelFormat: triton` with `protocolVersion: v2` selects `kserve-tritonserver`
+(`kubectl get clusterservingruntimes`). `onnx` selects a runtime that expects a
+bare model file, not the repository layout below.
 
 ## Deploy
 
 Point `storageUri` at the run you want, then apply:
 
 ```sh
-kubectl apply -f inferenceservice.yaml
+kubectl apply -f kubeflow/serving/inferenceservice.yaml 
 kubectl get inferenceservice -n kubeflow-user-example-com -w
 ```
 
@@ -47,6 +48,11 @@ Run it from inside the cluster; the predictor is a ClusterIP service.
   the GPU placement commented out if you want it.
 - **`RawDeployment`.** Avoids Knative scale-to-zero, which would release the
   node and pay the provisioning wait again on the next request.
+- **Opset is pinned to 19.** Triton 23.05 ships onnxruntime 1.15 (see
+  `TRITON_VERSION_MAP` in the server's `build.py`), which implements opset 19.
+  Ultralytics defaults to 20, which onnxruntime refuses with "Opset 20 is under
+  development". See `export_and_register` in
+  `kubeflow/pipelines/yolo_pipeline.py`.
 - **Batch is fixed at 1.** `max_batch_size: 0` in `config.pbtxt`, because the
   export pins the batch dimension. Serving many requests at once means
   re-exporting with `dynamic=True`.
