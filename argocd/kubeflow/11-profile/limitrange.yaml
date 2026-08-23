@@ -1,0 +1,18 @@
+# A ResourceQuota that caps requests.cpu/requests.memory forces EVERY pod in
+# the namespace to declare those requests. Upstream Kubeflow manifests (model
+# registry, notebooks) omit them, so without defaults the quota rejects them
+# with "must specify requests.cpu".
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: kf-default-requests
+  namespace: kubeflow-yolo
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 256Mi
+      default:
+        cpu: "2"
+        memory: 4Gi
