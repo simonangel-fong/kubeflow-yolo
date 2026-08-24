@@ -70,3 +70,18 @@ patches:
       kind: RequestAuthentication
       name: m2m-token-issuer
       namespace: istio-system
+  # # Port-forward access is plain HTTP, so a Secure cookie is never stored by the
+  # # browser. Without the session cookie oauth2-proxy sets no Authorization
+  # # header, and the require-jwt DENY policy rejects the request.
+  # - patch: |-
+  #     apiVersion: v1
+  #     kind: ConfigMap
+  #     metadata:
+  #       name: oauth2-proxy-parameters
+  #       namespace: oauth2-proxy
+  #     data:
+  #       FORCE_HTTPS: "false"
+  #   target:
+  #     version: v1
+  #     kind: ConfigMap
+  #     name: oauth2-proxy-parameters
