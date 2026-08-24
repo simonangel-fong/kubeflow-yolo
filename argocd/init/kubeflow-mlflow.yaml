@@ -93,6 +93,16 @@ spec:
       jqPathExpressions:
         - .spec.volumeName
         - .spec.volumeMode
+    # apiserver defaults apiVersion/kind into volumeClaimTemplates, which git
+    # omits; the field is immutable so this can never converge otherwise
+    - group: apps
+      kind: StatefulSet
+      name: mlflow-postgres
+      jqPathExpressions:
+        - .spec.volumeClaimTemplates[].apiVersion
+        - .spec.volumeClaimTemplates[].kind
+        - .spec.volumeClaimTemplates[].status
+        - .spec.volumeClaimTemplates[].metadata.creationTimestamp
   syncPolicy:
     automated:
       prune: true
