@@ -70,7 +70,7 @@ locals {
   # ##############################
   # Kubeflow
   # ##############################
-  kubeflow_profile_namespace       = "kubeflow-user-example-com"
+  kubeflow_profile_namespace       = "kubeflow-yolo"
   kubeflow_profile_service_account = "default-editor"
 
   # ##############################

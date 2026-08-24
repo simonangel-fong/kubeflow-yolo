@@ -3,7 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: notebook-gpu-pvc
-  namespace: kubeflow-user-example-com
+  namespace: kubeflow-yolo
 spec:
   accessModes:
     - ReadWriteOnce
@@ -16,7 +16,7 @@ apiVersion: kubeflow.org/v1
 kind: Notebook
 metadata:
   name: notebook-gpu
-  namespace: kubeflow-user-example-com
+  namespace: kubeflow-yolo
   labels:
     app: notebook-gpu
     kfp-api-token: "true"
