@@ -68,3 +68,8 @@ resource "aws_secretsmanager_secret_version" "cloudflare" {
 #   secret_id     = aws_secretsmanager_secret.eso_slack_webhook.id
 #   secret_string = jsonencode({ url = var.slack_webhook_url })
 # }
+
+import {
+  to       = aws_secretsmanager_secret.eso_cloudflare
+  identity = { "arn" = "arn:aws:secretsmanager:ca-central-1:099139718958:secret:kubeflow-yolo-dev/cloudflare-api-token-mwMDpZ" }
+}

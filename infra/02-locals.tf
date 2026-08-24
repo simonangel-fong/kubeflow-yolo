@@ -65,7 +65,7 @@ locals {
   # ##############################
   # ECR
   # ##############################
-  ecr_repositories = ["kserve", "frontend"]
+  ecr_repositories = ["kserve", "frontend", "train"]
 
   # ##############################
   # Kubeflow

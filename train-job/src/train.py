@@ -70,7 +70,41 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--project", default=None)
     parser.add_argument("--name", default=None)
 
+    # Tunables. These are the parameters a Katib experiment searches over; they
+    # are passed straight through to ultralytics' model.train().
+    parser.add_argument("--lr0", type=float, default=None,
+                        help="initial learning rate")
+    parser.add_argument("--lrf", type=float, default=None,
+                        help="final LR as a fraction of lr0")
+    parser.add_argument("--momentum", type=float, default=None)
+    parser.add_argument("--weight-decay", dest="weight_decay", type=float,
+                        default=None)
+    parser.add_argument("--warmup-epochs", dest="warmup_epochs", type=float,
+                        default=None)
+    parser.add_argument("--box", type=float, default=None,
+                        help="box loss gain; dominates for a single-class detector")
+    parser.add_argument("--cls", type=float, default=None,
+                        help="class loss gain; matters little with one class")
+    parser.add_argument("--dfl", type=float, default=None)
+    # augmentation
+    parser.add_argument("--scale", type=float, default=None,
+                        help="random resize gain; plate size varies with distance")
+    parser.add_argument("--mosaic", type=float, default=None)
+    parser.add_argument("--degrees", type=float, default=None,
+                        help="rotation; plates are near-horizontal so keep small")
+    parser.add_argument("--fliplr", type=float, default=None)
+    parser.add_argument("--hsv-v", dest="hsv_v", type=float, default=None,
+                        help="brightness jitter; day/night capture")
+
     return parser.parse_args(argv)
+
+
+# Passed through to model.train() when set on the command line.
+TUNABLE = (
+    "lr0", "lrf", "momentum", "weight_decay", "warmup_epochs",
+    "box", "cls", "dfl",
+    "scale", "mosaic", "degrees", "fliplr", "hsv_v",
+)
 
 
 def load_train_cfg(config: Path, overrides: dict[str, object]) -> dict:
@@ -222,6 +256,7 @@ def main(argv: list[str] | None = None) -> int:
             "seed": args.seed,
             "project": args.project,
             "name": args.name,
+            **{key: getattr(args, key) for key in TUNABLE},
         },
     )
     print("config     ", cfg)
@@ -244,6 +279,13 @@ def main(argv: list[str] | None = None) -> int:
     artifacts = collect_artifacts(args.artifacts, save_dir, cfg,
                                   train_metrics, val_metrics)
     print("\nartifacts  ", artifacts)
+
+    # Katib's default metrics collector scrapes stdout for "name=value", one per
+    # line. Keep this last so a partial run cannot report a stale best score.
+    print()
+    for key, value in val_metrics.items():
+        print(f"{key}={value:.6f}")
+
     return 0
 
 

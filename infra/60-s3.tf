@@ -24,9 +24,9 @@
 resource "aws_s3_bucket" "project" {
   bucket = local.s3_bucket_name
 
-  lifecycle {
-    prevent_destroy = true
-  }
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 
   tags = local.project_tags
 }
