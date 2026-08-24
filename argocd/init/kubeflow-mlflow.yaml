@@ -60,12 +60,17 @@ spec:
             - disableSecurityMiddleware
           extraEnvVars:
             AWS_DEFAULT_REGION: ca-central-1
+          # MLflow 3.15 forks 4 uvicorn workers, each loading the full app;
+          # 2Gi was OOMKilled. One worker keeps the footprint predictable for
+          # a single-tenant tracking server.
+          extraArgs:
+            workers: "2"
           resources:
             requests:
               cpu: 200m
-              memory: 512Mi
+              memory: 1Gi
             limits:
-              memory: 2Gi
+              memory: 4Gi
     # Postgres StatefulSet + VirtualService + NetworkPolicies
     - repoURL: https://github.com/simonangel-fong/kubeflow-yolo
       targetRevision: master
@@ -74,6 +79,15 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kubeflow
   ignoreDifferences:
+    # The chart ships mlflow-flask-server-secret-key as a Helm pre-install hook
+    # with hook-delete-policy=before-hook-creation. Argo honours that and
+    # deletes it, so the init container starts with no secret. ESO owns the
+    # secret instead (argocd/eso/external-secret-mlflow-flask.yaml); ignore the
+    # chart's copy entirely.
+    - kind: Secret
+      name: mlflow-flask-server-secret-key
+      jsonPointers:
+        - /data
     # bound by the provisioner
     - kind: PersistentVolumeClaim
       jqPathExpressions:
