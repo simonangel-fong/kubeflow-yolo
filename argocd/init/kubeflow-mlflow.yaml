@@ -23,6 +23,11 @@ spec:
       targetRevision: 1.11.5
       helm:
         releaseName: mlflow
+        # The chart ships mlflow-flask-server-secret-key as a pre-install hook
+        # with hook-delete-policy=before-hook-creation. Skipping hooks stops it
+        # being rendered and deleted here; ESO owns that secret instead
+        # (argocd/eso/external-secret-mlflow-flask.yaml).
+        skipHooks: true
         values: |
           serviceAccount:
             create: true
@@ -79,15 +84,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kubeflow
   ignoreDifferences:
-    # The chart ships mlflow-flask-server-secret-key as a Helm pre-install hook
-    # with hook-delete-policy=before-hook-creation. Argo honours that and
-    # deletes it, so the init container starts with no secret. ESO owns the
-    # secret instead (argocd/eso/external-secret-mlflow-flask.yaml); ignore the
-    # chart's copy entirely.
-    - kind: Secret
-      name: mlflow-flask-server-secret-key
-      jsonPointers:
-        - /data
     # bound by the provisioner
     - kind: PersistentVolumeClaim
       jqPathExpressions:

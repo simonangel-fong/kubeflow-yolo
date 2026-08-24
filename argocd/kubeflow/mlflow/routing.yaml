@@ -18,7 +18,7 @@ spec:
         - destination:
             host: mlflow.kubeflow.svc.cluster.local
             port:
-              number: 5000
+              number: 80
 ---
 # Only the ingress gateway may reach mlflow; same shape as the other
 # kubeflow NetworkPolicies.
