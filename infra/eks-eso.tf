@@ -1,4 +1,4 @@
-# eso.tf
+# eks-eso.tf
 
 # ##############################
 # IAM role: ESO
@@ -70,6 +70,6 @@ resource "aws_secretsmanager_secret_version" "cloudflare" {
 # }
 
 import {
-  to       = aws_secretsmanager_secret.eso_cloudflare
-  identity = { "arn" = "arn:aws:secretsmanager:ca-central-1:099139718958:secret:kubeflow-yolo-dev/cloudflare-api-token-mwMDpZ" }
+  to       = aws_secretsmanager_secret.mlflow_postgres
+  identity = { "arn" = "arn:aws:secretsmanager:ca-central-1:099139718958:secret:kubeflow-yolo-dev/mlflow-postgres-y9zRFb" }
 }

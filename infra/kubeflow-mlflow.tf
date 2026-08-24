@@ -1,4 +1,4 @@
-# mlflow.tf
+# kubeflow-mlflow.tf
 #
 # MLflow tracking server: experiment metrics/params during training.
 # Backend store is Postgres (in-cluster); artifacts go to s3://<bucket>/mlflow/.

@@ -1,4 +1,4 @@
-# eks-csi.tf
+# eks-addon-csi.tf
 
 # ##############################
 # IAM for the EBS CSI driver addon

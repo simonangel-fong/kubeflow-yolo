@@ -17,7 +17,6 @@
 # Objects under pipeline/ are reproducible: a run can be repeated from the
 # dataset version in dvcstore/, so only dvcstore/ is irreplaceable.
 
-
 # ##############################
 # S3 bucket
 # ##############################

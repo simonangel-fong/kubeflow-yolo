@@ -1,4 +1,4 @@
-# karpenter.tf
+# eks-karpenter.tf
 
 # ##############################
 # Karpenter

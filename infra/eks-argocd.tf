@@ -1,4 +1,4 @@
-# argocd.tf
+# eks-argocd.tf
 
 resource "helm_release" "argocd" {
   name       = local.argocd_release
