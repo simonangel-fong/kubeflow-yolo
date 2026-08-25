@@ -77,10 +77,4 @@ kubectl -n istio-ingress port-forward svc/istio-ingress-istio 8080:80
 
 # mlflow
 kubectl -n kubeflow port-forward svc/mlflow 5000:80
-
-
-
 ```
-
-
-45
