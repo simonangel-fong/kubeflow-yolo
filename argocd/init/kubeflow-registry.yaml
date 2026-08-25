@@ -27,7 +27,7 @@ spec:
         - .spec.volumeMode
   syncPolicy:
     automated:
-      # prune disabled: this app's overlay targets kubeflow-user-example-com,
+      # prune disabled: this app's overlay targets kubeflow-yolo,
       # a user profile namespace. With prune on, Argo deletes user-created
       # Notebooks/InferenceServices there because they are not in git.
       prune: false

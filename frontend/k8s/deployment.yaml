@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kubeflow-yolo-ui
-  namespace: kubeflow-user-example-com
+  namespace: kubeflow-yolo
   labels:
     app: kubeflow-yolo-ui
 spec:
@@ -26,7 +26,7 @@ spec:
 
           env:
             - name: PREDICTOR_UPSTREAM
-              value: kubeflow-yolo-plate-predictor-00001-private.kubeflow-user-example-com.svc.cluster.local:80
+              value: kubeflow-yolo-plate-predictor-00001-private.kubeflow-yolo.svc.cluster.local:80
 
           ports:
             - containerPort: 8080
@@ -92,7 +92,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kubeflow-yolo-ui
-  namespace: kubeflow-user-example-com
+  namespace: kubeflow-yolo
   labels:
     app: kubeflow-yolo-ui
 spec:

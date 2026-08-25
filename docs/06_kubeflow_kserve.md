@@ -89,23 +89,23 @@ kubectl patch cm config-deployment -n knative-serving --type merge \
 kubectl rollout restart deploy/controller -n knative-serving
 # deployment.apps/controller restarted
 
-# kubectl delete inferenceservice kubeflow-yolo-plate -n kubeflow-user-example-com
+# kubectl delete inferenceservice kubeflow-yolo-plate -n kubeflow-yolo
 kubectl apply -f kubeflow/kserve/inferenceservice.yaml
 # inferenceservice.serving.kserve.io/kubeflow-yolo-plate created
 
-kubectl get inferenceservice kubeflow-yolo-plate -n kubeflow-user-example-com
+kubectl get inferenceservice kubeflow-yolo-plate -n kubeflow-yolo
 # NAME                  URL                                                                        READY   PREV   LATEST   PREVROLLEDOUTREVISION   LATESTREADYREVISION                   AGE
-# kubeflow-yolo-plate   http://example.com/serving/kubeflow-user-example-com/kubeflow-yolo-plate   True           100                              kubeflow-yolo-plate-predictor-00001   37s
+# kubeflow-yolo-plate   http://example.com/serving/kubeflow-yolo/kubeflow-yolo-plate   True           100                              kubeflow-yolo-plate-predictor-00001   37s
 
 # confirm
-kubectl get svc -n kubeflow-user-example-com
+kubectl get svc -n kubeflow-yolo
 # NAME                                          TYPE           CLUSTER-IP       EXTERNAL-IP                                            PORT(S)                                     AGE
 # kubeflow-yolo-plate                           ExternalName   <none>           knative-local-gateway.istio-system.svc.cluster.local   <none>                                      27m
 # kubeflow-yolo-plate-predictor                 ExternalName   <none>           knative-local-gateway.istio-system.svc.cluster.local   80/TCP                                      27m
 # kubeflow-yolo-plate-predictor-00001           ClusterIP      172.20.230.208   <none>                                                 80/TCP,443/TCP                              27m
 
 # test svc
-kubectl port-forward -n kubeflow-user-example-com   deploy/kubeflow-yolo-plate-predictor-00001-deployment 8082:8080
+kubectl port-forward -n kubeflow-yolo   deploy/kubeflow-yolo-plate-predictor-00001-deployment 8082:8080
 
 # test model load
 curl localhost:8082/v1/models/kubeflow-yolo-plate
@@ -134,7 +134,7 @@ docker build -f frontend/Dockerfile -t 099139718958.dkr.ecr.ca-central-1.amazona
 # push
 docker push 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v0.1.2
 # restart
-kubectl rollout restart deploy/kubeflow-yolo-ui -n kubeflow-user-example-com
+kubectl rollout restart deploy/kubeflow-yolo-ui -n kubeflow-yolo
 # deployment.apps/kubeflow-yolo-ui restarted
 
 # confirm
@@ -152,16 +152,16 @@ kubectl apply -f frontend/k8s/deployment.yaml
 # service/kubeflow-yolo-ui created
 
 # confirm
-kubectl get po -n kubeflow-user-example-com -l app=kubeflow-yolo-ui
+kubectl get po -n kubeflow-yolo -l app=kubeflow-yolo-ui
 # NAME                               READY   STATUS    RESTARTS   AGE
 # kubeflow-yolo-ui-b6f64d8f5-457cb   2/2     Running   0          2m2s
 
-kubectl get service/kubeflow-yolo-ui -n kubeflow-user-example-comom
+kubectl get service/kubeflow-yolo-ui -n kubeflow-yoloom
 # NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
 # kubeflow-yolo-ui   ClusterIP   172.20.60.224   <none>        80/TCP    41s
 
 # test
-kubectl port-forward -n kubeflow-user-example-com svc/kubeflow-yolo-ui 3000:80
+kubectl port-forward -n kubeflow-yolo svc/kubeflow-yolo-ui 3000:80
 # http://localhost:3000
 ```
 

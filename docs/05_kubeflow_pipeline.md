@@ -45,7 +45,7 @@ The model registers as `kubeflow-yolo-plate`, version `<run-id>`.
 ```sh
 # define kpf token
 kubectl apply -f kubeflow/pipelines/kfp-api-token.yaml
-
+# poddefault.kubeflow.org/kfp-api-token unchanged
 
 pip install kfp kfp-kubernetes
 
@@ -66,8 +66,8 @@ python submit.py --no-cache
 python submit.py --wait
 
 # confirm
-kubectl get workflows -n kubeflow-user-example-com --sort-by=.metadata.creationTimestamp
-kubectl logs -n kubeflow-user-example-com <pod> -c main
+kubectl get workflows -n kubeflow-yolo --sort-by=.metadata.creationTimestamp
+kubectl logs -n kubeflow-yolo <pod> -c main
 ```
 
 - pipeline

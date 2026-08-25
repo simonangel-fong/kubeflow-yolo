@@ -114,7 +114,7 @@ kubectl get pods -n kubeflow
 # volumes-web-app-deployment-84d6cb98c-9gbh5              2/2     Running   0               6m38s
 # workflow-controller-cd549fb55-xpfzq                     2/2     Running   0               6m38s
 
-kubectl get pods -n kubeflow-user-example-com
+kubectl get pods -n kubeflow-yolo
 # NAME                                         READY   STATUS    RESTARTS   AGE
 # model-registry-db-86979795c4-8nb25           1/1     Running   0          27m
 # model-registry-deployment-64686c8cbf-564cq   2/2     Running   0          27m

@@ -301,7 +301,7 @@ deploymentSpec:
           /model.tar.gz\")\n    s3.upload_file(str(metrics), bucket, base + \"/metrics.json\"\
           )\n\n    storage_uri = \"s3://\" + bucket + \"/\" + repo\n\n    # 3. register\n\
           \    from model_registry import ModelRegistry\n\n    registry = ModelRegistry(\n\
-          \        server_address=\"http://model-registry-service.kubeflow-user-example-com.svc.cluster.local\"\
+          \        server_address=\"http://model-registry-service.kubeflow-yolo.svc.cluster.local\"\
           ,\n        port=8080,\n        author=\"kfp\",\n        is_secure=False,\n\
           \    )\n    registry.register_model(\n        model_name,\n        storage_uri,\n\
           \        model_format_name=\"onnx\",\n        model_format_version=\"1\"\

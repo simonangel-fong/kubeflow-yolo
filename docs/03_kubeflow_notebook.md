@@ -19,7 +19,7 @@ kubectl apply -f kubeflow/notebook/notebook-gpu.yaml
 # persistentvolumeclaim/notebook-gpu-pvc created
 # notebook.kubeflow.org/notebook-gpu created
 
-kubectl get notebook,pod,pvc -n kubeflow-user-example-com
+kubectl get notebook,pod,pvc -n kubeflow-yolo
 # NAME                                 AGE
 # notebook.kubeflow.org/notebook-cpu   22m
 # notebook.kubeflow.org/notebook-gpu   7m17s
@@ -37,7 +37,7 @@ kubectl get notebook,pod,pvc -n kubeflow-user-example-com
 # persistentvolumeclaim/notebook-gpu-pvc    Bound    pvc-0555c691-692f-4015-9430-dd7cf3644592   50Gi       RWO            gp3            <unset>                 7m18s
 
 # confirm
-kubectl get pod notebook-cpu-0 notebook-gpu-0 -n kubeflow-user-example-com -o wide
+kubectl get pod notebook-cpu-0 notebook-gpu-0 -n kubeflow-yolo -o wide
 # NAME             READY   STATUS    RESTARTS   AGE     IP            NODE                                           NOMINATED NODE   READINESS GATES
 # notebook-cpu-0   2/2     Running   0          23m     10.0.11.66    ip-10-0-11-26.ca-central-1.compute.internal    <none>           <none>
 # notebook-gpu-0   2/2     Running   0          8m19s   10.0.11.251   ip-10-0-11-115.ca-central-1.compute.internal   <none>           <none>

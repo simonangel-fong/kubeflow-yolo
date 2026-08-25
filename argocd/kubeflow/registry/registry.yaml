@@ -1,7 +1,7 @@
 # Rendered from community-distribution 26.03.1
 # applications/hub/overlays/model-registry, with the hardcoded demo namespace
-# kubeflow-user-example-com replaced by the project tenant kubeflow-yolo.
-# Regenerate: kustomize build <that overlay> | sed s/kubeflow-user-example-com/kubeflow-yolo/g
+# kubeflow-yolo replaced by the project tenant kubeflow-yolo.
+# Regenerate: kustomize build <that overlay> | sed s/kubeflow-yolo/kubeflow-yolo/g
 apiVersion: v1
 kind: ServiceAccount
 metadata:

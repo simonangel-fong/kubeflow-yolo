@@ -12,7 +12,7 @@ from pathlib import Path
 
 import kfp
 
-NAMESPACE = "kubeflow-user-example-com"
+NAMESPACE = "kubeflow-yolo"
 PACKAGE = Path(__file__).parent / "yolo_pipeline.yaml"
 EXPERIMENT = "kubeflow-yolo-plate"
 PIPELINE = "kubeflow-yolo-plate"

@@ -563,7 +563,7 @@ def register_model(
     from model_registry import ModelRegistry
 
     registry = ModelRegistry(
-        server_address="http://model-registry-service.kubeflow-user-example-com.svc.cluster.local",
+        server_address="http://model-registry-service.kubeflow-yolo.svc.cluster.local",
         port=8080,
         author="kfp",
         is_secure=False,

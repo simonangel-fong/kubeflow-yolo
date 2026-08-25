@@ -2,7 +2,7 @@ apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
   name: kubeflow-yolo-plate
-  namespace: kubeflow-user-example-com
+  namespace: kubeflow-yolo
   annotations:
     autoscaling.knative.dev/min-scale: "1"
     autoscaling.knative.dev/max-scale: "3"
