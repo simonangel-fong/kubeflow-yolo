@@ -5,6 +5,13 @@ metadata:
   namespace: kubeflow-yolo
   annotations:
     autoscaling.knative.dev/min-scale: "1"
+    # Takes the Knative activator off the request path, so callers connect to the
+    # predictor directly over mTLS and AuthorizationPolicy can match the source
+    # namespace. With the activator relaying, requests arrive from 127.0.0.6 with
+    # no identity and every policy fails with matched_policy[none]. Safe here:
+    # min-scale 1 means this never scales to zero, so the activator buys nothing.
+    # https://kserve.github.io/website/docs/admin-guide/serverless/servicemesh
+    autoscaling.knative.dev/targetBurstCapacity: "0"
     autoscaling.knative.dev/max-scale: "3"
     autoscaling.knative.dev/metric: "concurrency"
     autoscaling.knative.dev/target: "2"
