@@ -6,6 +6,7 @@
   - [Katib](#katib)
     - [Build and push to ECR](#build-and-push-to-ecr)
     - [Run the experiment](#run-the-experiment)
+  - [MLflow tracking](#mlflow-tracking)
   - [Runbook](#runbook)
 
 ---
@@ -71,6 +72,49 @@ k get job -n kubeflow-yolo
 # kubeflow-yolo-plate-znhdslzz   Complete   1/1           4m12s      11m
 
 ```
+
+- Experiment in action
+
+![kf_katib01](./img/kf_katib01.png)
+
+- Experiment overview
+
+![kf_katib03](./img/kf_katib03.png)
+
+- Experiment plot
+
+![kf_katib02](./img/kf_katib02.png)
+
+- Experiment trials
+
+![kf_katib04](./img/kf_katib04.png)
+
+- Experiment details
+
+![kf_katib04](./img/kf_katib05.png)
+
+---
+
+## MLflow tracking
+
+- Experimen runs
+
+![mlflow_run01](./img/mlflow_run01.png)
+
+- Plot
+
+![mlflow_plot01](./img/mlflow_plot01.png)
+
+- Metrics
+
+![mlflow_metrics01](./img/mlflow_metrics01.png)
+![mlflow_metrics02](./img/mlflow_metrics02.png)
+
+- Artifacts
+
+![mlflow_artifasts01](./img/mlflow_artifasts01.png)
+
+![mlflow_artifasts02](./img/mlflow_artifasts02.png)
 
 ---
 

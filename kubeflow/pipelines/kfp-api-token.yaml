@@ -3,7 +3,7 @@ apiVersion: kubeflow.org/v1alpha1
 kind: PodDefault
 metadata:
   name: kfp-api-token
-  namespace: kubeflow-user-example-com
+  namespace: kubeflow-yolo
 spec:
   desc: "Allow access to the Kubeflow Pipelines API"
   selector:

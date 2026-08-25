@@ -43,6 +43,10 @@ The model registers as `kubeflow-yolo-plate`, version `<run-id>`.
 ## Pipeline
 
 ```sh
+# define kpf token
+kubectl apply -f kubeflow/pipelines/kfp-api-token.yaml
+
+
 pip install kfp kfp-kubernetes
 
 cd ~/kubeflow-yolo/kubeflow/pipelines/src
