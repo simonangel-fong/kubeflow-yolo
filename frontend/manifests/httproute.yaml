@@ -1,0 +1,48 @@
+# Exposes the UI at https://kubeflow.arguswatcher.net.
+# external-dns runs with sources: [gateway-httproute], so this hostname is what
+# creates the Cloudflare record, pointed at the istio-ingress NLB. TLS is the
+# wildcard *.arguswatcher.net cert already terminated on the Gateway's https listener.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kubeflow-yolo-ui
+  namespace: kubeflow-yolo
+  labels:
+    app: kubeflow-yolo-ui
+spec:
+  parentRefs:
+    - name: istio-ingress
+      namespace: istio-ingress
+      sectionName: https
+  hostnames:
+    - kubeflow.arguswatcher.net
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: kubeflow-yolo-ui
+          port: 80
+---
+# Redirect plain http to https; the Gateway's :80 listener accepts it first.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kubeflow-yolo-ui-redirect
+  namespace: kubeflow-yolo
+  labels:
+    app: kubeflow-yolo-ui
+spec:
+  parentRefs:
+    - name: istio-ingress
+      namespace: istio-ingress
+      sectionName: http
+  hostnames:
+    - kubeflow.arguswatcher.net
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
