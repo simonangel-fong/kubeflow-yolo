@@ -55,6 +55,20 @@ module "eks" {
       })
     }
 
+    aws-efs-csi-driver = {
+      pod_identity_association = [{
+        role_arn        = aws_iam_role.efs_csi.arn
+        service_account = "efs-csi-controller-sa"
+      }]
+      configuration_values = jsonencode({
+        controller = {
+          tolerations = [
+            { key = "workload-class", operator = "Equal", value = "platform", effect = "NoSchedule" },
+          ]
+        }
+      })
+    }
+
     vpc-cni = {
       before_compute = true
       configuration_values = jsonencode({

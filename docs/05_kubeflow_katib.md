@@ -44,10 +44,16 @@ aws ecr list-images --repository-name kubeflow-yolo-train --region ca-central-1
 ```sh
 # experiments in the profile namespace
 kubectl -n kubeflow-yolo get experiments
+# NAME                  TYPE      STATUS   AGE
+# kubeflow-yolo-plate   Running   True     5m47s
 
 # trials and their pods
 kubectl -n kubeflow-yolo get trials
-kubectl -n kubeflow-yolo get pods -l katib.kubeflow.org/experiment=yolo-plate-hpo
+# NAME                           TYPE      STATUS   AGE
+# kubeflow-yolo-plate-lxx5fm85   Running   True     5m18s
+# kubeflow-yolo-plate-nwhcprkk   Running   True     5m18s
+
+kubectl -n kubeflow-yolo get pods -l katib.kubeflow.org/experiment=kubeflow-yolo-plate
 ```
 
 ---

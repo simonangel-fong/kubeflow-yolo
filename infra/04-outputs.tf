@@ -91,3 +91,11 @@ output "argocd_bootstrap" {
     kubectl apply -f argocd/root.yaml
   EOT
 }
+
+# ##############################
+# EFS
+# ##############################
+output "efs_file_system_id" {
+  description = "Shared dataset filesystem; referenced by the EFS StorageClass"
+  value       = aws_efs_file_system.data.id
+}

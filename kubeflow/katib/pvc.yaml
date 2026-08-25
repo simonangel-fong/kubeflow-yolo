@@ -1,0 +1,20 @@
+# Shared dataset volume for Katib trials.
+#
+# ReadWriteMany so every parallel trial can mount it at once; trials mount it
+# read-only and only the populate Job writes to it.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dataset-raw
+  namespace: kubeflow-yolo
+  labels:
+    scope: kubeflow
+    capability: dataset
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      # EFS is elastic; this is a claim formality, not a provisioned size.
+      storage: 5Gi

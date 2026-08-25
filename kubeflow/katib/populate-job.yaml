@@ -1,0 +1,126 @@
+# Populates the shared dataset PVC from the DVC remote, once.
+#
+# Katib trial pods mount this volume read-only, so the data must already be
+# there before an experiment is submitted. The download logic mirrors
+# jupyter-notebook/notebooks/04-kf-train.ipynb: DVC stores objects
+# content-addressed at files/md5/<2>/<rest>, and a .dir manifest maps each
+# hash back to its filename.
+#
+# Idempotent -- files that already exist are skipped, so re-running after a
+# dataset update only fetches what changed.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dataset-populate
+  namespace: kubeflow-yolo
+  labels:
+    scope: kubeflow
+    capability: dataset
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      annotations:
+        # the sidecar never exits, so an injected Job hangs forever
+        sidecar.istio.io/inject: "false"
+    spec:
+      restartPolicy: Never
+      # carries the S3 pod identity association
+      serviceAccountName: default-editor
+      containers:
+        - name: populate
+          image: python:3.12-slim
+          env:
+            - name: BUCKET
+              value: kubeflow-yolo-dev-099139718958
+            - name: AWS_REGION
+              value: ca-central-1
+            - name: DIR_MD5
+              # outs[0].md5 from data/raw.dvc -- bump when the dataset changes
+              value: 0e94102a7a6b4424a0f1292c2f221072.dir
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              pip install --no-cache-dir -q boto3
+              python /scripts/populate.py
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: scripts
+              mountPath: /scripts
+          resources:
+            requests:
+              cpu: "1"
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: dataset-raw
+        - name: scripts
+          configMap:
+            name: dataset-populate-script
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dataset-populate-script
+  namespace: kubeflow-yolo
+  labels:
+    scope: kubeflow
+    capability: dataset
+data:
+  populate.py: |
+    """Restore the dvc-tracked data/raw directory into the shared PVC."""
+    import json
+    import os
+    from concurrent.futures import ThreadPoolExecutor
+    from pathlib import Path
+
+    import boto3
+
+    BUCKET = os.environ["BUCKET"]
+    DIR_MD5 = os.environ["DIR_MD5"]
+    DEST = Path("/data/raw")
+
+    s3 = boto3.client("s3", region_name=os.environ["AWS_REGION"])
+
+
+    def dvc_key(md5: str) -> str:
+        """DVC stores an object at files/md5/<first 2 chars>/<rest>."""
+        return f"dvcstore/files/md5/{md5[:2]}/{md5[2:]}"
+
+
+    def fetch(entry):
+        target = DEST / entry["relpath"]
+        if target.exists():
+            return 0
+        target.parent.mkdir(parents=True, exist_ok=True)
+        s3.download_file(BUCKET, dvc_key(entry["md5"]), str(target))
+        return 1
+
+
+    DEST.mkdir(parents=True, exist_ok=True)
+
+    # the .dir object lists {"md5": ..., "relpath": ...} for every file
+    manifest = json.loads(
+        s3.get_object(Bucket=BUCKET, Key=dvc_key(DIR_MD5))["Body"].read()
+    )
+
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        downloaded = sum(pool.map(fetch, manifest))
+
+    print(f"downloaded {downloaded}  skipped {len(manifest) - downloaded}")
+
+    images = [p for p in DEST.iterdir()
+              if p.suffix.lower() in {".jpeg", ".jpg", ".png"}]
+    labels = [p for p in DEST.iterdir()
+              if p.suffix.lower() == ".txt" and p.name != "classes.txt"]
+    print(f"images {len(images)}  labels {len(labels)}")
+
+    if not images:
+        raise RuntimeError(f"no images under {DEST} -- run `dvc push` first")

@@ -1,0 +1,24 @@
+# Shared ReadWriteMany storage, used for the training dataset.
+#
+# EBS is ReadWriteOnce and binds to one node, so parallel Katib trials landing
+# on separate nodes cannot share a gp3 volume. EFS can be mounted by every
+# trial at once, read-only.
+#
+# fileSystemId comes from `terraform -chdir=infra output efs_file_system_id`.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-REPLACE_ME
+  directoryPerms: "700"
+  # Access points are created under this path, one per PVC.
+  basePath: "/dynamic"
+  subPathPattern: "${.PVC.namespace}/${.PVC.name}"
+  ensureUniqueDirectory: "false"
+  gidRangeStart: "1000"
+  gidRangeEnd: "2000"
