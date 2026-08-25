@@ -6,6 +6,7 @@
   - [Katib](#katib)
     - [Build and push to ECR](#build-and-push-to-ecr)
     - [Run the experiment](#run-the-experiment)
+  - [Runbook](#runbook)
 
 ---
 
@@ -61,13 +62,29 @@ kubectl -n kubeflow-yolo get pods -l katib.kubeflow.org/experiment=kubeflow-yolo
 
 k get job -n kubeflow-yolo
 # NAME                           STATUS     COMPLETIONS   DURATION   AGE
-# kubeflow-yolo-plate-28rcrkxh   Running    0/1           4m48s      4m48s
-# kubeflow-yolo-plate-rj6wg26l   Running    0/1           4m48s      4m48s
+# kubeflow-yolo-plate-8dw6z4hr   Running    0/1           2m6s       2m6s
+# kubeflow-yolo-plate-kmrgd7c7   Running    0/1           2m6s       2m6s
+
+k -n kubeflow-yolo logs job/kubeflow-yolo-plate-kmrgd7c7
 ```
 
 ---
 
+## Runbook
+
+- stop running trials
+
 ```sh
+# stop everything: deleting the experiment removes its trials and pods
+kubectl -n kubeflow-yolo delete experiment kubeflow-yolo-plate
+
+# stop one trial, letting the experiment continue
+kubectl -n kubeflow-yolo delete trial <trial-name>
+
+# pause instead of delete: keeps results, stops new trials
+kubectl -n kubeflow-yolo patch experiment kubeflow-yolo-plate \
+  --type merge -p '{"spec":{"parallelTrialCount":0}}'
+
 # clean up when finished
 kubectl -n kubeflow-yolo delete experiment kubeflow-yolo-plate
 ```
