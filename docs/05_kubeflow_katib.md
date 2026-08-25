@@ -39,13 +39,6 @@ docker push 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-train:
 aws ecr list-images --repository-name kubeflow-yolo-train --region ca-central-1
 ```
 
-- Smoke-test:
-
-```sh
-# GPU builds:
-docker run --rm --gpus all --entrypoint python kubeflow-yolo-train:v0.2.0 -c "import torch; print(torch.__version__, torch.cuda.is_available())"
-```
-
 ### Run the experiment
 
 ```sh
