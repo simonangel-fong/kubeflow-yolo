@@ -50,21 +50,24 @@ kubectl -n kubeflow-yolo get experiments
 # trials and their pods
 kubectl -n kubeflow-yolo get trials
 # NAME                           TYPE      STATUS   AGE
-# kubeflow-yolo-plate-lxx5fm85   Running   True     5m18s
-# kubeflow-yolo-plate-nwhcprkk   Running   True     5m18s
+# kubeflow-yolo-plate-28rcrkxh   Running   True     96s
+# kubeflow-yolo-plate-rj6wg26l   Running   True     96s
 
 kubectl -n kubeflow-yolo get pods -l katib.kubeflow.org/experiment=kubeflow-yolo-plate
+# NAME                                                        READY   STATUS    RESTARTS   AGE
+# kubeflow-yolo-plate-28rcrkxh-x9frd                          2/2     Running   0          2m55s
+# kubeflow-yolo-plate-bayesianoptimization-68b7769569-ngvqh   1/1     Running   0          3m36s
+# kubeflow-yolo-plate-rj6wg26l-vcvgj                          2/2     Running   0          2m55s
+
+k get job -n kubeflow-yolo
+# NAME                           STATUS     COMPLETIONS   DURATION   AGE
+# kubeflow-yolo-plate-28rcrkxh   Running    0/1           4m48s      4m48s
+# kubeflow-yolo-plate-rj6wg26l   Running    0/1           4m48s      4m48s
 ```
 
 ---
 
 ```sh
-# what a trial actually reported
-kubectl -n kubeflow-yolo logs job/<trial-name> | tail -5
-
-# the winning assignment
-kubectl -n kubeflow-yolo get experiment yolo-plate-hpo -o jsonpath='{.status.currentOptimalTrial}' | python -m json.tool
-
-# clean up when finished -- trial pods are retained for their logs
-kubectl -n kubeflow-yolo delete experiment yolo-plate-hpo
+# clean up when finished
+kubectl -n kubeflow-yolo delete experiment kubeflow-yolo-plate
 ```
