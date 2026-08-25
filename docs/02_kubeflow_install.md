@@ -126,7 +126,9 @@ kubectl get pods -n kubeflow-yolo
 # model-registry-ui-6cc794669b-6crgf           2/2     Running   0          27m
 
 # login ui
-kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80
+# kubeflow
+kubectl -n istio-ingress port-forward svc/istio-ingress-istio 8080:80
+
 # ad: http://127.0.0.1:8080/
 # default email: user@example.com
 # default password: 12341234

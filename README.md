@@ -1,133 +1,197 @@
-# License plate recognition with `Kubeflow`
+# GPU-Enabled MLOps Platform on `AWS EKS` with `kubeflow`
 
-An `Kubeflow` project that trains and deploys an object detection model (`YOLO`) through a full `MLOps` workflow — from labelled images to an inference endpoint behind a public web app.
+> From model experiment to production inference on Kubernetes.
+
+An end-to-end MLOps platform that trains, tracks, deploys, and serves a YOLO object detection model on `AWS EKS` using `Kubeflow`, `MLflow`, `KServe`, `Terraform`, `Argo CD`, and `GitHub Actions`.
 
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white&style=plastic) ![AWS](https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazonwebservices&logoColor=white&style=plastic) ![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=Cloudflare&logoColor=white&style=plastic) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white&style=plastic) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white&style=plastic) ![YOLO](https://img.shields.io/badge/YOLO-111F68?logo=yolo&logoColor=fff&style=plastic) ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=plastic)
 
-- [License plate recognition with `Kubeflow`](#license-plate-recognition-with-kubeflow)
+- [GPU-Enabled MLOps Platform on `AWS EKS` with `kubeflow`](#gpu-enabled-mlops-platform-on-aws-eks-with-kubeflow)
   - [Business Challenge](#business-challenge)
   - [Architecture](#architecture)
-  - [Model training with `Kubeflow`](#model-training-with-kubeflow)
-    - [MLOps Pipeline](#mlops-pipeline)
-    - [`Jupyter notebook` \& `MLflow`](#jupyter-notebook--mlflow)
-    - [Train with `gpu` node and `karpenter`](#train-with-gpu-node-and-karpenter)
-  - [Inference deployment](#inference-deployment)
-  - [Road Map - Further features](#road-map---further-features)
+  - [MLOps Engineering](#mlops-engineering)
+    - [Workflow in Action](#workflow-in-action)
+  - [Platform Engineering](#platform-engineering)
+    - [Infrastructure as Code](#infrastructure-as-code)
+    - [Platform Capabilities](#platform-capabilities)
+    - [Platform in Action](#platform-in-action)
+  - [DevOps Engineering](#devops-engineering)
+    - [CI/CD Pipelines](#cicd-pipelines)
+    - [GitOps with Argo CD](#gitops-with-argo-cd)
+  - [Roadmap](#roadmap)
   - [Documentation](#documentation)
 
 ---
 
 ## Business Challenge
 
-Computer vision models like `YOLO` are popular for object detection in manufacturing.
+**Machine learning models** can deliver strong business value, but moving them from **experimentation** to reliable **production** use requires more than model training.
 
-> However, integrating these computer vision models reliably into business applications remains a significant challenge.
+> Teams need repeatable training workflows, scalable compute, experiment tracking, model serving, and automated infrastructure.
 
-This project demonstrates an end-to-end MLOps workflow by **training**, **deploying**, and **serving** a `YOLO` model that **detects vehicle license plates**.
+This project addresses that challenge building an end-to-end MLOps platform for a YOLO object detection model with **3 engineering perspectives**:
 
-![app01](./docs/img/app01.png)
+1. `MLOps Engineering`: experiment, train, track, store, and serve the model.
+2. `Platform Engineering`: provide scalable GPU compute, storage, networking, security, and observability on EKS.
+3. `DevOps Engineering`: automate infrastructure and application delivery with Terraform, GitHub Actions, Argo CD, and GitOps.
 
-> OCR feature is not included — the model detects plate regions, it does not read them.
+---
+
+- **Live application demo**: car plate detection
+
+![](./docs/img/app_demo01.png)
 
 ---
 
 ## Architecture
 
-- Infrastructure diagram
+- Architecture Diagram
 
-![architecture-infra](./docs/img/architecture-infra.gif)
+![diagram_architecture](./docs/img/diagram_architecture.gif)
 
-- Cluster diagram
+- Repository Layout
 
-![architecture-cluster](./docs/img/architecture-cluster.gif)
-
-- Repo layout
-
-```
+```text
 kubeflow-yolo/
-
+├── .github/
+│   └── workflows/          # CI/CD workflows
+├── data/                   # Dataset files and related assets
+├── argocd/                 # Argo CD applications and platform components
+├── app-of-apps.yaml        # Argo CD root application
+├── infra/                  # Terraform modules and AWS infrastructure
+├── jupyter-notebook/       # Model development and experimentation notebooks
+├── kubeflow/               # Kubeflow pipelines and related configurations
+├── train-job/              # YOLO training code and training image
+├── inference/              # KServe inference application and image
+├── frontend/               # Web UI and Nginx image
+├── docs/                   # Detailed implementation documentation
+└── README.md               # Project overview and documentation index
 ```
 
 ---
 
-## Model training with `Kubeflow`
+## MLOps Engineering
 
-Train the `YOLO` model with `Kubeflow notebook`.
+![diagram_mlops](./docs/img/diagram_mlops.gif)
 
-### MLOps Pipeline
-
-1. **Data collection** — collect images of license plates.
-2. **Feature engineering** — label images.
-3. **Model training and experiment tracking** — run training code with a `SageMaker pipeline` and log metrics to `MLflow`.
-4. **Evaluate model** — register the model only when `mAP50-95` clears the `0.70` gate.
-5. **Package and deploy** — serve the model from a `SageMaker` serverless endpoint.
-6. **Integrate** the **inference endpoint** with the **web application**.
-
-- SageMaker pipeline to automate training
-
-![sagemaker_pipeline02](./docs/img/sagemaker_pipeline02.png)
+| MLOps Stage       | Components / Technologies                                                          |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| Data preparation  | Images and labels stored in `S3`; versioned with `DVC`                             |
+| Model development | `Jupyter Notebook`                                                                 |
+| Experimentation   | `Katib` for hyperparameter trials; `MLflow` for metrics and run tracking           |
+| Training pipeline | `KFP` for orchestration; artifacts stored in `S3`; model registered after training |
+| Model serving     | `KServe` for online inference                                                      |
 
 ---
 
-### `Jupyter notebook` & `MLflow`
+### Workflow in Action
 
-- `Jupyter notebook`: train the `YOLO` model
+- **Data**: images and labels
+  ![data_images](./docs/img/data_images.png)
 
-![notebook_train_cpu01](./docs/img/notebook_train_cpu01.png)
+- **Development**: model exploration in `Jupyter`
+  ![kf_notebook_train01](./docs/img/kf_notebook_train01.png)
 
-- `MLflow`: track training metrics
+- **Experiments**: `Katib` trials
+  ![mlops_katib](./docs/img/kf_katib01.png)
 
-![mlflow_metrics01](./docs/img/mlflow_metrics01.png)
+- **Experiments**: `MLflow` metrics
+  ![mlflow_metrics02](./docs/img/mlflow_metrics02.png)
 
-- `MLflow`: hyperparameter sweep for the best performance
+- **Pipeline**: train, evaluate, and register
+  ![kf_pipeline02](./docs/img/kf_pipeline02.png)
 
-![mlflow_traintime01](./docs/img/mlflow_traintime01.png)
-
----
-
-### Train with `gpu` node and `karpenter`
-
----
-
-## Inference deployment
-
-1. **Promote the model** — approve a version in the `sagemaker-yolo` model package group.
-2. **Serve** the approved model from a `SageMaker` serverless endpoint, so idle time costs nothing.
-3. **Integrate** the endpoint with the web application through the `Lambda` proxy behind `CloudFront`.
-4. **Monitor** application performance metrics with `Cloudwatch Dashboard` and costs with `AWS Budgets`.
-
-- **Performance metrics**
-
-![app_monitor01](./docs/img/app_monitor01.png)
-
-- **CI/CD pipeline**
-
-![cicd_pipeline01](./docs/img/cicd_pipeline01.png)
-
-- **Budgets**
-
-![app_budget01](./docs/img/app_budget01.png)
+- **Serving** — deploy the selected model with KServe
+  ![kf_kserve_endpoint01](./docs/img/kf_kserve_endpoint01.png)
 
 ---
 
-## Road Map - Further features
+## Platform Engineering
 
-| Feature                  | Goal                                                            | Approach                                                                                                |
-| ------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Plate OCR**            | Read the plate text, not just locate the plate.                 | Crop the detected box and run a text recognition model as a second stage.                               |
-| **Automated retraining** | Keep the model fresh without manual runs.                       | Trigger the `SageMaker pipeline` when new labelled data lands in `S3`; watch for drift on the endpoint. |
-| **Video & batch input**  | Process a video or a folder of images, not one image at a time. | Add an `S3`-upload-triggered batch path alongside the existing real-time endpoint.                      |
+### Infrastructure as Code
+
+AWS infrastructure is managed with **Terraform**:
+
+- using an **`S3` remote backend**
+- integrating `GitHub Actions` for `fmt`, `validate`, `plan`, and `apply`.
+
+![diagram_infra](./docs/img/diagram_infra.gif)
+
+---
+
+### Platform Capabilities
+
+| Capability | Infrastructure / Cluster                                     | Purpose                                          |
+| ---------- | ------------------------------------------------------------ | ------------------------------------------------ |
+| Compute    | EKS, Karpenter, node selectors                               | Autoscaling and GPU node provisioning            |
+| Storage    | S3, EBS, EFS, StorageClass, PVC                              | Persistent and shared storage for ML workloads   |
+| Networking | VPC, ALBC, Istio, Gateway API, ExternalDNS                   | North-south/east-west traffic and automated DNS  |
+| Security   | Secrets Manager, KMS, ESO, cert-manager, NetworkPolicy, mTLS | Secrets, encryption, certificates, and isolation |
+| Monitoring | CloudWatch, Grafana Cloud                                    | Logs and platform metrics                        |
+
+---
+
+### Platform in Action
+
+- EKS cluster
+
+![infra_eks](./docs/img/infra_eks.png)
+
+- Self-managed nodes `GPU` nodes via `Karpenter`
+
+![infra_eks_node_gpu](./docs/img/infra_eks_node_gpu.png)
+
+- Grafana dashboard
+
+![monitor_grafana01](./docs/img/monitor_grafana01.png)
+
+---
+
+## DevOps Engineering
+
+### CI/CD Pipelines
+
+| Pipeline                | Key Steps                                            | Purpose                        |
+| ----------------------- | ---------------------------------------------------- | ------------------------------ |
+| `terraform-apply`       | Trigger, `fmt`, `validate`, `plan`, `apply`          | Deploy infrastructure          |
+| `terraform-destroy`     | Manual trigger, `fmt`, `validate`, `plan`, `destroy` | Tear down infrastructure       |
+| `train-image-build`     | Trigger, build, push                                 | Publish training image to ECR  |
+| `inference-image-build` | Trigger, build, push                                 | Publish inference image to ECR |
+| `frontend-image-build`  | Trigger, build, push                                 | Publish frontend image to ECR  |
+
+![cicd_tf_apply](./docs/img/cicd_tf_apply.png)
+
+---
+
+### GitOps with Argo CD
+
+- **App-of-Apps**: declaratively manages platform and application components.
+- **Git as source of truth**: Argo CD continuously reconciles the cluster with the repository.
+- **Automated deployment**: platform and application changes are applied through GitOps.
+
+![argocd01](./docs/img/argocd01.png)
+
+---
+
+## Roadmap
+
+| Stage                      | Focus                                                                    |
+| -------------------------- | ------------------------------------------------------------------------ |
+| **Make it work — current** | Deliver a MVP functional end-to-end MLOps platform                       |
+| **Make it right**          | Add model promotion gates, policy as code, and CI/CD security scanning   |
+| **Make it fast**           | Optimize container builds(multi-stage build) and enable pipeline caching |
+| **Make it efficient**      | Add FinOps practices and deeper Prometheus/Grafana monitoring            |
 
 ---
 
 ## Documentation
 
-- [IaC with `Terraform`](./docs/01_infra.md)
-- [Kubeflow Installation](./docs/02_kubeflow_install.md)
-- [Jupyter notebook](./docs/03_kubeflow_notebook.md)
-- [Experiment with `Katib`](./docs/04_kubeflow_katib.md)
-- [Kubeflow Pipeline](./docs/05_kubeflow_pipeline.md)
-- [Deploy with `KServe`](./docs/06_kubeflow_kserve.md)
-- [Deploy frontend](./docs/07_app_frontend.md)
+Detailed implementation guides:
 
----
+- [Infrastructure with `Terraform`](./docs/01_infra.md)
+- [`Kubeflow` Installation](./docs/02_kubeflow_install.md)
+- [Model Development in `Jupyter`](./docs/03_kubeflow_notebook.md)
+- [Hyperparameter Experiments with `Katib`](./docs/04_kubeflow_katib.md)
+- [Training with `Kubeflow Pipelines`](./docs/05_kubeflow_pipeline.md)
+- [Model Serving with `KServe`](./docs/06_kubeflow_kserve.md)
+- [Frontend Deployment](./docs/07_app_frontend.md)

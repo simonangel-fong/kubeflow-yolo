@@ -82,21 +82,12 @@ kubectl patch applications.argoproj.io 00-app-of-apps -n argocd --type merge -p 
 - [x] albc
 - [x] eso
 - [x] e-dns
-- [ ] dashboard
-- notebook
-- mlflow
-- kf hub
-- kf pipeline
-- kf kserve
-- user ns
-- frontend
+- [x] dashboard
+- [x] notebook
+- [x] mlflow
+- [x] kf pipeline
+- [x] kf kserve
+- [x] user ns
+- [x] frontend
 
 ---
-
-```sh
-# kubeflow
-kubectl -n istio-ingress port-forward svc/istio-ingress-istio 8080:80
-
-# mlflow
-kubectl -n kubeflow port-forward svc/mlflow 5000:80
-```

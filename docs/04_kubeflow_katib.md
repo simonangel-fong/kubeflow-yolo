@@ -97,6 +97,11 @@ k get job -n kubeflow-yolo
 
 ## MLflow tracking
 
+```sh
+# mlflow
+kubectl -n kubeflow port-forward svc/mlflow 5000:80
+```
+
 - Experimen runs
 
 ![mlflow_run01](./img/mlflow_run01.png)
