@@ -128,5 +128,6 @@ Train the `YOLO` model with `Kubeflow notebook`.
 - [Experiment with `Katib`](./docs/04_kubeflow_katib.md)
 - [Kubeflow Pipeline](./docs/05_kubeflow_pipeline.md)
 - [Deploy with `KServe`](./docs/06_kubeflow_kserve.md)
+- [Deploy frontend](./docs/07_app_frontend.md)
 
 ---
