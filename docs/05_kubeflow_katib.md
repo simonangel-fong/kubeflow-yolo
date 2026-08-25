@@ -62,10 +62,19 @@ kubectl -n kubeflow-yolo get pods -l katib.kubeflow.org/experiment=kubeflow-yolo
 
 k get job -n kubeflow-yolo
 # NAME                           STATUS     COMPLETIONS   DURATION   AGE
-# kubeflow-yolo-plate-8dw6z4hr   Running    0/1           2m6s       2m6s
-# kubeflow-yolo-plate-kmrgd7c7   Running    0/1           2m6s       2m6s
+# kubeflow-yolo-plate-4sjd6gcz   Complete   1/1           4m12s      11m
+# kubeflow-yolo-plate-7bv9bdxd   Complete   1/1           2m39s      17m
+# kubeflow-yolo-plate-7mbm85dt   Complete   1/1           3m14s      7m32s
+# kubeflow-yolo-plate-dnsh8ml8   Complete   1/1           4m11s      24m
+# kubeflow-yolo-plate-h52ddpzp   Complete   1/1           4m12s      21m
+# kubeflow-yolo-plate-hpmm6wzb   Complete   1/1           2m51s      24m
+# kubeflow-yolo-plate-k22mvv22   Complete   1/1           2m41s      14m
+# kubeflow-yolo-plate-kmw7lszz   Complete   1/1           3m24s      17m
+# kubeflow-yolo-plate-mp9dnbxc   Complete   1/1           2m40s      13m
+# kubeflow-yolo-plate-pltf9tf6   Complete   1/1           4m57s      6m45s
+# kubeflow-yolo-plate-sq6f7vq9   Complete   1/1           2m47s      20m
+# kubeflow-yolo-plate-znhdslzz   Complete   1/1           4m12s      11m
 
-k -n kubeflow-yolo logs job/kubeflow-yolo-plate-kmrgd7c7
 ```
 
 ---
