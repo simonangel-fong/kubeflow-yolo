@@ -1,0 +1,33 @@
+# Knative's allow-istio-gateways-to-activator NetworkPolicy only admits port 8012
+# from the istio-system gateways, so a meshed pod calling the predictor's stable
+# hostname (which routes via the activator) is dropped -- the connection times out
+# rather than being refused. This adds the tenant namespace as an allowed source,
+# the same shape as kubeflow's mlflow-from-tenants policy.
+#
+# NetworkPolicies are additive, so this widens ingress without touching Knative's.
+# Lives here rather than the platform tree so the frontend stays self-contained,
+# but note it targets the knative-serving namespace, not kubeflow-yolo.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: activator-from-kubeflow-yolo
+  namespace: knative-serving
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - activator
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kubeflow-yolo
+      ports:
+        - port: 8012
+          protocol: TCP
+        - port: 8112
+          protocol: TCP

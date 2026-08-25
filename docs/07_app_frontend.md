@@ -54,6 +54,9 @@ kubectl get service/kubeflow-yolo-ui -n kubeflow-yoloom
 # test
 kubectl port-forward -n kubeflow-yolo svc/kubeflow-yolo-ui 3000:80
 # http://localhost:3000
+
+# test dns
+curl https://kubeflow.arguswatcher.net/
 ```
 
 ![app_frontend01](./img/app_frontend01.png)

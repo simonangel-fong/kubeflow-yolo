@@ -1,0 +1,24 @@
+# The Profile's ns-owner-access-istio policy only admits traffic that carries a
+# kubeflow-userid header from the legacy istio-system ingressgateway. This UI is
+# served publicly through the Gateway API gateway in istio-ingress, which has a
+# different identity and no Kubeflow login in front of it, so it needs its own
+# ALLOW rule. Istio ORs ALLOW policies, so this widens access for the pods it
+# selects -- and only those: the selector keeps the rest of the tenant namespace
+# behind the Profile's policy.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: kubeflow-yolo-ui-public
+  namespace: kubeflow-yolo
+  labels:
+    app: kubeflow-yolo-ui
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: kubeflow-yolo-ui
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-ingress/sa/istio-ingress-istio
