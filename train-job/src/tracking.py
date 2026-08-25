@@ -1,5 +1,13 @@
 """
-MLflow helpers.
+MLflow tracking for a training run.
+
+Tracking is opt-in: with no --mlflow-uri (and no MLFLOW_TRACKING_URI in the
+environment) every call here is a no-op, so the script still runs unchanged
+outside the cluster.
+
+Under Katib each trial is its own pod, so each trial becomes its own MLflow
+run. The Katib trial name arrives via the downward API as POD_NAME and is used
+as the run name, which is what ties an MLflow run back to its trial.
 """
 
 from __future__ import annotations
@@ -7,167 +15,119 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import mlflow
+# Per-epoch metrics come from an ultralytics callback. Ultralytics also ships
+# its own mlflow integration, which would open a second, competing run; the
+# env var below disables it.
+os.environ.setdefault("MLFLOW", "False")
 
 
-def dataset_params(processed_dir: Path, raw_dir: Path | None = None) -> dict[str, object]:
-    """
-    Get hyperparameters from processed_dir
-    """
-    params: dict[str, object] = {}
-    for split in ("train", "val"):
-        images = list((processed_dir / split / "images").iterdir())
-        labels = list((processed_dir / split / "labels").iterdir())
-        boxes = sum(
-            len([ln for ln in p.read_text().splitlines() if ln.strip()]) for p in labels
+class NullTracker:
+    """Used when tracking is disabled; every method does nothing."""
+
+    enabled = False
+
+    def start(self, *args, **kwargs):
+        return self
+
+    def log_params(self, params):
+        pass
+
+    def log_metrics(self, metrics, step=None):
+        pass
+
+    def log_artifacts(self, path):
+        pass
+
+    def set_tags(self, tags):
+        pass
+
+    def attach(self, model):
+        pass
+
+    def finish(self):
+        pass
+
+
+class MlflowTracker:
+    """Thin wrapper so train.py does not carry mlflow specifics."""
+
+    enabled = True
+
+    def __init__(self, uri: str, experiment: str):
+        import mlflow
+
+        self._mlflow = mlflow
+        mlflow.set_tracking_uri(uri)
+        mlflow.set_experiment(experiment)
+
+        # The default 10s sample logged one point at a time is noisy over a
+        # long train, so average 6 samples into one point per minute.
+        mlflow.system_metrics.set_system_metrics_sampling_interval(10)
+        mlflow.system_metrics.set_system_metrics_samples_before_logging(6)
+        mlflow.system_metrics.set_system_metrics_node_id(
+            os.environ.get("POD_NAME", os.environ.get("HOSTNAME", "trial"))
         )
-        params[f"data.{split}_images"] = len(images)
-        params[f"data.{split}_boxes"] = boxes
+        self._run = None
 
-    total_images = params["data.train_images"] + params["data.val_images"]
-    params["data.total_images"] = total_images
-    if raw_dir is not None:
-        # How much of the available data this run actually used.
-        available = len([p for p in raw_dir.iterdir()
-                        if p.suffix.lower() != ".txt"])
-        params["data.available_images"] = available
-        params["data.fraction_used"] = round(
-            total_images / available, 3) if available else 0
+    def start(self, run_name: str):
+        # log_system_metrics starts a background sampler for cpu/mem/disk/net,
+        # plus gpu when pynvml sees a device.
+        self._run = self._mlflow.start_run(
+            run_name=run_name, log_system_metrics=True
+        )
+        print("mlflow run  ", run_name, self._run.info.run_id)
+        return self
 
-    return params
+    def log_params(self, params):
+        self._mlflow.log_params(params)
 
+    def log_metrics(self, metrics, step=None):
+        # mlflow only accepts numeric values
+        clean = {
+            k: float(v) for k, v in metrics.items()
+            if isinstance(v, (int, float))
+        }
+        if clean:
+            self._mlflow.log_metrics(clean, step=step)
 
-def log_dataset_context(processed_dir: Path, raw_dir: Path | None = None, **extra) -> dict:
-    """
-    Log hyperparameters to mlflow 
-    """
-    params = dataset_params(processed_dir, raw_dir)
-    params.update(extra)
-    mlflow.log_params(params)
-    return params
+    def log_artifacts(self, path: Path):
+        self._mlflow.log_artifacts(str(path))
 
+    def set_tags(self, tags):
+        self._mlflow.set_tags(tags)
 
-def run_sweep(
-    grid: list[dict],
-    base_cfg: dict,
-    data_yaml: Path,
-    processed_dir: Path,
-    raw_dir: Path,
-    experiment: str,
-    run_name: callable = None,
-) -> list[dict]:
-    """
-    Run sweep defined in `grid`
-    """
-    import os
-    import time
+    def attach(self, model):
+        """Log ultralytics' per-epoch metrics as an MLflow curve."""
 
-    from ultralytics import YOLO
-
-    # loop grid
-    results = []
-    for i, overrides in enumerate(grid, start=1):
-
-        # load param
-        cfg = {**base_cfg, **overrides}
-        weights = cfg.pop("model")
-        name = run_name(
-            cfg) if run_name else "-".join(f"{k}{v}" for k, v in overrides.items())
-
-        # define env var
-        os.environ["MLFLOW_EXPERIMENT_NAME"] = experiment
-        os.environ["MLFLOW_RUN"] = name
-        os.environ["MLFLOW_KEEP_RUN_ACTIVE"] = "true"
-
-        print(
-            f"\n{'=' * 60}\n[{i}/{len(grid)}] {name}  {overrides}\n{'=' * 60}")
-        start = time.time()
-        try:
-            # construct yolo model with param
-            model = YOLO(weights)
-
-            # train model, output performance metrics
-            trained = model.train(data=str(data_yaml), **cfg)
-            # log elapsed time
-            elapsed = time.time() - start
-
-            # log mlflow
-            log_dataset_context(
-                processed_dir, raw_dir, **{f"sweep.{k}": v for k, v in overrides.items()}
+        def on_fit_epoch_end(trainer):
+            metrics = {
+                # "metrics/mAP50(B)" -> "mAP50"; mlflow rejects "(" and ")"
+                key.split("/")[-1].removesuffix("(B)"): value
+                for key, value in trainer.metrics.items()
+            }
+            metrics.update(
+                {f"loss/{k}": v for k, v in (trainer.label_loss_items(
+                    trainer.tloss, prefix="train") or {}).items()}
             )
-            mlflow.log_metric("elapsed_seconds", elapsed)
-            run_id = mlflow.active_run().info.run_id
-            mlflow.end_run()  # terminate mlflow run
+            self.log_metrics(metrics, step=trainer.epoch)
 
-            # append result
-            results.append(
-                {
-                    "name": name,
-                    "run_id": run_id,
-                    **overrides,
-                    "mAP50": trained.results_dict["metrics/mAP50(B)"],
-                    "mAP50-95": trained.results_dict["metrics/mAP50-95(B)"],
-                    "elapsed_s": round(elapsed),
-                }
-            )
-            print(f"[{i}/{len(grid)}] done in {elapsed:.0f}s")
-        except Exception as exc:  # noqa: BLE001 - one bad config must not kill the sweep
-            print(f"[{i}/{len(grid)}] FAILED: {exc}")
-            if mlflow.active_run():
-                mlflow.end_run(status="FAILED")
-            results.append({"name": name, **overrides, "error": str(exc)})
+        model.add_callback("on_fit_epoch_end", on_fit_epoch_end)
 
-    return results
+    def finish(self):
+        if self._run is not None:
+            self._mlflow.end_run()
+            self._run = None
 
 
-def latest_run_id(experiment_name: str) -> str | None:
-    """Most recent run in an experiment, so a finished run can be reopened."""
-    # get experiment
-    experiment = mlflow.get_experiment_by_name(experiment_name)
-    if experiment is None:
-        return None
-    runs = mlflow.search_runs(
-        experiment_ids=[experiment.experiment_id],
-        order_by=["attributes.start_time DESC"],
-        max_results=1,
-    )
-    return None if runs.empty else runs.iloc[0]["run_id"]
-
-
-def compare_runs(experiment_name: str, metrics: list[str] | None = None):
-    """
-    compare experiment runs
-    """
-    # metrics
-    metrics = metrics or [
-        "metrics/mAP50B",
-        "metrics/mAP50-95B",
-        "metrics/precisionB",
-        "metrics/recallB",
-    ]
-
-    # get experiment
-    experiment = mlflow.get_experiment_by_name(experiment_name)
-    if experiment is None:
-        raise RuntimeError(f"no experiment named {experiment_name!r}")
-
-    # order runs
-    runs = mlflow.search_runs(
-        experiment_ids=[experiment.experiment_id],
-        order_by=["attributes.start_time DESC"],
-    )
-    if runs.empty:
-        return runs
-
-    columns = ["tags.mlflow.runName", "params.epochs",
-               "params.imgsz", "params.data.train_images"]
-    columns += [f"metrics.{m}" for m in metrics]
-    present = [c for c in columns if c in runs.columns]
-    table = runs[present].copy()
-    table.columns = [c.split(".", 1)[-1] for c in present]
-    return table
-
-
-def tracking_uri() -> str:
-    """Gat tracking URI."""
-    return os.environ.get("MLFLOW_TRACKING_URI") or mlflow.get_tracking_uri()
+def build_tracker(uri: str | None, experiment: str) -> NullTracker | MlflowTracker:
+    """Return a live tracker when a tracking uri is configured, else a no-op."""
+    uri = uri or os.environ.get("MLFLOW_TRACKING_URI")
+    if not uri:
+        print("mlflow      disabled (no tracking uri)")
+        return NullTracker()
+    try:
+        return MlflowTracker(uri, experiment)
+    except Exception as exc:
+        # Tracking must never take the training run down with it.
+        print(f"mlflow      disabled ({type(exc).__name__}: {exc})")
+        return NullTracker()

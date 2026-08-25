@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import time
 from datetime import datetime, timezone
@@ -23,6 +24,7 @@ from ultralytics import YOLO
 from ultralytics.data.utils import check_det_dataset
 
 from src.data_loader import build_split, verify_split, write_data_yaml
+from src.tracking import build_tracker
 
 # Repo root: trainjob/train.py -> trainjob -> repo
 ROOT = Path(__file__).resolve().parent.parent
@@ -96,6 +98,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--hsv-v", dest="hsv_v", type=float, default=None,
                         help="brightness jitter; day/night capture")
 
+    # tracking
+    parser.add_argument("--mlflow-uri", dest="mlflow_uri", default=None,
+                        help="MLflow tracking server; falls back to "
+                             "MLFLOW_TRACKING_URI, disabled when neither is set")
+    parser.add_argument("--mlflow-experiment", dest="mlflow_experiment",
+                        default=None,
+                        help="MLflow experiment name (default: kubeflow-yolo)")
+    parser.add_argument("--run-name", dest="run_name", default=None,
+                        help="MLflow run name; defaults to the pod name so a "
+                             "Katib trial is traceable back to its pod")
+
     return parser.parse_args(argv)
 
 
@@ -138,7 +151,7 @@ def prepare_data(args: argparse.Namespace) -> Path:
     return data_yaml
 
 
-def train(data_yaml: Path, cfg: dict) -> tuple[Path, dict]:
+def train(data_yaml: Path, cfg: dict, tracker=None) -> tuple[Path, dict]:
     """Train and return (save_dir, final-epoch validation metrics)."""
     cfg = dict(cfg)
     weights = cfg.pop("model")
@@ -147,6 +160,8 @@ def train(data_yaml: Path, cfg: dict) -> tuple[Path, dict]:
     cfg["project"] = str(project if project.is_absolute() else ROOT / project)
 
     model = YOLO(weights)
+    if tracker is not None:
+        tracker.attach(model)
 
     start = time.time()
     results = model.train(data=str(data_yaml), **cfg)
@@ -261,24 +276,53 @@ def main(argv: list[str] | None = None) -> int:
     )
     print("config     ", cfg)
 
-    data_yaml = prepare_data(args)
-    save_dir, train_metrics = train(data_yaml, cfg)
+    tracker = build_tracker(
+        args.mlflow_uri,
+        args.mlflow_experiment or os.environ.get(
+            "MLFLOW_EXPERIMENT", "kubeflow-yolo"),
+    )
+    # Under Katib the pod name is the trial name, which is what makes an MLflow
+    # run traceable back to the trial that produced it.
+    run_name = (
+        args.run_name
+        or os.environ.get("POD_NAME")
+        or f"{Path(cfg['model']).stem}-e{cfg['epochs']}-b{cfg['batch']}"
+    )
+    tracker.start(run_name)
 
-    print("\nsave_dir   ", save_dir)
-    for key, value in train_metrics.items():
-        print(f"{key:24} {value:.4f}")
+    try:
+        tracker.log_params(cfg)
+        tracker.set_tags({
+            "trial": os.environ.get("POD_NAME", ""),
+            "katib_experiment": os.environ.get("KATIB_EXPERIMENT", ""),
+            "device": str(cfg.get("device")),
+        })
 
-    val_metrics = validate(save_dir, data_yaml, cfg)
-    print()
-    for key, value in val_metrics.items():
-        print(f"{key:12} {value:.4f}")
+        data_yaml = prepare_data(args)
+        save_dir, train_metrics = train(data_yaml, cfg, tracker)
 
-    for weight in sorted((save_dir / "weights").glob("*.pt")):
-        print(f"{weight.name:10} {weight.stat().st_size / 1e6:.1f} MB")
+        print("\nsave_dir   ", save_dir)
+        for key, value in train_metrics.items():
+            print(f"{key:24} {value:.4f}")
 
-    artifacts = collect_artifacts(args.artifacts, save_dir, cfg,
-                                  train_metrics, val_metrics)
-    print("\nartifacts  ", artifacts)
+        val_metrics = validate(save_dir, data_yaml, cfg)
+        print()
+        for key, value in val_metrics.items():
+            print(f"{key:12} {value:.4f}")
+
+        # the final validation pass, which is what Katib optimises against
+        tracker.log_metrics({f"val_{k}": v for k, v in val_metrics.items()})
+
+        for weight in sorted((save_dir / "weights").glob("*.pt")):
+            print(f"{weight.name:10} {weight.stat().st_size / 1e6:.1f} MB")
+
+        artifacts = collect_artifacts(args.artifacts, save_dir, cfg,
+                                      train_metrics, val_metrics)
+        print("\nartifacts  ", artifacts)
+        tracker.log_artifacts(artifacts)
+    finally:
+        # ends the run and stops the system-metrics sampler even on failure
+        tracker.finish()
 
     # Katib's default metrics collector scrapes stdout for "name=value", one per
     # line. Keep this last so a partial run cannot report a stale best score.

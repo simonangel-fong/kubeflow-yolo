@@ -25,16 +25,14 @@ terraform -chdir=infra output
 # login
 aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin 099139718958.dkr.ecr.ca-central-1.amazonaws.com
 
-# build: GPU version
-docker build -f train-job/Dockerfile -t kubeflow-yolo-train:v0.1.0 .
-# build: cpu version
-docker build -f train-job/Dockerfile --build-arg FLAVOR=cpu --build-arg BASE=python:3.12-slim -t kubeflow-yolo-train:v0.1.0-cpu .
+# build
+docker build -f train-job/Dockerfile -t kubeflow-yolo-train:v0.3.0 .
 
 # tag
-docker tag kubeflow-yolo-train:v0.1.0 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-train:v0.1.0
+docker tag kubeflow-yolo-train:v0.3.0 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-train:v0.3.0
 
 # push
-docker push 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-train:v0.1.0
+docker push 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-train:v0.3.0
 
 # confirm
 aws ecr list-images --repository-name kubeflow-yolo-train --region ca-central-1
