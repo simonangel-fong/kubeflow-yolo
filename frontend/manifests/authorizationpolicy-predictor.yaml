@@ -1,17 +1,21 @@
 # The Profile's ns-owner-access-istio policy has an empty selector, so it applies
 # to every pod in the namespace -- the predictor included. Its rules only admit
 # traffic carrying a kubeflow-userid header from the legacy istio-system gateway,
-# or originating in-namespace. Requests from the UI reach the predictor via the
-# Knative activator (knative-serving/sa/activator), which matches neither, so the
-# inbound sidecar denies with rbac_access_denied_matched_policy[none].
+# or originating in-namespace, so requests from the UI are denied at the
+# predictor's inbound sidecar with rbac_access_denied_matched_policy[none].
 #
-# Istio ORs ALLOW policies, so this grants the activator access to the predictor
-# without touching the Profile's policy (which is owner-referenced and would be
-# reverted by the Profile controller anyway).
+# Requests reach the predictor through the Knative activator, which does NOT
+# preserve the caller's mTLS identity -- matching on principals therefore never
+# works. Match on the source namespace instead, exactly as KServe documents:
+# https://kserve.github.io/website/docs/admin-guide/serverless/servicemesh
+# (see net-istio#554 for why the activator cannot be locked down further).
+#
+# Istio ORs ALLOW policies, so this leaves the Profile's owner-referenced policy
+# untouched -- the Profile controller would revert any edit to it anyway.
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: kubeflow-yolo-plate-predictor-from-activator
+  name: kubeflow-yolo-plate-predictor-allow
   namespace: kubeflow-yolo
   labels:
     app: kubeflow-yolo-ui
@@ -21,10 +25,26 @@ spec:
     matchLabels:
       component: predictor
   rules:
+    # Direct pod-to-pod, once the revision is scaled up and the activator drops
+    # out of the path.
     - from:
         - source:
-            principals:
-              # Knative routes through the activator when scaling from/near zero
-              - cluster.local/ns/knative-serving/sa/activator
-              # ...and direct pod-to-pod once the revision is scaled up
-              - cluster.local/ns/kubeflow-yolo/sa/default-editor
+            namespaces:
+              - kubeflow-yolo
+    # Via the activator, which proxies without the original source namespace.
+    - from:
+        - source:
+            namespaces:
+              - knative-serving
+    # Knative's own metrics scraping and health probes.
+    - from:
+        - source:
+            namespaces:
+              - knative-serving
+      to:
+        - operation:
+            paths:
+              - /metrics
+              - /healthz
+              - /ready
+              - /wait-for-drain
