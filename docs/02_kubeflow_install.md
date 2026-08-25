@@ -2,6 +2,11 @@
 
 [Back](../README.md)
 
+- [Kubeflow: Installation](#kubeflow-installation)
+  - [Installation](#installation)
+    - [Prerequisites](#prerequisites)
+    - [Install](#install)
+
 ---
 
 ## Installation

@@ -1,0 +1,45 @@
+# YOLO plate detector InferenceService. Requires kubeflow-serving (KServe CRDs)
+# and kubeflow-tenant (Profile creates the kubeflow-yolo namespace).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow-yolo-kserve
+  namespace: argocd
+  labels:
+    scope: kubeflow
+    capability: ml-platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "41"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: kubeflow/kserve
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow-yolo
+  ignoreDifferences:
+    # KServe defaults the predictor pod spec and Knative rewrites the probes
+    - group: serving.kserve.io
+      kind: InferenceService
+      jqPathExpressions:
+        - .spec.predictor.containers[].resources
+        - .status
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # the Profile owns the namespace
+      - CreateNamespace=false
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

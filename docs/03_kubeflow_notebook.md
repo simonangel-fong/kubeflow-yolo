@@ -2,6 +2,13 @@
 
 [Back](../README.md)
 
+- [Kubeflow: Jupyter notebook](#kubeflow-jupyter-notebook)
+  - [Notebook](#notebook)
+    - [Download notebook](#download-notebook)
+  - [Train model](#train-model)
+    - [Track data](#track-data)
+    - [Training](#training)
+
 ---
 
 ## Notebook

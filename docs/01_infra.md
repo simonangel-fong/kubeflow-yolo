@@ -2,6 +2,12 @@
 
 [Back](../README.md)
 
+- [Kubeflow: Infrastructrure](#kubeflow-infrastructrure)
+  - [IaC - Terraform](#iac---terraform)
+  - [ArgoCD](#argocd)
+  - [Runbook](#runbook)
+  - [Components](#components)
+
 ---
 
 ## IaC - Terraform
@@ -15,10 +21,22 @@ terraform -chdir=infra apply -auto-approve
 terraform -chdir=infra refresh
 terraform -chdir=infra output
 
-terraform -chdir=infra import 
+terraform -chdir=infra import
 
 terraform -chdir=infra destroy -auto-approve
 ```
+
+- EKS cluster
+
+![infra_eks](./img/infra_eks.png)
+
+- EKS node group
+
+![infra_eks_node01](./img/infra_eks_node01.png)
+
+- S3 bucket
+
+![infra_s301](./img/infra_s301.png)
 
 ---
 
@@ -35,7 +53,11 @@ kubectl apply -f app-of-apps.yaml
 argocd login localhost:8000
 ```
 
-- Runbook
+![argocd01](./img/argocd01.png)
+
+---
+
+## Runbook
 
 ```sh
 # finalizer issue

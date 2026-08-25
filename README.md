@@ -125,7 +125,8 @@ Train the `YOLO` model with `Kubeflow notebook`.
 - [IaC with `Terraform`](./docs/01_infra.md)
 - [Kubeflow Installation](./docs/02_kubeflow_install.md)
 - [Jupyter notebook](./docs/03_kubeflow_notebook.md)
-- [Kubeflow Pipeline](./docs/04_kubeflow_pipeline.md)
-- [Deploy with `KServe`](./docs/05_kubeflow_kserve.md)
+- [Experiment with `Katib`](./docs/04_kubeflow_katib.md)
+- [Kubeflow Pipeline](./docs/05_kubeflow_pipeline.md)
+- [Deploy with `KServe`](./docs/06_kubeflow_kserve.md)
 
 ---

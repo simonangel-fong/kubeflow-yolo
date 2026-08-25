@@ -130,9 +130,9 @@ terraform -chdir=infra output
 # }
 
 # build
-docker build -f frontend/Dockerfile -t 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v0.1.2 .
+docker build -f frontend/Dockerfile -t 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v0.1.0 .
 # push
-docker push 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v0.1.2
+docker push 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v0.1.0
 # restart
 kubectl rollout restart deploy/kubeflow-yolo-ui -n kubeflow-yolo
 # deployment.apps/kubeflow-yolo-ui restarted
