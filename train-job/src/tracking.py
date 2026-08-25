@@ -12,6 +12,7 @@ as the run name, which is what ties an MLflow run back to its trial.
 
 from __future__ import annotations
 
+import functools
 import os
 from pathlib import Path
 
@@ -19,6 +20,30 @@ from pathlib import Path
 # its own mlflow integration, which would open a second, competing run; the
 # env var below disables it.
 os.environ.setdefault("MLFLOW", "False")
+
+
+def _safe(method):
+    """
+    Tracking must never take the training run down with it.
+
+    A trial that trained successfully but failed to log is still a valid trial:
+    Katib reads the objective from stdout, so a tracking error here would throw
+    away a finished GPU-hour. Failures are reported once and then ignored.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if self._broken:
+            return None
+        try:
+            return method(self, *args, **kwargs)
+        except Exception as exc:
+            self._broken = True
+            print(f"mlflow      {method.__name__} failed, tracking off "
+                  f"({type(exc).__name__}: {exc})")
+            return None
+
+    return wrapper
 
 
 class NullTracker:
@@ -68,7 +93,9 @@ class MlflowTracker:
             os.environ.get("POD_NAME", os.environ.get("HOSTNAME", "trial"))
         )
         self._run = None
+        self._broken = False
 
+    @_safe
     def start(self, run_name: str):
         # log_system_metrics starts a background sampler for cpu/mem/disk/net,
         # plus gpu when pynvml sees a device.
@@ -78,9 +105,11 @@ class MlflowTracker:
         print("mlflow run  ", run_name, self._run.info.run_id)
         return self
 
+    @_safe
     def log_params(self, params):
         self._mlflow.log_params(params)
 
+    @_safe
     def log_metrics(self, metrics, step=None):
         # mlflow only accepts numeric values
         clean = {
@@ -90,12 +119,15 @@ class MlflowTracker:
         if clean:
             self._mlflow.log_metrics(clean, step=step)
 
+    @_safe
     def log_artifacts(self, path: Path):
         self._mlflow.log_artifacts(str(path))
 
+    @_safe
     def set_tags(self, tags):
         self._mlflow.set_tags(tags)
 
+    @_safe
     def attach(self, model):
         """Log ultralytics' per-epoch metrics as an MLflow curve."""
 
@@ -114,8 +146,15 @@ class MlflowTracker:
         model.add_callback("on_fit_epoch_end", on_fit_epoch_end)
 
     def finish(self):
-        if self._run is not None:
+        # Not @_safe: this must run even after an earlier call marked tracking
+        # broken, or the run stays open and the metrics sampler keeps going.
+        if self._run is None:
+            return
+        try:
             self._mlflow.end_run()
+        except Exception as exc:
+            print(f"mlflow      end_run failed ({type(exc).__name__}: {exc})")
+        finally:
             self._run = None
 
 

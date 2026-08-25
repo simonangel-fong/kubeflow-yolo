@@ -12,7 +12,9 @@ matplotlib>=3.9.0
 pyyaml>=6.0
 
 # Tracking. psutil and pynvml back mlflow's system-metrics sampler; without
-# pynvml the GPU series are silently absent.
+# pynvml the GPU series are silently absent. boto3 is what mlflow uses to push
+# artifacts to the s3:// artifact store.
 mlflow>=3.0
 psutil
 pynvml
+boto3
