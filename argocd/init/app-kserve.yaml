@@ -6,8 +6,8 @@ metadata:
   name: kubeflow-yolo-kserve
   namespace: argocd
   labels:
-    scope: kubeflow
-    capability: ml-platform
+    scope: app
+    capability: kserve
   annotations:
     argocd.argoproj.io/sync-wave: "41"
   finalizers:
