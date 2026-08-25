@@ -1,0 +1,37 @@
+# YOLO plate detector UI (nginx). Requires app-kserve: the frontend proxies to
+# the predictor's Knative private service, and kubeflow-tenant owns the namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-frontend
+  namespace: argocd
+  labels:
+    scope: kubeflow
+    capability: ml-platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "42"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: frontend/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow-yolo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # the Profile owns the namespace
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2
