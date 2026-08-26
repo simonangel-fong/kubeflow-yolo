@@ -1,0 +1,48 @@
+# Shared Katib dataset volume and its one-shot populate Job. Requires
+# kubeflow-tenant (Profile creates the kubeflow-yolo namespace) and the EFS
+# StorageClass from argocd/storageclass.
+#
+# Katib trials mount pvc/dataset-raw read-only, so an experiment submitted
+# before the Job completes reads an empty directory and every trial fails.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-dataset
+  namespace: argocd
+  labels:
+    scope: app
+    capability: dataset
+  annotations:
+    argocd.argoproj.io/sync-wave: "41"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/simonangel-fong/kubeflow-yolo
+    targetRevision: master
+    path: kubeflow/katib
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeflow-yolo
+  ignoreDifferences:
+    # the EFS provisioner fills these in on bind
+    - kind: PersistentVolumeClaim
+      jqPathExpressions:
+        - .spec.volumeName
+        - .spec.volumeMode
+  syncPolicy:
+    automated:
+      # a completed populate Job is not garbage -- pruning it would re-run the
+      # download on every resync
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

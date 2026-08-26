@@ -16,6 +16,12 @@ metadata:
   labels:
     scope: kubeflow
     capability: dataset
+  annotations:
+    # after the PVC binds and the ConfigMap exists
+    argocd.argoproj.io/sync-wave: "1"
+    # a Job's pod template is immutable, so replace rather than patch when the
+    # DIR_MD5 changes -- without this Argo fails the sync on a field update
+    argocd.argoproj.io/sync-options: Replace=true
 spec:
   backoffLimit: 2
   template:
@@ -73,6 +79,8 @@ metadata:
   labels:
     scope: kubeflow
     capability: dataset
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 data:
   populate.py: |
     """Restore the dvc-tracked data/raw directory into the shared PVC."""
