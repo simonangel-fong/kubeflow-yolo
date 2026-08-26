@@ -68,4 +68,17 @@ kubectl -n kube-system rollout restart deploy aws-load-balancer-controller
 
 # hard refresh
 kubectl patch applications.argoproj.io 00-app-of-apps -n argocd --type merge -p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}' 2>&1; sleep 20; kubectl get applications.argoproj.io -n argocd 2>&1
+
+# remove secret
+aws secretsmanager delete-secret --secret-id kubeflow-yolo-dev/mlflow-flask-key --force-delete-without-recovery
+
+```
+
+- import
+
+```hcl
+import {
+  to       = aws_secretsmanager_secret.mlflow_postgres
+  identity = { "arn" = "<secret_arn>" }
+}
 ```

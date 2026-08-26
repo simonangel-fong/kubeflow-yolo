@@ -46,25 +46,25 @@ data "aws_caller_identity" "current" {}
 # Auth via the AWS CLI exec plugin rather than a token data source: tokens
 # expire after 15 minutes, which a long apply can outlive.
 provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  host                   = module.eks[0].cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks[0].cluster_certificate_authority_data)
 
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", var.aws_region]
+    args        = ["eks", "get-token", "--cluster-name", module.eks[0].cluster_name, "--region", var.aws_region]
   }
 }
 
 provider "helm" {
   kubernetes = {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    host                   = module.eks[0].cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks[0].cluster_certificate_authority_data)
 
     exec = {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", var.aws_region]
+      args        = ["eks", "get-token", "--cluster-name", module.eks[0].cluster_name, "--region", var.aws_region]
     }
   }
 }

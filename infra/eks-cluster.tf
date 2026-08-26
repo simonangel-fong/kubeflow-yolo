@@ -102,7 +102,18 @@ module "eks" {
       max_size     = local.eks_node_count_max
       desired_size = local.eks_node_count_desired
 
-      disk_size = local.eks_node_disk_size
+      # maps block devices to ec2 node
+      block_device_mappings = {
+        root = {
+          device_name = "/dev/xvda"
+          ebs = {
+            volume_size           = local.eks_node_disk_size
+            volume_type           = "gp3"
+            encrypted             = true
+            delete_on_termination = true
+          }
+        }
+      }
 
       labels = {
         "role"                    = "bootstrap"

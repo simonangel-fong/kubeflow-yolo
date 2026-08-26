@@ -1,12 +1,12 @@
-# # outputs
+# outputs
 
-# # ##############################
-# # VPC
-# # ##############################
-# output "vpc_id" {
-#   description = "VPC ID"
-#   value       = module.vpc.vpc_id
-# }
+# ##############################
+# VPC
+# ##############################
+output "vpc_id" {
+  description = "VPC ID"
+  value       = module.vpc[0].vpc_id
+}
 
 # # ##############################
 # # EKS

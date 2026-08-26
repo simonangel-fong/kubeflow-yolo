@@ -17,8 +17,8 @@ variable "aws_region" {
 # ##############################
 # Providers: cloudflare
 # ##############################
-variable "cloudflare_api_token" {
-  description = "Cloudflare API token with Zone:Read + DNS:Edit on the domain_name zone. Set via TF_VAR_cloudflare_api_token or tfvars."
+variable "eso_cloudflare_api_token" {
+  description = "ESO Cloudflare API token."
   type        = string
   sensitive   = true
 }
