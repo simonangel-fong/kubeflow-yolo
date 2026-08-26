@@ -73,9 +73,9 @@ output "ecr_repository_urls" {
 # ##############################
 # GitHub Actions
 # ##############################
-output "github_actions_role_arn" {
-  description = "Role GitHub Actions assumes via OIDC."
-  value       = aws_iam_role.github_actions.arn
+output "github_ecr_push_role_arn" {
+  description = "Role GitHub Actions assumes to push ecr via OIDC."
+  value       = aws_iam_role.github_ecr_push.arn
 }
 
 output "github_terraform_plan_role_arn" {
