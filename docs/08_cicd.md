@@ -67,6 +67,7 @@ gh api -X PUT repos/simonangel-fong/kubeflow-yolo/environments/tf-apply \
   -F "reviewers[][type]=User" -F "reviewers[][id]=64545430"
 
 gh secret set CLOUDFLARE_API_TOKEN --body "<api_token>"
+# ✓ Set Actions secret CLOUDFLARE_API_TOKEN for simonangel-fong/kubeflow-yolo
 gh secret set CLOUDFLARE_ZONE_ID --body "<zone_id>"
 ```
 

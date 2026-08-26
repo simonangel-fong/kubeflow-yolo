@@ -1,10 +1,4 @@
-# Terraform CI for infra/.
-#
-# Pull requests run fmt/validate/plan on a read-only role and post the plan as
-# a comment. Apply is manual only, and runs in the `tf-apply` GitHub
-# Environment -- the apply role's trust policy accepts no other subject, so a
-# push to any branch cannot reach it.
-name: terraform
+name: Terraform apply
 
 on:
   pull_request:
@@ -27,11 +21,10 @@ on:
 
 permissions:
   contents: read
-  id-token: write
+  id-token: write # required for oidc
 
-# Never cancel a run mid-apply: a half-applied state is worse than a queue.
 concurrency:
-  group: terraform-${{ github.ref }}
+  group: terraform-apply-${{ github.ref }}
   cancel-in-progress: false
 
 defaults:
@@ -41,7 +34,6 @@ defaults:
 env:
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
-  # backend.hcl is gitignored, so the values are passed on the command line.
   TF_BACKEND_BUCKET: simonangelfong-terraform-backend
   TF_BACKEND_KEY: kubeflow-yolo/dev/terraform.tfstate
 
@@ -49,27 +41,28 @@ jobs:
   # ##############################
   # plan: read-only, runs on PRs and pushes
   # ##############################
-  plan:
+  terraform-plan:
     name: Plan
     if: github.event_name != 'workflow_dispatch' || inputs.action == 'plan'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment: dev
     permissions:
       contents: read
       id-token: write
       pull-requests: write # to post the plan comment
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.15.7
           terraform_wrapper: false
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.TF_PLAN_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -91,10 +84,9 @@ jobs:
       - name: Validate
         run: terraform validate -no-color
 
-      # Continues on failure so a plan error still reaches the PR comment.
       - name: Plan
         id: plan
-        continue-on-error: true
+        continue-on-error: true # Continues on failure
         run: terraform plan -no-color -input=false -lock-timeout=5m -out=tfplan
         env:
           TF_VAR_env: ${{ vars.ENV || 'dev' }}
@@ -105,11 +97,13 @@ jobs:
         id: render
         run: |
           set -euo pipefail
+
           if [ -f tfplan ]; then
             terraform show -no-color tfplan > plan.txt
           else
             echo "terraform plan failed; see the job log." > plan.txt
           fi
+
           # Keep the comment under the 65536-char API limit.
           if [ "$(wc -c < plan.txt)" -gt 60000 ]; then
             head -c 60000 plan.txt > plan.trunc
@@ -118,8 +112,9 @@ jobs:
           fi
 
       - name: Comment plan on PR
+        # if pr
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -127,12 +122,15 @@ jobs:
             const outcome = '${{ steps.plan.outcome }}';
             const marker = '<!-- terraform-plan -->';
             const body = `${marker}\n### Terraform plan \`${outcome}\`\n\n<details><summary>Show plan</summary>\n\n\`\`\`terraform\n${plan}\n\`\`\`\n\n</details>`;
+
             // Update the existing comment rather than stacking one per push.
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo,
               issue_number: context.issue.number,
             });
+
             const existing = comments.find(c => c.body && c.body.includes(marker));
+
             if (existing) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner, repo: context.repo.repo,
@@ -152,26 +150,25 @@ jobs:
   # ##############################
   # apply: manual dispatch only, gated by the tf-apply environment
   # ##############################
-  apply:
+  terraform-apply:
     name: Apply
+    # if manual and apply
     if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    # Required reviewers on this environment are what gate the admin role;
-    # the role's trust policy accepts this environment's subject only.
-    environment: tf-apply
+    environment: dev
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.15.7
           terraform_wrapper: false
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.TF_APPLY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -187,8 +184,6 @@ jobs:
         env:
           AWS_REGION: ${{ vars.AWS_REGION }}
 
-      # Plans and applies in one job: applying a plan file built by the
-      # read-only role in a separate job would be a stale-state risk.
       - name: Apply
         run: terraform apply -auto-approve -input=false -lock-timeout=5m
         env:
