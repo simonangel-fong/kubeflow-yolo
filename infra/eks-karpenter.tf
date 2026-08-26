@@ -1,29 +1,31 @@
-# # eks-karpenter.tf
+# eks-karpenter.tf
 
-# # ##############################
-# # Karpenter
-# # ##############################
-# module "karpenter" {
-#   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-#   version = "21.24.0"
+# ##############################
+# Karpenter
+# ##############################
+module "karpenter" {
+  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version = "21.24.0"
 
-#   cluster_name = module.eks.cluster_name
+  count = var.enable_eks ? 1 : 0
 
-#   create_pod_identity_association = true # enable pod id
-#   namespace                       = local.karpenter_namespace
-#   service_account                 = "karpenter"
+  cluster_name = module.eks.cluster_name
 
-#   enable_inline_policy = true
+  create_pod_identity_association = true # enable pod id
+  namespace                       = local.karpenter_namespace
+  service_account                 = "karpenter"
 
-#   # Node role
-#   node_iam_role_use_name_prefix = false
-#   node_iam_role_name            = "${local.project_prefix}-karpenter-node"
-#   node_iam_role_additional_policies = {
-#     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-#   }
+  enable_inline_policy = true
 
-#   # SQS queue + EventBridge rules
-#   enable_spot_termination = true
+  # Node role
+  node_iam_role_use_name_prefix = false
+  node_iam_role_name            = "${local.project_prefix}-karpenter-node"
+  node_iam_role_additional_policies = {
+    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  }
 
-#   tags = local.project_tags
-# }
+  # SQS queue + EventBridge rules
+  enable_spot_termination = true
+
+  tags = local.project_tags
+}

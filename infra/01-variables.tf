@@ -28,5 +28,5 @@ variable "cloudflare_api_token" {
 # ##############################
 variable "enable_eks" {
   description = "flag to control whether to enable eks cluster"
-  default     = false
+  default     = true
 }
