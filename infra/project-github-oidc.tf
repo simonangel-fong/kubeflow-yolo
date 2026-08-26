@@ -62,7 +62,7 @@ data "aws_iam_policy_document" "github_actions_ecr_push" {
       "ecr:DescribeRepositories",
       "ecr:ListImages",
     ]
-    resources = [for r in aws_ecr_repository.app : r.arn]
+    resources = [for r in aws_ecr_repository.yolo : r.arn]
   }
 }
 
@@ -110,7 +110,7 @@ data "aws_iam_policy_document" "github_terraform_state" {
   statement {
     sid       = "StateBucketList"
     actions   = ["s3:ListBucket"]
-    resources = ["arn:aws:s3:::${local.tf_backend_bucket}"]
+    resources = ["arn:aws:s3:::${local.github_tf_backend_bucket}"]
   }
 
   # use_lockfile keeps the lock next to the state object, so plan needs write
@@ -122,7 +122,7 @@ data "aws_iam_policy_document" "github_terraform_state" {
       "s3:PutObject",
       "s3:DeleteObject",
     ]
-    resources = ["arn:aws:s3:::${local.tf_backend_bucket}/${local.tf_backend_key}*"]
+    resources = ["arn:aws:s3:::${local.github_tf_backend_bucket}/${local.github_tf_backend_key}*"]
   }
 }
 
@@ -146,11 +146,6 @@ resource "aws_iam_role_policy" "github_terraform_plan_state" {
 # ##############################
 # IAM role: Terraform apply (admin)
 # ##############################
-# This config manages EKS, VPC, IAM, KMS, S3 and Secrets Manager, so apply is
-# effectively account admin. It is therefore restricted twice: the trust policy
-# accepts only the `tf-apply` GitHub Environment, and that environment carries
-# required reviewers. Narrow this to a permission boundary if the blast radius
-# ever needs to shrink further.
 data "aws_iam_policy_document" "github_terraform_apply_trust" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -171,14 +166,14 @@ data "aws_iam_policy_document" "github_terraform_apply_trust" {
     condition {
       test     = "StringEquals"
       variable = "${local.github_oidc_host}:sub"
-      values   = ["${local.github_oidc_subject}:environment:${local.tf_apply_environment}"]
+      values   = ["${local.github_oidc_subject}:environment:${local.github_tf_environment}"]
     }
   }
 }
 
 resource "aws_iam_role" "github_terraform_apply" {
   name               = "${local.project_prefix}-github-terraform-apply"
-  description        = "Assumed by the gated ${local.tf_apply_environment} environment to run terraform apply"
+  description        = "Assumed by the gated ${local.github_tf_environment} environment to run terraform apply"
   assume_role_policy = data.aws_iam_policy_document.github_terraform_apply_trust.json
 }
 

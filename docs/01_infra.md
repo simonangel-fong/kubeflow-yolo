@@ -6,7 +6,6 @@
   - [IaC - Terraform](#iac---terraform)
   - [ArgoCD](#argocd)
   - [Runbook](#runbook)
-  - [Components](#components)
 
 ---
 
@@ -70,24 +69,3 @@ kubectl -n kube-system rollout restart deploy aws-load-balancer-controller
 # hard refresh
 kubectl patch applications.argoproj.io 00-app-of-apps -n argocd --type merge -p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}' 2>&1; sleep 20; kubectl get applications.argoproj.io -n argocd 2>&1
 ```
-
----
-
-## Components
-
-- [x] karpenter
-- [x] storageclass
-- [x] cert-manager
-- [x] istio
-- [x] albc
-- [x] eso
-- [x] e-dns
-- [x] dashboard
-- [x] notebook
-- [x] mlflow
-- [x] kf pipeline
-- [x] kf kserve
-- [x] user ns
-- [x] frontend
-
----

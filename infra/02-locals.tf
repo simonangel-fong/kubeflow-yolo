@@ -65,48 +65,26 @@ locals {
   # ##############################
   # ECR
   # ##############################
-  ecr_repositories = ["kserve", "frontend", "train"]
+  ecr_repo = ["train", "kserve", "frontend"]
 
   # ##############################
   # GitHub Actions OIDC
   # ##############################
   github_oidc_host = "token.actions.githubusercontent.com"
-
-  # Repositories created on or after 2026-07-15 emit an "immutable" sub claim
-  # that appends the permanent numeric owner and repository IDs, so a recycled
-  # name cannot mint tokens matching a stale trust policy. This repo was
-  # created 2026-08-07, so the name-only form never matches.
-  #   gh api repos/<owner>/<repo> --jq '{owner_id:.owner.id, repo_id:.id}'
-  github_owner    = "simonangel-fong"
-  github_owner_id = 64545430
-  github_repo     = "kubeflow-yolo"
-  github_repo_id  = 1326782654
-
-  # Mirrors infra/backend.hcl, which is gitignored and so unavailable to the
-  # CI role policies below.
-  tf_backend_bucket = "simonangelfong-terraform-backend"
-  tf_backend_key    = "kubeflow-yolo/dev/terraform.tfstate"
-
-  # GitHub Environment gating terraform apply; must carry required reviewers.
-  tf_apply_environment = "tf-apply"
-
   github_oidc_subject = format(
     "repo:%s@%d/%s@%d",
     local.github_owner, local.github_owner_id,
     local.github_repo, local.github_repo_id,
   )
 
-  # ##############################
-  # Kubeflow
-  # ##############################
-  kubeflow_profile_namespace       = "kubeflow-yolo"
-  kubeflow_profile_service_account = "default-editor"
-
-  # ##############################
-  # ESO
-  # ##############################
-  eso_namespace       = "external-secrets"
-  eso_service_account = "external-secrets"
+  github_owner    = "simonangel-fong"
+  github_owner_id = 64545430
+  github_repo     = "kubeflow-yolo"
+  github_repo_id  = 1326782654
+  # terraform
+  github_tf_backend_bucket = "simonangelfong-terraform-backend"
+  github_tf_backend_key    = "kubeflow-yolo/dev/terraform.tfstate"
+  github_tf_environment    = "tf-apply"
 
   # ##############################
   # ArgoCD
@@ -119,6 +97,7 @@ locals {
 
   argocd_values = yamlencode({
     global = {
+      # schdule argocd only to node with taint
       tolerations = [
         {
           key      = "workload-class"
@@ -145,10 +124,22 @@ locals {
   })
 
   # ##############################
+  # ESO
+  # ##############################
+  eso_namespace       = "external-secrets"
+  eso_service_account = "external-secrets"
+
+  # ##############################
   # AWS Load Balancer Controller
   # ##############################
   albc_namespace       = "kube-system"
   albc_service_account = "aws-load-balancer-controller"
+
+  # ##############################
+  # Kubeflow
+  # ##############################
+  kubeflow_profile_namespace       = "kubeflow-yolo"
+  kubeflow_profile_service_account = "default-editor"
 
   # ##############################
   # MLflow

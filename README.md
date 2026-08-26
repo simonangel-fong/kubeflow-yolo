@@ -151,13 +151,12 @@ AWS infrastructure is managed with **Terraform**:
 
 ### CI/CD Pipelines
 
-| Pipeline                | Key Steps                                            | Purpose                        |
-| ----------------------- | ---------------------------------------------------- | ------------------------------ |
-| `terraform-apply`       | Trigger, `fmt`, `validate`, `plan`, `apply`          | Deploy infrastructure          |
-| `terraform-destroy`     | Manual trigger, `fmt`, `validate`, `plan`, `destroy` | Tear down infrastructure       |
-| `train-image-build`     | Trigger, build, push                                 | Publish training image to ECR  |
-| `inference-image-build` | Trigger, build, push                                 | Publish inference image to ECR |
-| `frontend-image-build`  | Trigger, build, push                                 | Publish frontend image to ECR  |
+| Pipeline                | Key Steps                                   | Purpose                        |
+| ----------------------- | ------------------------------------------- | ------------------------------ |
+| `terraform-apply`       | Trigger, `fmt`, `validate`, `plan`, `apply` | Deploy infrastructure          |
+| `build-image-train`     | Trigger, build, push                        | Publish training image to ECR  |
+| `build-image-inference` | Trigger, build, push                        | Publish inference image to ECR |
+| `build-image-frontend`  | Trigger, build, push                        | Publish frontend image to ECR  |
 
 ![cicd_build_train](./docs/img/cicd_build_train.png)
 
@@ -198,14 +197,8 @@ Detailed implementation guides:
 
 ---
 
-- workflow
-  - tf apply
-  - tf destroy
-  - train image build
-  - inference image build
-  - frontend image build
 - infra
+  - reorgan
   - cloudwatch
   - grafana
 - web/
-  - 

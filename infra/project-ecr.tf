@@ -3,30 +3,21 @@
 # ##############################
 # ECR: application images
 # ##############################
-resource "aws_ecr_repository" "app" {
-  for_each = toset(local.ecr_repositories)
+resource "aws_ecr_repository" "yolo" {
+  for_each = toset(local.ecr_repo)
 
   name = "${local.project_name}-${each.key}"
-
-  # allow terraform destroy
-  force_delete = true
-
   image_scanning_configuration {
     scan_on_push = true
   }
 
-  # encryption_configuration {
-  #   encryption_type = "KMS"
-  #   kms_key         = aws_kms_key.yolo.arn
-  # }
-
-  # lifecycle {
-  #   prevent_destroy = true
-  # }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-resource "aws_ecr_lifecycle_policy" "app" {
-  for_each = aws_ecr_repository.app
+resource "aws_ecr_lifecycle_policy" "yolo" {
+  for_each = aws_ecr_repository.yolo
 
   repository = each.value.name
 

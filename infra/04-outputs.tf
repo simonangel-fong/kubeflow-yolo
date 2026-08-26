@@ -67,7 +67,7 @@
 # ##############################
 output "ecr_repository_urls" {
   description = "Registry URL per application image repository"
-  value       = { for k, r in aws_ecr_repository.app : k => r.repository_url }
+  value       = { for k, r in aws_ecr_repository.yolo : k => r.repository_url }
 }
 
 # ##############################
