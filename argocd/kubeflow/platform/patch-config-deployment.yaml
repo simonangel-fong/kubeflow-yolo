@@ -1,0 +1,17 @@
+# Knative resolves each Revision's image tag to a digest from the controller
+# pod. That call is separate from the kubelet's pull, so the node role does not
+# cover it; the controller needs its own ECR credentials, granted by the pod
+# identity association in infra/cluster/iam-knative.tf.
+#
+# Kept as a strategic-merge patch because config-deployment comes from the
+# upstream Knative base, and the controller writes its own defaults back into
+# this ConfigMap at runtime.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-deployment
+  namespace: knative-serving
+data:
+  # The digest lookup crosses the internet to ECR; 10s is tight for a cold
+  # credential fetch on top of the round trip.
+  digest-resolution-timeout: "30s"

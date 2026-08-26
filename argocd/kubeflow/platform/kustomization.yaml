@@ -8,3 +8,6 @@ resources:
   - ingressgateway.yaml
   - https://github.com/kubeflow/community-distribution//common/knative/knative-serving/overlays/gateways?ref=26.03.1
   - https://github.com/kubeflow/community-distribution//common/istio/cluster-local-gateway/base?ref=26.03.1
+
+patches:
+  - path: patch-config-deployment.yaml

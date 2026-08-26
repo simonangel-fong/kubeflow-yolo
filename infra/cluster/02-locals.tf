@@ -124,6 +124,14 @@ locals {
   albc_service_account = "aws-load-balancer-controller"
 
   # ##############################
+  # Knative Serving controller
+  # ##############################
+  # Resolves image tags to digests when reconciling Revisions, so it needs its
+  # own ECR read credentials -- the node role covers the kubelet pull, not this.
+  knative_namespace       = "knative-serving"
+  knative_service_account = "controller"
+
+  # ##############################
   # Kubeflow
   # ##############################
   kubeflow_profile_namespace       = "kubeflow-yolo"
