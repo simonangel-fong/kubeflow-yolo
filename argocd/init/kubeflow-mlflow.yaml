@@ -24,10 +24,11 @@ spec:
       helm:
         releaseName: mlflow
         # The chart ships mlflow-flask-server-secret-key as a pre-install hook
-        # with hook-delete-policy=before-hook-creation. Skipping hooks stops it
-        # being rendered and deleted here; ESO owns that secret instead
-        # (argocd/eso/external-secret-mlflow-flask.yaml).
-        skipHooks: true
+        # and no chart value disables it, so ESO must not target that name or
+        # both apps claim it (SharedResourceWarning). ESO delivers the real key
+        # as mlflow-flask-eso (argocd/eso/external-secret-mlflow-flask.yaml);
+        # extraSecretNamesForEnvFrom appends it after the chart's own secret in
+        # envFrom, so the ESO value wins and the hook copy goes unused.
         values: |
           serviceAccount:
             create: true
@@ -65,6 +66,8 @@ spec:
             - disableSecurityMiddleware
           extraEnvVars:
             AWS_DEFAULT_REGION: ca-central-1
+          extraSecretNamesForEnvFrom:
+            - mlflow-flask-eso
           # MLflow 3.15 forks 4 uvicorn workers, each loading the full app;
           # 2Gi was OOMKilled. One worker keeps the footprint predictable for
           # a single-tenant tracking server.
