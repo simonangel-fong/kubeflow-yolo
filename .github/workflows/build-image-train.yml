@@ -78,7 +78,7 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: false
 
-      - name: Summary
+      - name: Summary report
         env:
           IMAGE: ${{ vars.ECR_REPO_TRAIN }}:${{ steps.meta.outputs.tag }}
         run: |
