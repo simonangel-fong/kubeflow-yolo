@@ -15,8 +15,6 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY inference/src/ ./src/
 
-# No weights baked in: KServe's storage-initializer fills /mnt/models from
-# STORAGE_URI, and docker-compose bind-mounts ./models there.
 ENV MODEL_DIR=/mnt/models
 ENV PYTHONUNBUFFERED=1
 
