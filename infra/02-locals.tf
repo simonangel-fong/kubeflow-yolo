@@ -82,6 +82,14 @@ locals {
   github_repo     = "kubeflow-yolo"
   github_repo_id  = 1326782654
 
+  # Mirrors infra/backend.hcl, which is gitignored and so unavailable to the
+  # CI role policies below.
+  tf_backend_bucket = "simonangelfong-terraform-backend"
+  tf_backend_key    = "kubeflow-yolo/dev/terraform.tfstate"
+
+  # GitHub Environment gating terraform apply; must carry required reviewers.
+  tf_apply_environment = "tf-apply"
+
   github_oidc_subject = format(
     "repo:%s@%d/%s@%d",
     local.github_owner, local.github_owner_id,

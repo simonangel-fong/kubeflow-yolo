@@ -1,0 +1,205 @@
+# Terraform CI for infra/.
+#
+# Pull requests run fmt/validate/plan on a read-only role and post the plan as
+# a comment. Apply is manual only, and runs in the `tf-apply` GitHub
+# Environment -- the apply role's trust policy accepts no other subject, so a
+# push to any branch cannot reach it.
+name: terraform
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform-apply.yml"
+  push:
+    branches: [master]
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform-apply.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Terraform action to run"
+        required: true
+        default: plan
+        type: choice
+        options: [plan, apply]
+
+permissions:
+  contents: read
+  id-token: write
+
+# Never cancel a run mid-apply: a half-applied state is worse than a queue.
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: infra
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  # backend.hcl is gitignored, so the values are passed on the command line.
+  TF_BACKEND_BUCKET: simonangelfong-terraform-backend
+  TF_BACKEND_KEY: kubeflow-yolo/dev/terraform.tfstate
+
+jobs:
+  # ##############################
+  # plan: read-only, runs on PRs and pushes
+  # ##############################
+  plan:
+    name: Plan
+    if: github.event_name != 'workflow_dispatch' || inputs.action == 'plan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write # to post the plan comment
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.7
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.TF_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Init
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${TF_BACKEND_BUCKET}" \
+            -backend-config="key=${TF_BACKEND_KEY}" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+
+      - name: Format check
+        run: terraform fmt -check -recursive -diff
+
+      - name: Validate
+        run: terraform validate -no-color
+
+      # Continues on failure so a plan error still reaches the PR comment.
+      - name: Plan
+        id: plan
+        continue-on-error: true
+        run: terraform plan -no-color -input=false -lock-timeout=5m -out=tfplan
+        env:
+          TF_VAR_env: ${{ vars.ENV || 'dev' }}
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Render plan
+        id: render
+        run: |
+          set -euo pipefail
+          if [ -f tfplan ]; then
+            terraform show -no-color tfplan > plan.txt
+          else
+            echo "terraform plan failed; see the job log." > plan.txt
+          fi
+          # Keep the comment under the 65536-char API limit.
+          if [ "$(wc -c < plan.txt)" -gt 60000 ]; then
+            head -c 60000 plan.txt > plan.trunc
+            printf '\n\n...truncated, see the job log for the full plan.\n' >> plan.trunc
+            mv plan.trunc plan.txt
+          fi
+
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infra/plan.txt', 'utf8');
+            const outcome = '${{ steps.plan.outcome }}';
+            const marker = '<!-- terraform-plan -->';
+            const body = `${marker}\n### Terraform plan \`${outcome}\`\n\n<details><summary>Show plan</summary>\n\n\`\`\`terraform\n${plan}\n\`\`\`\n\n</details>`;
+            // Update the existing comment rather than stacking one per push.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, body,
+              });
+            }
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  # ##############################
+  # apply: manual dispatch only, gated by the tf-apply environment
+  # ##############################
+  apply:
+    name: Apply
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    # Required reviewers on this environment are what gate the admin role;
+    # the role's trust policy accepts this environment's subject only.
+    environment: tf-apply
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.7
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.TF_APPLY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Init
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${TF_BACKEND_BUCKET}" \
+            -backend-config="key=${TF_BACKEND_KEY}" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+
+      # Plans and applies in one job: applying a plan file built by the
+      # read-only role in a separate job would be a stale-state risk.
+      - name: Apply
+        run: terraform apply -auto-approve -input=false -lock-timeout=5m
+        env:
+          TF_VAR_env: ${{ vars.ENV || 'dev' }}
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Summary
+        run: |
+          {
+            echo "### Terraform apply complete"
+            echo
+            terraform output -json | jq -r 'to_entries[] | "- **\(.key)**: \(.value.value|tostring)"' 2>/dev/null || true
+          } >> "$GITHUB_STEP_SUMMARY"

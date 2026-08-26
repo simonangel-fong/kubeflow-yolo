@@ -78,6 +78,16 @@ output "github_actions_role_arn" {
   value       = aws_iam_role.github_actions.arn
 }
 
+output "github_terraform_plan_role_arn" {
+  description = "Role the terraform plan job assumes; set as the TF_PLAN_ROLE_ARN variable"
+  value       = aws_iam_role.github_terraform_plan.arn
+}
+
+output "github_terraform_apply_role_arn" {
+  description = "Role the gated terraform apply job assumes; set as the TF_APPLY_ROLE_ARN variable"
+  value       = aws_iam_role.github_terraform_apply.arn
+}
+
 # # ##############################
 # # ArgoCD
 # # ##############################
