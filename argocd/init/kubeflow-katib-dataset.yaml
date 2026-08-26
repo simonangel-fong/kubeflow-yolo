@@ -2,15 +2,19 @@
 # kubeflow-tenant (Profile creates the kubeflow-yolo namespace) and the EFS
 # StorageClass from argocd/storageclass.
 #
+# Separate from kubeflow-katib (wave 38) because that installs the controller
+# into the kubeflow namespace, while this data lands in the kubeflow-yolo
+# tenant namespace -- one Application cannot own both.
+#
 # Katib trials mount pvc/dataset-raw read-only, so an experiment submitted
 # before the Job completes reads an empty directory and every trial fails.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: app-dataset
+  name: kubeflow-katib-dataset
   namespace: argocd
   labels:
-    scope: app
+    scope: kubeflow
     capability: dataset
   annotations:
     argocd.argoproj.io/sync-wave: "41"
