@@ -16,6 +16,9 @@ module "eks" {
   endpoint_public_access  = true
   endpoint_private_access = true
 
+  enabled_log_types                      = local.eks_enabled_log_types
+  cloudwatch_log_group_retention_in_days = local.eks_log_retention_days
+
   enable_cluster_creator_admin_permissions = true
 
   # add-ons

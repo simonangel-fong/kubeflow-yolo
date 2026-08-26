@@ -1,0 +1,8 @@
+# Created here so the grafana-admin ExternalSecret has a namespace to land in
+# before the monitoring Application syncs.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false

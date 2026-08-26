@@ -12,6 +12,26 @@ resource "aws_secretsmanager_secret_version" "eso_cloudflare" {
   secret_string = jsonencode({ apiToken = var.eso_cloudflare_api_token })
 }
 
+# ##############################
+# Secret: Grafana admin credentials
+# ##############################
+resource "random_password" "grafana_admin" {
+  length  = 32
+  special = false
+}
+
+resource "aws_secretsmanager_secret" "grafana_admin" {
+  name = "${module.eks.cluster_name}/grafana-admin"
+}
+
+resource "aws_secretsmanager_secret_version" "grafana_admin" {
+  secret_id = aws_secretsmanager_secret.grafana_admin.id
+  secret_string = jsonencode({
+    admin-user     = "admin"
+    admin-password = random_password.grafana_admin.result
+  })
+}
+
 
 
 

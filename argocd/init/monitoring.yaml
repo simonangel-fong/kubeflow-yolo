@@ -1,0 +1,150 @@
+# kube-prometheus-stack: Prometheus, Alertmanager, Grafana, kube-state-metrics,
+# node-exporter. Syncs after ESO resources (wave 13) so the grafana-admin secret
+# exists, and after the storage classes (wave 10) so the PVCs can bind.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-monitoring
+  namespace: argocd
+  labels:
+    scope: platform
+    capability: observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 88.5.4
+    helm:
+      releaseName: kube-prometheus-stack
+      # The bundled CRDs are far past the 262144-byte annotation limit, so this
+      # chart only applies cleanly server-side.
+      skipCrds: false
+      values: |
+        # Pick up ServiceMonitors from every namespace, not just those carrying
+        # this release's Helm labels. Without this the Istio, KServe, Katib and
+        # Karpenter ServiceMonitors are silently ignored.
+        prometheus:
+          prometheusSpec:
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            probeSelectorNilUsesHelmValues: false
+            scrapeConfigSelectorNilUsesHelmValues: false
+            retention: 15d
+            retentionSize: 40GB
+            resources:
+              requests:
+                cpu: 250m
+                memory: 2Gi
+              limits:
+                memory: 3Gi
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: gp3
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 50Gi
+            nodeSelector:
+              workload-class: platform
+            tolerations:
+              - key: workload-class
+                operator: Equal
+                value: platform
+                effect: NoSchedule
+
+        alertmanager:
+          alertmanagerSpec:
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: gp3
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 5Gi
+            nodeSelector:
+              workload-class: platform
+            tolerations:
+              - key: workload-class
+                operator: Equal
+                value: platform
+                effect: NoSchedule
+
+        grafana:
+          # Credentials come from Secrets Manager via ESO; the chart must not
+          # generate its own admin secret.
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
+          persistence:
+            enabled: true
+            storageClassName: gp3
+            size: 10Gi
+          service:
+            type: ClusterIP
+          defaultDashboardsTimezone: browser
+          nodeSelector:
+            workload-class: platform
+          tolerations:
+            - key: workload-class
+              operator: Equal
+              value: platform
+              effect: NoSchedule
+
+        prometheusOperator:
+          nodeSelector:
+            workload-class: platform
+          tolerations:
+            - key: workload-class
+              operator: Equal
+              value: platform
+              effect: NoSchedule
+
+        kube-state-metrics:
+          nodeSelector:
+            workload-class: platform
+          tolerations:
+            - key: workload-class
+              operator: Equal
+              value: platform
+              effect: NoSchedule
+
+        # node-exporter must run on every node, including tainted and
+        # Karpenter-provisioned ones, so it tolerates everything.
+        prometheus-node-exporter:
+          tolerations:
+            - operator: Exists
+
+        # EKS does not expose these control-plane components to scraping.
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeEtcd:
+          enabled: false
+        kubeProxy:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        maxDuration: 3m
+        factor: 2

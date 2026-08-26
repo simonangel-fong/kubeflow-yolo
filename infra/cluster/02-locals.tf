@@ -54,12 +54,18 @@ locals {
   # ##############################
   # EKS
   # ##############################
-  eks_version            = "1.36"
+  eks_version = "1.36"
+
   eks_node_instance_type = "t3.large"
   eks_node_count_desired = 2
   eks_node_count_min     = 2
   eks_node_count_max     = 5
   eks_node_disk_size     = 50
+
+  # controllerManager and scheduler are high-volume and rarely read, so they
+  # stay off; audit is the stream that answers "who changed this?".
+  eks_enabled_log_types  = ["api", "audit", "authenticator"]
+  eks_log_retention_days = 30
 
   # ##############################
   # Karpenter
@@ -129,4 +135,11 @@ locals {
   mlflow_namespace       = "kubeflow"
   mlflow_service_account = "mlflow"
   mlflow_s3_prefix       = "mlflow/"
+
+  # ##############################
+  # Monitoring
+  # ##############################
+  # The kube-prometheus-stack itself is an ArgoCD Application
+  # (argocd/init/monitoring.yaml); Terraform only owns the Grafana credential.
+  monitoring_namespace = "monitoring"
 }

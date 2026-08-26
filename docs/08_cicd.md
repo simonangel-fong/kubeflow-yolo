@@ -1,8 +1,8 @@
-# CI/CD: GitHub Actions
+# Kubeflow: CI/CD
 
 [Back](../README.md)
 
-- [CI/CD: GitHub Actions](#cicd-github-actions)
+- [Kubeflow: CI/CD](#kubeflow-cicd)
   - [Prerequisites](#prerequisites)
   - [`build-image-train` pipeline](#build-image-train-pipeline)
   - [`build-image-kserve` pipeline](#build-image-kserve-pipeline)

@@ -58,3 +58,19 @@ output "argocd_bootstrap" {
     kubectl apply -f argocd/root.yaml
   EOT
 }
+
+# ##############################
+# Monitoring
+# ##############################
+output "grafana_bootstrap" {
+  description = "Post-apply steps: fetch the Grafana admin password and port-forward the UI"
+  value       = <<-EOT
+    aws secretsmanager get-secret-value --region ${var.aws_region} --secret-id ${aws_secretsmanager_secret.grafana_admin.name} --query SecretString --output text
+    kubectl -n ${local.monitoring_namespace} port-forward svc/kube-prometheus-stack-grafana 3000:80
+  EOT
+}
+
+output "eks_cluster_log_group" {
+  description = "CloudWatch log group receiving EKS control-plane logs"
+  value       = "/aws/eks/${module.eks.cluster_name}/cluster"
+}
