@@ -1,14 +1,4 @@
 # NVIDIA DCGM exporter: per-GPU utilization, memory, temperature and power.
-#
-# The device plugin (wave 20) only advertises nvidia.com/gpu as a schedulable
-# resource -- it exports no telemetry. kube-state-metrics can therefore show
-# GPU capacity/allocation, but every Grafana GPU dashboard (1400/12239/14574,
-# and the Kubernetes-flavoured 23382/17603) charts DCGM_FI_DEV_* series, which
-# nothing in the cluster produced before this app.
-#
-# Runs after the device plugin so the GPU is already advertised, and its
-# ServiceMonitor is picked up because platform-monitoring sets
-# serviceMonitorSelectorNilUsesHelmValues: false.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -30,8 +20,6 @@ spec:
     helm:
       releaseName: dcgm-exporter
       values: |
-        # GPU nodes only: the pool is tainted workload-class=gpu:NoSchedule and
-        # the device plugin adds nvidia.com/gpu:NoSchedule on top.
         nodeSelector:
           workload-class: gpu
         tolerations:
@@ -45,16 +33,10 @@ spec:
 
         serviceMonitor:
           enabled: true
-          # scrapeTimeout must stay below interval; the chart defaults to
-          # 30s/25s, so both are set together rather than interval alone.
           interval: 15s
           scrapeTimeout: 10s
-          # honorLabels keeps the exporter's own instance/node labels intact
           honorLabels: true
 
-        # Chart defaults (100m/128Mi requests, 200m/512Mi limits) are kept:
-        # DCGM holds per-GPU field data plus NVML/MIG state, and a 256Mi limit
-        # OOMKilled it (exit 137) on the g5.xlarge A10G.
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
