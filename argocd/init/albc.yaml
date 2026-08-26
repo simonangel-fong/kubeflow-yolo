@@ -23,7 +23,7 @@ spec:
       values: |
         clusterName: kubeflow-yolo-dev
         region: ca-central-1
-        vpcId: vpc-023a17a17fc7fe59e
+        vpcId: vpc-0378f0ae03ba34e0d
         serviceAccount:
           create: true
           name: aws-load-balancer-controller

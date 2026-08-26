@@ -197,8 +197,4 @@ Detailed implementation guides:
 
 ---
 
-- infra
-  - reorgan
-  - cloudwatch
-  - grafana
 - web/

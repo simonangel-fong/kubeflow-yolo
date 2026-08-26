@@ -11,8 +11,6 @@ resources:
   - https://github.com/kubeflow/community-distribution//applications/dashboard/overlays/istio?ref=26.03.1
 
 patches:
-  # Demo account user@example.com -> project owner; password still from
-  # DEX_USER_PASSWORD, no hash committed.
   - patch: |-
       apiVersion: v1
       kind: ConfigMap

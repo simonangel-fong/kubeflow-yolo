@@ -33,6 +33,7 @@ terraform -chdir=infra/cluster output
 
 terraform -chdir=infra/cluster import
 
+# clean up
 terraform -chdir=infra/cluster destroy -auto-approve
 ```
 
@@ -83,6 +84,17 @@ kubectl patch applications.argoproj.io 00-app-of-apps -n argocd --type merge -p 
 # remove secret
 aws secretsmanager delete-secret --secret-id kubeflow-yolo-dev/cloudflare-api-token --force-delete-without-recovery
 
+```
+
+- Clean up
+
+```sh
+kubectl delete -f app-of-apps.yaml
+# application.argoproj.io "00-app-of-apps" deleted from argocd namespace
+
+kubectl -n argocd delete app $(kubectl -n argocd get app -o custom-columns=NAME:.metadata.name --no-headers | xargs)
+
+kubectl -n argocd patch app $(kubectl -n argocd get app -o custom-columns=NAME:.metadata.name --no-headers | xargs) --type merge -p '{"metadata":{"finalizers":[]}}'
 ```
 
 - import
