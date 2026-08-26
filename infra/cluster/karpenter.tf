@@ -7,9 +7,7 @@ module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
   version = "21.24.0"
 
-  count = var.enable_eks ? 1 : 0
-
-  cluster_name = module.eks[0].cluster_name
+  cluster_name = module.eks.cluster_name
 
   create_pod_identity_association = true # enable pod id
   namespace                       = local.karpenter_namespace

@@ -7,13 +7,11 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "21.24.0"
 
-  count = var.enable_eks ? 1 : 0
-
   name               = local.project_prefix
   kubernetes_version = local.eks_version
 
-  vpc_id     = module.vpc[0].vpc_id
-  subnet_ids = module.vpc[0].private_subnets
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
 
   endpoint_public_access  = true
   endpoint_private_access = true
@@ -58,19 +56,19 @@ module "eks" {
       })
     }
 
-    # aws-efs-csi-driver = {
-    #   pod_identity_association = [{
-    #     role_arn        = aws_iam_role.eks_csi_ebs.arn
-    #     service_account = "efs-csi-controller-sa"
-    #   }]
-    #   configuration_values = jsonencode({
-    #     controller = {
-    #       tolerations = [
-    #         { key = "workload-class", operator = "Equal", value = "platform", effect = "NoSchedule" },
-    #       ]
-    #     }
-    #   })
-    # }
+    aws-efs-csi-driver = {
+      pod_identity_association = [{
+        role_arn        = aws_iam_role.eks_csi_efs.arn
+        service_account = "efs-csi-controller-sa"
+      }]
+      configuration_values = jsonencode({
+        controller = {
+          tolerations = [
+            { key = "workload-class", operator = "Equal", value = "platform", effect = "NoSchedule" },
+          ]
+        }
+      })
+    }
 
     vpc-cni = {
       before_compute = true

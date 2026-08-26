@@ -1,4 +1,4 @@
-# eks-iam-csi.tf
+# iam-csi.tf
 
 # ##############################
 # IAM: allow EBS CSI driver addon

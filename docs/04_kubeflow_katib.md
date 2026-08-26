@@ -16,7 +16,7 @@
 ### Build and push to ECR
 
 ```sh
-terraform -chdir=infra output
+terraform -chdir=infra/project output
 # ecr_repository_urls = {
 #   "frontend" = "099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend"
 #   "kserve" = "099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-kserve"

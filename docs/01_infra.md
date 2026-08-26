@@ -11,18 +11,29 @@
 
 ## IaC - Terraform
 
+- Split:
+  - project level: long live; budget
+  - cluster level: optional; costly
+
 ```sh
-terraform -chdir=infra init -backend-config=backend.hcl
+# project level
+terraform -chdir=infra/project init -backend-config=backend.hcl
+terraform -chdir=infra/project fmt && terraform -chdir=infra/project validate
 
-terraform -chdir=infra fmt && terraform -chdir=infra validate
-terraform -chdir=infra apply -auto-approve
+terraform -chdir=infra/project apply -auto-approve
 
-terraform -chdir=infra refresh
-terraform -chdir=infra output
+# cluster level
+terraform -chdir=infra/cluster init -backend-config=backend.hcl
+terraform -chdir=infra/cluster fmt && terraform -chdir=infra/cluster validate
 
-terraform -chdir=infra import
+terraform -chdir=infra/cluster apply -auto-approve
 
-terraform -chdir=infra destroy -auto-approve
+terraform -chdir=infra/cluster refresh
+terraform -chdir=infra/cluster output
+
+terraform -chdir=infra/cluster import
+
+terraform -chdir=infra/cluster destroy -auto-approve
 ```
 
 - EKS cluster

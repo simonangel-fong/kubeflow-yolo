@@ -1,8 +1,6 @@
 # eks-argocd.tf
 
 resource "helm_release" "argocd" {
-  count = var.enable_eks ? 1 : 0
-
   name       = local.argocd_release
   repository = local.argocd_repo
   chart      = local.argocd_chart

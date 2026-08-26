@@ -1,4 +1,4 @@
-# eks-iam-efs.tf
+# iam-efs.tf
 
 # ##############################
 # IAM: EFS CSI driver role

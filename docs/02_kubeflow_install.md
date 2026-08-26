@@ -15,8 +15,8 @@
 
 ```sh
 # eks init
-terraform -chdir=infra fmt && terraform -chdir=infra validate
-terraform -chdir=infra apply -auto-approve
+terraform -chdir=infra/cluster fmt && terraform -chdir=infra/cluster validate
+terraform -chdir=infra/cluster apply -auto-approve
 
 # kubeconfig update
 aws eks update-kubeconfig --region ca-central-1 --name kubeflow-yolo-dev

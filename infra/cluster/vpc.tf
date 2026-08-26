@@ -1,4 +1,4 @@
-# eks-vpc.tf
+# vpc.tf
 
 # ##############################
 # VPC
@@ -6,8 +6,6 @@
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 6.0"
-
-  count = var.enable_eks ? 1 : 0
 
   name = local.project_prefix
 

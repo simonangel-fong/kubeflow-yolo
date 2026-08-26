@@ -18,6 +18,12 @@ on:
         default: plan
         type: choice
         options: [plan, apply]
+      root:
+        description: "Root module to target"
+        required: true
+        default: cluster
+        type: choice
+        options: [project, cluster, both]
 
 permissions:
   contents: read
@@ -27,22 +33,17 @@ concurrency:
   group: terraform-apply-${{ github.ref }}
   cancel-in-progress: false
 
-defaults:
-  run:
-    working-directory: infra
-
 env:
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
   TF_BACKEND_BUCKET: simonangelfong-terraform-backend
-  TF_BACKEND_KEY: kubeflow-yolo/dev/terraform.tfstate
 
 jobs:
   # ##############################
   # plan: read-only, runs on PRs and pushes
   # ##############################
   terraform-plan:
-    name: Plan
+    name: Plan (${{ matrix.root }})
     if: github.event_name != 'workflow_dispatch' || inputs.action == 'plan'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -51,6 +52,13 @@ jobs:
       contents: read
       id-token: write
       pull-requests: write # to post the plan comment
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [project, cluster]
+    defaults:
+      run:
+        working-directory: infra/${{ matrix.root }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -71,12 +79,13 @@ jobs:
         run: |
           terraform init -input=false \
             -backend-config="bucket=${TF_BACKEND_BUCKET}" \
-            -backend-config="key=${TF_BACKEND_KEY}" \
+            -backend-config="key=kubeflow-yolo/${TF_ENV}/${{ matrix.root }}.tfstate" \
             -backend-config="region=${AWS_REGION}" \
             -backend-config="encrypt=true" \
             -backend-config="use_lockfile=true"
         env:
           AWS_REGION: ${{ vars.AWS_REGION }}
+          TF_ENV: ${{ vars.ENV || 'dev' }}
 
       - name: Format check
         run: terraform fmt -check -recursive -diff
@@ -91,7 +100,9 @@ jobs:
         env:
           TF_VAR_env: ${{ vars.ENV || 'dev' }}
           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_eso_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_project_state_bucket: simonangelfong-terraform-backend
+          TF_VAR_project_state_key: kubeflow-yolo/${{ vars.ENV || 'dev' }}/project.tfstate
 
       - name: Render plan
         id: render
@@ -115,13 +126,30 @@ jobs:
         # if pr
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v9
+        env:
+          ROOT: ${{ matrix.root }}
+          OUTCOME: ${{ steps.plan.outcome }}
         with:
           script: |
             const fs = require('fs');
-            const plan = fs.readFileSync('infra/plan.txt', 'utf8');
-            const outcome = '${{ steps.plan.outcome }}';
-            const marker = '<!-- terraform-plan -->';
-            const body = `${marker}\n### Terraform plan \`${outcome}\`\n\n<details><summary>Show plan</summary>\n\n\`\`\`terraform\n${plan}\n\`\`\`\n\n</details>`;
+            const root = process.env.ROOT;
+            const outcome = process.env.OUTCOME;
+            const plan = fs.readFileSync(`infra/${root}/plan.txt`, 'utf8');
+            // One marker per root so the two matrix jobs keep separate comments.
+            const marker = `<!-- terraform-plan-${root} -->`;
+            const fence = '```';
+            const body = [
+              marker,
+              `### Terraform plan \`${root}\` - \`${outcome}\``,
+              '',
+              '<details><summary>Show plan</summary>',
+              '',
+              fence + 'terraform',
+              plan,
+              fence,
+              '',
+              '</details>',
+            ].join('\n');
 
             // Update the existing comment rather than stacking one per push.
             const { data: comments } = await github.rest.issues.listComments({
@@ -150,13 +178,18 @@ jobs:
   # ##############################
   # apply: manual dispatch only, gated by the tf-apply environment
   # ##############################
-  terraform-apply:
-    name: Apply
-    # if manual and apply
-    if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+  # project runs first: cluster reads its outputs via terraform_remote_state.
+  terraform-apply-project:
+    name: Apply (project)
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+      && (inputs.root == 'project' || inputs.root == 'both')
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
     environment: tf-apply
+    defaults:
+      run:
+        working-directory: infra/project
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -177,12 +210,72 @@ jobs:
         run: |
           terraform init -input=false \
             -backend-config="bucket=${TF_BACKEND_BUCKET}" \
-            -backend-config="key=${TF_BACKEND_KEY}" \
+            -backend-config="key=kubeflow-yolo/${TF_ENV}/project.tfstate" \
             -backend-config="region=${AWS_REGION}" \
             -backend-config="encrypt=true" \
             -backend-config="use_lockfile=true"
         env:
           AWS_REGION: ${{ vars.AWS_REGION }}
+          TF_ENV: ${{ vars.ENV || 'dev' }}
+
+      - name: Apply
+        run: terraform apply -auto-approve -input=false -lock-timeout=5m
+        env:
+          TF_VAR_env: ${{ vars.ENV || 'dev' }}
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+
+      - name: Summary
+        run: |
+          {
+            echo "### Terraform apply complete - project"
+            echo
+            terraform output -json | jq -r 'to_entries[] | "- **\(.key)**: \(.value.value|tostring)"' 2>/dev/null || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  terraform-apply-cluster:
+    name: Apply (cluster)
+    # always() keeps this running when root == 'cluster' and the project job is
+    # skipped; the needs edge only enforces ordering when root == 'both'.
+    if: >-
+      always()
+      && github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+      && (inputs.root == 'cluster' || inputs.root == 'both')
+      && !contains(needs.*.result, 'failure')
+      && !contains(needs.*.result, 'cancelled')
+    needs: [terraform-apply-project]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: tf-apply
+    defaults:
+      run:
+        working-directory: infra/cluster
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.15.7
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.TF_APPLY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Init
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${TF_BACKEND_BUCKET}" \
+            -backend-config="key=kubeflow-yolo/${TF_ENV}/cluster.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          TF_ENV: ${{ vars.ENV || 'dev' }}
 
       - name: Apply
         run: terraform apply -auto-approve -input=false -lock-timeout=5m
@@ -190,11 +283,13 @@ jobs:
           TF_VAR_env: ${{ vars.ENV || 'dev' }}
           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
           TF_VAR_eso_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_project_state_bucket: simonangelfong-terraform-backend
+          TF_VAR_project_state_key: kubeflow-yolo/${{ vars.ENV || 'dev' }}/project.tfstate
 
       - name: Summary
         run: |
           {
-            echo "### Terraform apply complete"
+            echo "### Terraform apply complete - cluster"
             echo
             terraform output -json | jq -r 'to_entries[] | "- **\(.key)**: \(.value.value|tostring)"' 2>/dev/null || true
           } >> "$GITHUB_STEP_SUMMARY"

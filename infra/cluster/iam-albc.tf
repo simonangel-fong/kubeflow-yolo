@@ -1,4 +1,4 @@
-# eks-albc.tf
+# iam-albc.tf
 
 
 # AWS-published policy JSON
@@ -32,7 +32,7 @@ resource "aws_iam_role_policy_attachment" "albc" {
 }
 
 resource "aws_eks_pod_identity_association" "albc" {
-  cluster_name    = module.eks[0].cluster_name
+  cluster_name    = module.eks.cluster_name
   namespace       = local.albc_namespace
   service_account = local.albc_service_account
   role_arn        = aws_iam_role.albc.arn

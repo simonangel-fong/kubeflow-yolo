@@ -18,15 +18,15 @@ config github var, secret, and env
 
 - repo var
 
-  | varible             | default values                                                       |
-  | ------------------- | -------------------------------------------------------------------- |
-  | `AWS_REGION`        | ca-central-1                                                         |
-  | `AWS_OIDC_ROLE_ARN` | `terraform -chdir=infra output -raw github_actions_role_arn`         |
-  | `ECR_REPO_TRAIN`    | `terraform -chdir=infra output ecr_repository_urls`                  |
-  | `ECR_REPO_KSERVE`   | `terraform -chdir=infra output ecr_repository_urls`                  |
-  | `ECR_REPO_FRONTEND` | `terraform -chdir=infra output ecr_repository_urls`                  |
-  | `TF_PLAN_ROLE_ARN`  | `terraform -chdir=infra output -raw github_terraform_plan_role_arn`  |
-  | `TF_APPLY_ROLE_ARN` | `terraform -chdir=infra output -raw github_terraform_apply_role_arn` |
+  | varible             | default values                                                               |
+  | ------------------- | ---------------------------------------------------------------------------- |
+  | `AWS_REGION`        | ca-central-1                                                                 |
+  | `AWS_OIDC_ROLE_ARN` | `terraform -chdir=infra/project output -raw github_actions_role_arn`         |
+  | `ECR_REPO_TRAIN`    | `terraform -chdir=infra/project output ecr_repository_urls`                  |
+  | `ECR_REPO_KSERVE`   | `terraform -chdir=infra/project output ecr_repository_urls`                  |
+  | `ECR_REPO_FRONTEND` | `terraform -chdir=infra/project output ecr_repository_urls`                  |
+  | `TF_PLAN_ROLE_ARN`  | `terraform -chdir=infra/project output -raw github_terraform_plan_role_arn`  |
+  | `TF_APPLY_ROLE_ARN` | `terraform -chdir=infra/project output -raw github_terraform_apply_role_arn` |
 
 - env var: `tf-apply`
 
@@ -41,11 +41,11 @@ gh variable set ENV --body "dev" --env "tf-apply"
 gh variable set AWS_REGION --body "ca-central-1"
 # ✓ Created variable AWS_REGION for simonangel-fong/kubeflow-yolo
 
-terraform -chdir=infra output -raw github_actions_role_arn
+terraform -chdir=infra/project output -raw github_actions_role_arn
 gh variable set AWS_OIDC_ROLE_ARN --body "arn:aws:iam::099139718958:role/kubeflow-yolo-dev-github-actions"
 # ✓ Set Actions secret AWS_OIDC_ROLE_ARN for simonangel-fong/kubeflow-yolo
 
-terraform -chdir=infra output ecr_repository_urls
+terraform -chdir=infra/project output ecr_repository_urls
 gh variable set ECR_REPO_TRAIN --body "099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-train"
 # ✓ Created variable ECR_REPO_TRAIN for simonangel-fong/kubeflow-yolo
 
@@ -55,11 +55,11 @@ gh variable set ECR_REPO_KSERVE --body "099139718958.dkr.ecr.ca-central-1.amazon
 gh variable set ECR_REPO_FRONTEND --body "099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend"
 # ✓ Created variable ECR_REPO_FRONTEND for simonangel-fong/kubeflow-yolo
 
-terraform -chdir=infra output -raw github_terraform_plan_role_arn
+terraform -chdir=infra/project output -raw github_terraform_plan_role_arn
 gh variable set TF_PLAN_ROLE_ARN --body "arn:aws:iam::099139718958:role/kubeflow-yolo-dev-github-terraform-plan"
 # ✓ Created variable TF_PLAN_ROLE_ARN for simonangel-fong/kubeflow-yolo
 
-terraform -chdir=infra output -raw github_terraform_apply_role_arn
+terraform -chdir=infra/project output -raw github_terraform_apply_role_arn
 gh variable set TF_APPLY_ROLE_ARN --body "arn:aws:iam::099139718958:role/kubeflow-yolo-dev-github-terraform-apply"
 # ✓ Updated variable TF_APPLY_ROLE_ARN for simonangel-fong/kubeflow-yolo
 
@@ -162,10 +162,10 @@ rights and this is a public repo.
 
 - Roles:
 
-  | Role                                       | Rights                              | Trust condition                  |
-  | ------------------------------------------ | ----------------------------------- | -------------------------------- |
-  | `kubeflow-yolo-dev-github-terraform-plan`  | `ReadOnlyAccess` + state bucket R/W | any ref on this repo             |
-  | `kubeflow-yolo-dev-github-terraform-apply` | `AdministratorAccess`               | `:environment:tf-apply` **only** |
+| Role                                       | Rights                              | Trust condition                  |
+| ------------------------------------------ | ----------------------------------- | -------------------------------- |
+| `kubeflow-yolo-dev-github-terraform-plan`  | `ReadOnlyAccess` + state bucket R/W | any ref on this repo             |
+| `kubeflow-yolo-dev-github-terraform-apply` | `AdministratorAccess`               | `:environment:tf-apply` **only** |
 
 ```sh
 # plan runs automatically on a PR touching infra/; to apply:

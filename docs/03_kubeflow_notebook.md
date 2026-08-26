@@ -99,7 +99,7 @@ dvc init
 # - Star us on GitHub: <https://github.com/treeverse/dvc>
 
 # get bucket id
-terraform -chdir=infra output -raw s3_bucket_name
+terraform -chdir=infra/project output -raw s3_bucket_name
 # kubeflow-yolo-dev-099139718958
 
 # Set S3 as Remote Storage

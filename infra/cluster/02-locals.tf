@@ -4,6 +4,17 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+# Long-lived resources owned by ../project.
+data "terraform_remote_state" "project" {
+  backend = "s3"
+
+  config = {
+    bucket = var.project_state_bucket
+    key    = var.project_state_key
+    region = var.aws_region
+  }
+}
+
 locals {
   # ##############################
   # Metadata
@@ -16,6 +27,12 @@ locals {
     Env       = var.env
     ManagedBy = "Terraform"
   }
+
+  # ##############################
+  # Project resources (remote state)
+  # ##############################
+  s3_bucket_name = data.terraform_remote_state.project.outputs.s3_bucket_name
+  s3_bucket_arn  = data.terraform_remote_state.project.outputs.s3_bucket_arn
 
   # ##############################
   # AWS
@@ -50,41 +67,6 @@ locals {
   karpenter_namespace     = "kube-system"
   karpenter_chart_version = "1.14.0"
   karpenter_discovery     = local.project_prefix
-
-  # ##############################
-  # S3
-  # ##############################
-  s3_bucket_name = "${local.project_prefix}-${data.aws_caller_identity.current.account_id}"
-  s3_bucket_prefix = [
-    "dvcstore/", # raw data
-    "pipeline/processed/",
-    "pipeline/runs/",
-    "mlflow/", # mlflow tracking artifacts
-  ]
-
-  # ##############################
-  # ECR
-  # ##############################
-  ecr_repo = ["train", "kserve", "frontend"]
-
-  # ##############################
-  # GitHub Actions OIDC
-  # ##############################
-  github_oidc_host = "token.actions.githubusercontent.com"
-  github_oidc_subject = format(
-    "repo:%s@%d/%s@%d",
-    local.github_owner, local.github_owner_id,
-    local.github_repo, local.github_repo_id,
-  )
-
-  github_owner    = "simonangel-fong"
-  github_owner_id = 64545430
-  github_repo     = "kubeflow-yolo"
-  github_repo_id  = 1326782654
-  # terraform
-  github_tf_backend_bucket = "simonangelfong-terraform-backend"
-  github_tf_backend_key    = "kubeflow-yolo/dev/terraform.tfstate"
-  github_tf_environment    = "tf-apply"
 
   # ##############################
   # ArgoCD
@@ -147,5 +129,4 @@ locals {
   mlflow_namespace       = "kubeflow"
   mlflow_service_account = "mlflow"
   mlflow_s3_prefix       = "mlflow/"
-
 }

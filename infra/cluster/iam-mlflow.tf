@@ -1,8 +1,4 @@
-# # kubeflow-mlflow.tf
-# #
-# # MLflow tracking server: experiment metrics/params during training.
-# # Backend store is Postgres (in-cluster); artifacts go to s3://<bucket>/mlflow/.
-# # Model registry and serving stay with Kubeflow — MLflow is tracking only.
+# # eks-iam-mlflow.tf
 
 # # ##############################
 # # IAM role: MLflow artifact store
@@ -58,43 +54,4 @@
 #   namespace       = local.mlflow_namespace
 #   service_account = local.mlflow_service_account
 #   role_arn        = aws_iam_role.mlflow.arn
-# }
-
-# # ##############################
-# # Secret: mlflow postgres credentials
-# # ##############################
-# resource "random_password" "mlflow_postgres" {
-#   length  = 32
-#   special = false
-# }
-
-# resource "aws_secretsmanager_secret" "mlflow_postgres" {
-#   name = "${module.eks.cluster_name}/mlflow-postgres"
-# }
-
-# resource "aws_secretsmanager_secret_version" "mlflow_postgres" {
-#   secret_id = aws_secretsmanager_secret.mlflow_postgres.id
-#   secret_string = jsonencode({
-#     username = "mlflow"
-#     password = random_password.mlflow_postgres.result
-#   })
-# }
-
-# # ##############################
-# # Secret: mlflow flask session key
-# # ##############################
-# # The chart generates this at render time when unset, which means a new key on
-# # every Argo sync (invalidating sessions). Pin it here and deliver via ESO.
-# resource "random_password" "mlflow_flask_key" {
-#   length  = 64
-#   special = false
-# }
-
-# resource "aws_secretsmanager_secret" "mlflow_flask_key" {
-#   name = "${module.eks.cluster_name}/mlflow-flask-key"
-# }
-
-# resource "aws_secretsmanager_secret_version" "mlflow_flask_key" {
-#   secret_id     = aws_secretsmanager_secret.mlflow_flask_key.id
-#   secret_string = jsonencode({ key = random_password.mlflow_flask_key.result })
 # }
