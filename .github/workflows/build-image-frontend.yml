@@ -1,0 +1,101 @@
+name: Build frontend image
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "frontend/app/**"
+      - "frontend/Dockerfile"
+      - ".github/workflows/build-image-frontend.yml"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Tag to publish (default: v<run_number>-<short-sha>)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write # OIDC needs
+
+concurrency:
+  group: build-image-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build-image-frontend:
+    name: Build and push frontend image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Resolve image tag
+        id: meta
+        env:
+          INPUT_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+
+          short_sha="$(git rev-parse --short=7 HEAD)"
+          tag="${INPUT_TAG:-v${GITHUB_RUN_NUMBER}-${short_sha}}"
+
+          if ! printf '%s' "$tag" | grep -Eq '^[A-Za-z0-9._-]{1,128}$'; then
+            echo "::error::invalid image tag: $tag"
+            exit 1
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$short_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # ECR_REPO_TRAIN is the full repository URI, so the registry host this
+      # step logs into is already part of it -- do not prefix it again.
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Build context is the repo root: the Dockerfile copies frontend/app.
+      # Nginx serves the static page and proxies /v1/ to the predictor.
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: frontend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ vars.ECR_REPO_FRONTEND }}:${{ steps.meta.outputs.tag }}
+            ${{ vars.ECR_REPO_FRONTEND }}:sha-${{ steps.meta.outputs.short_sha }}
+          # Small image; the cache mostly saves the nginx base pull.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Keeps the pushed manifest a plain image, so `aws ecr list-images`
+          # and the Katib pod spec see one tag rather than an attestation index.
+          provenance: false
+
+      - name: Summary
+        env:
+          IMAGE: ${{ vars.ECR_REPO_FRONTEND }}:${{ steps.meta.outputs.tag }}
+        run: |
+          {
+            echo "### Frontend image pushed"
+            echo
+            echo '```'
+            echo "$IMAGE"
+            echo '```'
+            echo
+            echo "Update the tag in frontend/manifests/deployment.yaml, then let ArgoCD sync."
+          } >> "$GITHUB_STEP_SUMMARY"
