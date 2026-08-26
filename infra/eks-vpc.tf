@@ -1,37 +1,39 @@
-# # eks-vpc.tf
+# eks-vpc.tf
 
-# # ##############################
-# # VPC
-# # ##############################
-# module "vpc" {
-#   source  = "terraform-aws-modules/vpc/aws"
-#   version = "~> 6.0"
+# ##############################
+# VPC
+# ##############################
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 6.0"
 
-#   name = local.project_prefix
+  count = var.enable_eks ? 1 : 0
 
-#   cidr            = local.vpc_cidr
-#   azs             = keys(local.vpc_public_subnets)
-#   public_subnets  = values(local.vpc_public_subnets)
-#   private_subnets = values(local.vpc_private_subnets)
+  name = local.project_prefix
 
-#   # Enable nat gateway
-#   enable_nat_gateway = true
-#   single_nat_gateway = true
+  cidr            = local.vpc_cidr
+  azs             = keys(local.vpc_public_subnets)
+  public_subnets  = values(local.vpc_public_subnets)
+  private_subnets = values(local.vpc_private_subnets)
 
-#   enable_dns_hostnames = true
-#   enable_dns_support   = true
+  # Enable nat gateway
+  enable_nat_gateway = true
+  single_nat_gateway = true
 
-#   # tag: elb
-#   public_subnet_tags = {
-#     "kubernetes.io/role/elb"                        = "1"
-#     "kubernetes.io/cluster/${local.project_prefix}" = "shared"
-#   }
+  enable_dns_hostnames = true
+  enable_dns_support   = true
 
-#   # tab: kapenter;
-#   private_subnet_tags = {
-#     "kubernetes.io/role/internal-elb" = "1" # lb
-#     "karpenter.sh/discovery"          = local.project_prefix
-#   }
+  # tag: elb
+  public_subnet_tags = {
+    "kubernetes.io/role/elb"                        = "1"
+    "kubernetes.io/cluster/${local.project_prefix}" = "shared"
+  }
 
-#   tags = local.project_tags
-# }
+  # tab: kapenter;
+  private_subnet_tags = {
+    "kubernetes.io/role/internal-elb" = "1" # lb
+    "karpenter.sh/discovery"          = local.project_prefix
+  }
+
+  tags = local.project_tags
+}
