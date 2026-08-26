@@ -1,0 +1,37 @@
+# GPU dashboards for Grafana, kept in git rather than clicked into the UI
+# (the Grafana PVC is not backed up, so UI-imported dashboards are lost on a
+# volume rebuild).
+#
+# kube-prometheus-stack runs the grafana-sc-dashboard sidecar with
+# LABEL=grafana_dashboard, LABEL_VALUE=1, NAMESPACE=ALL, so any ConfigMap
+# carrying that label is picked up and loaded automatically -- no chart
+# values and no Grafana restart needed.
+#
+# The upstream JSON ships a ${DS_PROMETHEUS} __inputs placeholder that only
+# the interactive importer can fill in. Both files here have it substituted
+# for the provisioned datasource uid (prometheus) and __inputs removed, so
+# the sidecar can load them unattended.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+generatorOptions:
+  # the sidecar watches for label changes; a hash suffix would orphan the
+  # previous ConfigMap on every edit
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    argocd.argoproj.io/sync-wave: "22"
+
+configMapGenerator:
+  # grafana.com 12239 -- NVIDIA's official per-GPU view, keys on `instance`
+  - name: grafana-dashboard-nvidia-dcgm-exporter
+    files:
+      - nvidia-dcgm-exporter.json=dashboards/nvidia-dcgm-exporter.json
+  # grafana.com 23382 -- Kubernetes-oriented, keys on `Hostname` (supplied by
+  # the ServiceMonitor relabeling in argocd/init/dcgm-exporter.yaml)
+  - name: grafana-dashboard-nvidia-dcgm-kubernetes
+    files:
+      - nvidia-dcgm-kubernetes.json=dashboards/nvidia-dcgm-kubernetes.json
