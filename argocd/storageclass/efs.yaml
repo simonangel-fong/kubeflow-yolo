@@ -14,7 +14,8 @@ reclaimPolicy: Delete
 volumeBindingMode: Immediate
 parameters:
   provisioningMode: efs-ap
-  fileSystemId: fs-03aa0674732c9c276
+  # need update
+  fileSystemId: fs-0dad470a013fa8028
   directoryPerms: "700"
   # Access points are created under this path, one per PVC.
   basePath: "/dynamic"
