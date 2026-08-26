@@ -159,7 +159,7 @@ AWS infrastructure is managed with **Terraform**:
 | `inference-image-build` | Trigger, build, push                                 | Publish inference image to ECR |
 | `frontend-image-build`  | Trigger, build, push                                 | Publish frontend image to ECR  |
 
-![cicd_tf_apply](./docs/img/cicd_tf_apply.png)
+![cicd_build_train](./docs/img/cicd_build_train.png)
 
 ---
 

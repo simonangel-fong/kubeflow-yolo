@@ -70,8 +70,23 @@ locals {
   # ##############################
   # GitHub Actions OIDC
   # ##############################
-  github_oidc_host  = "token.actions.githubusercontent.com"
-  github_repository = "simonangel-fong/kubeflow-yolo"
+  github_oidc_host = "token.actions.githubusercontent.com"
+
+  # Repositories created on or after 2026-07-15 emit an "immutable" sub claim
+  # that appends the permanent numeric owner and repository IDs, so a recycled
+  # name cannot mint tokens matching a stale trust policy. This repo was
+  # created 2026-08-07, so the name-only form never matches.
+  #   gh api repos/<owner>/<repo> --jq '{owner_id:.owner.id, repo_id:.id}'
+  github_owner    = "simonangel-fong"
+  github_owner_id = 64545430
+  github_repo     = "kubeflow-yolo"
+  github_repo_id  = 1326782654
+
+  github_oidc_subject = format(
+    "repo:%s@%d/%s@%d",
+    local.github_owner, local.github_owner_id,
+    local.github_repo, local.github_repo_id,
+  )
 
   # ##############################
   # Kubeflow

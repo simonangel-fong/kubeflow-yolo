@@ -29,11 +29,12 @@ data "aws_iam_policy_document" "github_actions_trust" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Scope: current repository; Any branch, tag, or environment
+    # Scope: current repository; any branch, tag, or environment.
+    # Uses the immutable subject form -- see local.github_oidc_subject.
     condition {
       test     = "StringLike"
       variable = "${local.github_oidc_host}:sub"
-      values   = ["repo:${local.github_repository}:*"]
+      values   = ["${local.github_oidc_subject}:*"]
     }
   }
 }
@@ -55,6 +56,8 @@ data "aws_iam_policy_document" "github_actions_ecr_push" {
       "ecr:CompleteLayerUpload",
       "ecr:PutImage",
       "ecr:BatchGetImage",
+      # buildx reads existing layers back when pushing.
+      "ecr:GetDownloadUrlForLayer",
       "ecr:DescribeImages",
       "ecr:DescribeRepositories",
       "ecr:ListImages",

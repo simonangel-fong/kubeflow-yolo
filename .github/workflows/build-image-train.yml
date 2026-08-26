@@ -5,7 +5,7 @@ on:
     branches: [master]
     paths:
       - "train-job/**"
-      - ".github/workflows/train-image-build.yml"
+      - ".github/workflows/build-image-train.yml"
   workflow_dispatch:
     inputs:
       image_tag:
@@ -55,8 +55,9 @@ jobs:
           role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      # ECR_REPO_TRAIN is the full repository URI, so the registry host this
+      # step logs into is already part of it -- do not prefix it again.
       - name: Login to Amazon ECR
-        id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Buildx
@@ -73,8 +74,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPO_TRAIN }}:${{ steps.meta.outputs.tag }}
-            ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPO_TRAIN }}:sha-${{ steps.meta.outputs.short_sha }}
+            ${{ vars.ECR_REPO_TRAIN }}:${{ steps.meta.outputs.tag }}
+            ${{ vars.ECR_REPO_TRAIN }}:sha-${{ steps.meta.outputs.short_sha }}
           # The CUDA base and pip install dominate build time.
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -84,7 +85,7 @@ jobs:
 
       - name: Summary
         env:
-          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPO_TRAIN }}:${{ steps.meta.outputs.tag }}
+          IMAGE: ${{ vars.ECR_REPO_TRAIN }}:${{ steps.meta.outputs.tag }}
         run: |
           {
             echo "### Training image pushed"
