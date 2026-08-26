@@ -42,7 +42,7 @@ gh variable set AWS_REGION --body "ca-central-1"
 # ✓ Created variable AWS_REGION for simonangel-fong/kubeflow-yolo
 
 terraform -chdir=infra/project output -raw github_actions_role_arn
-gh variable set AWS_OIDC_ROLE_ARN --body "arn:aws:iam::099139718958:role/kubeflow-yolo-dev-github-actions"
+gh variable set AWS_OIDC_ROLE_ARN --body "arn:aws:iam::099139718958:role/kubeflow-yolo-dev-github-ecr-push"
 # ✓ Set Actions secret AWS_OIDC_ROLE_ARN for simonangel-fong/kubeflow-yolo
 
 terraform -chdir=infra/project output ecr_repository_urls
