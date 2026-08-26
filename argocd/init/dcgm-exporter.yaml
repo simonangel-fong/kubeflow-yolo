@@ -33,9 +33,25 @@ spec:
 
         serviceMonitor:
           enabled: true
+          # scrapeTimeout must stay below interval; the chart defaults to
+          # 30s/25s, so both are set together rather than interval alone.
           interval: 15s
           scrapeTimeout: 10s
+          # honorLabels keeps the exporter's own pod/namespace attribution,
+          # which is what maps a GPU back to the Katib trial using it.
           honorLabels: true
+          # DCGM 4.x emits the node as lowercase `hostname`, but the community
+          # GPU dashboards (12239, 14574) query `Hostname`, and the Kubernetes
+          # ones (23382, 17603) query `node` -- both render empty without these.
+          # Copying rather than renaming keeps `hostname` intact for anything
+          # already using it.
+          relabelings:
+            - sourceLabels: [__meta_kubernetes_pod_node_name]
+              targetLabel: Hostname
+              action: replace
+            - sourceLabels: [__meta_kubernetes_pod_node_name]
+              targetLabel: node
+              action: replace
 
   destination:
     server: https://kubernetes.default.svc
