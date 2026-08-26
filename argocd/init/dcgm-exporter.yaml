@@ -40,17 +40,14 @@ spec:
           # honorLabels keeps the exporter's own pod/namespace attribution,
           # which is what maps a GPU back to the Katib trial using it.
           honorLabels: true
-          # DCGM 4.x emits the node as lowercase `hostname`, but the community
-          # GPU dashboards (12239, 14574) query `Hostname`, and the Kubernetes
-          # ones (23382, 17603) query `node` -- both render empty without these.
-          # Copying rather than renaming keeps `hostname` intact for anything
-          # already using it.
+          # dcgm-exporter 4.x renamed the node label `Hostname` -> `hostname`
+          # (NVIDIA/dcgm-exporter#655). Dashboard 23382 still queries
+          # `Hostname`, so it renders empty without this copy. Copying rather
+          # than renaming keeps `hostname` intact for anything already on it.
+          # Dashboard 12239 keys on `instance`, which needs no relabeling.
           relabelings:
             - sourceLabels: [__meta_kubernetes_pod_node_name]
               targetLabel: Hostname
-              action: replace
-            - sourceLabels: [__meta_kubernetes_pod_node_name]
-              targetLabel: node
               action: replace
 
   destination:
