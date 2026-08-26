@@ -1,15 +1,15 @@
-name: Build train-job image
+name: Build kserve predictor image
 
 on:
   push:
     branches: [master]
     paths:
-      - "train-job/**"
-      - ".github/workflows/build-image-train.yml"
+      - "inference/**"
+      - ".github/workflows/build-image-kserve.yml"
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Tag to publish (default: v<run_number>-<short-sha>)"
+        description: "Tag to publish (default: v<run_number>-<short-sha>-cpu)"
         required: false
         type: string
 
@@ -18,17 +18,17 @@ permissions:
   id-token: write # OIDC needs
 
 concurrency:
-  group: build-image-train-${{ github.ref }}
+  group: build-image-kserve-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
-  build-image-train:
-    name: Build and push train image
+  build-image-kserve:
+    name: Build and push kserve image
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
 
           short_sha="$(git rev-parse --short=7 HEAD)"
-          tag="${INPUT_TAG:-v${GITHUB_RUN_NUMBER}-${short_sha}}"
+          tag="${INPUT_TAG:-v${GITHUB_RUN_NUMBER}-${short_sha}-cpu}"
 
           if ! printf '%s' "$tag" | grep -Eq '^[A-Za-z0-9._-]{1,128}$'; then
             echo "::error::invalid image tag: $tag"
@@ -66,20 +66,20 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v4
 
-      # Build context is the repo root: the Dockerfile copies train-job/src
-      # and train-job/configs. Trials run on the g5.xlarge GPU nodepool, so
-      # only linux/amd64 is built.
+      # Build context is the repo root: the Dockerfile copies inference/src.
+      # The predictor runs on CPU nodes -- no weights are baked in, KServe's
+      # storage-initializer fills /mnt/models from STORAGE_URI at startup.
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: train-job/Dockerfile
+          file: inference/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ vars.ECR_REPO_TRAIN }}:${{ steps.meta.outputs.tag }}
-            ${{ vars.ECR_REPO_TRAIN }}:sha-${{ steps.meta.outputs.short_sha }}
-          # The CUDA base and pip install dominate build time.
+            ${{ vars.ECR_REPO_KSERVE }}:${{ steps.meta.outputs.tag }}
+            ${{ vars.ECR_REPO_KSERVE }}:sha-${{ steps.meta.outputs.short_sha }}-cpu
+          # pip install dominates build time.
           cache-from: type=gha
           cache-to: type=gha,mode=max
           # Keeps the pushed manifest a plain image, so `aws ecr list-images`
@@ -88,14 +88,14 @@ jobs:
 
       - name: Summary
         env:
-          IMAGE: ${{ vars.ECR_REPO_TRAIN }}:${{ steps.meta.outputs.tag }}
+          IMAGE: ${{ vars.ECR_REPO_KSERVE }}:${{ steps.meta.outputs.tag }}
         run: |
           {
-            echo "### Training image pushed"
+            echo "### KServe predictor image pushed"
             echo
             echo '```'
             echo "$IMAGE"
             echo '```'
             echo
-            echo "Pin this tag in the Katib experiment, then re-apply it."
+            echo "Pin this tag in the InferenceService, then re-apply it."
           } >> "$GITHUB_STEP_SUMMARY"
