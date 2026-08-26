@@ -68,6 +68,12 @@ locals {
   ecr_repositories = ["kserve", "frontend", "train"]
 
   # ##############################
+  # GitHub Actions OIDC
+  # ##############################
+  github_oidc_host  = "token.actions.githubusercontent.com"
+  github_repository = "simonangel-fong/kubeflow-yolo"
+
+  # ##############################
   # Kubeflow
   # ##############################
   kubeflow_profile_namespace       = "kubeflow-yolo"

@@ -1,21 +1,4 @@
 # s3.tf
-#
-# Bucket layout:
-#
-#   dvcstore/                              DVC content-addressed store
-#     files/md5/<2>/<rest>                 every object, keyed by content hash
-#
-#   pipeline/                              written by kubeflow/pipelines
-#     processed/                           train/val split + data.yaml
-#     runs/<run-id>/                       one directory per pipeline run
-#       train/best.pt                      trained weights
-#       eval/metrics.json                  mAP50 and the run id
-#       serve/                             registered storage_uri
-#         model.onnx                       the served graph
-#         metadata.json                    imgsz, class names, opset
-#
-# Objects under pipeline/ are reproducible: a run can be repeated from the
-# dataset version in dvcstore/, so only dvcstore/ is irreplaceable.
 
 # ##############################
 # S3 bucket
@@ -23,9 +6,9 @@
 resource "aws_s3_bucket" "project" {
   bucket = local.s3_bucket_name
 
-  # lifecycle {
-  #   prevent_destroy = true
-  # }
+  lifecycle {
+    prevent_destroy = true
+  }
 
   tags = local.project_tags
 }

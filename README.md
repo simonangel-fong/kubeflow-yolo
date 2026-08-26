@@ -17,7 +17,7 @@ An end-to-end MLOps platform that trains, tracks, deploys, and serves a YOLO obj
     - [Platform in Action](#platform-in-action)
   - [DevOps Engineering](#devops-engineering)
     - [CI/CD Pipelines](#cicd-pipelines)
-    - [GitOps with Argo CD](#gitops-with-argo-cd)
+    - [GitOps with `Argo CD`](#gitops-with-argo-cd)
   - [Roadmap](#roadmap)
   - [Documentation](#documentation)
 
@@ -39,7 +39,7 @@ This project addresses that challenge building an end-to-end MLOps platform for 
 
 - **Live application demo**: car plate detection
 
-![](./docs/img/app_demo01.png)
+![app_demo01](./docs/img/app_demo01.png)
 
 ---
 
@@ -92,16 +92,16 @@ kubeflow-yolo/
 - **Development**: model exploration in `Jupyter`
   ![kf_notebook_train01](./docs/img/kf_notebook_train01.png)
 
-- **Experiments**: `Katib` trials
+- **Experiments**: `Katib` runs trials
   ![mlops_katib](./docs/img/kf_katib01.png)
 
-- **Experiments**: `MLflow` metrics
+- **Experiments**: `MLflow` tracks metrics
   ![mlflow_metrics02](./docs/img/mlflow_metrics02.png)
 
-- **Pipeline**: train, evaluate, and register
+- **Pipeline**: `KFP` trains, evaluates, and registers
   ![kf_pipeline02](./docs/img/kf_pipeline02.png)
 
-- **Serving** — deploy the selected model with KServe
+- **Serving**: deploy the selected model with `KServe`
   ![kf_kserve_endpoint01](./docs/img/kf_kserve_endpoint01.png)
 
 ---
@@ -163,11 +163,11 @@ AWS infrastructure is managed with **Terraform**:
 
 ---
 
-### GitOps with Argo CD
+### GitOps with `Argo CD`
 
 - **App-of-Apps**: declaratively manages platform and application components.
-- **Git as source of truth**: Argo CD continuously reconciles the cluster with the repository.
-- **Automated deployment**: platform and application changes are applied through GitOps.
+- **`Git` as source of truth**: `Argo CD` continuously reconciles the cluster with the repository.
+- **Automated deployment**: platform and application changes are applied through `GitOps`.
 
 ![argocd01](./docs/img/argocd01.png)
 
@@ -175,12 +175,12 @@ AWS infrastructure is managed with **Terraform**:
 
 ## Roadmap
 
-| Stage                      | Focus                                                                    |
-| -------------------------- | ------------------------------------------------------------------------ |
-| **Make it work — current** | Deliver a MVP functional end-to-end MLOps platform                       |
-| **Make it right**          | Add model promotion gates, policy as code, and CI/CD security scanning   |
-| **Make it fast**           | Optimize container builds(multi-stage build) and enable pipeline caching |
-| **Make it efficient**      | Add FinOps practices and deeper Prometheus/Grafana monitoring            |
+| Stage                      | Focus                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| **Make it work — current** | Deliver a MVP functional end-to-end MLOps platform                           |
+| **Make it right**          | Add model promotion gates, policy as code, and CI/CD security scanning       |
+| **Make it fast**           | Optimize container builds with multi-stage build and enable pipeline caching |
+| **Make it efficient**      | Add FinOps practices and deeper Prometheus/Grafana monitoring                |
 
 ---
 
@@ -195,3 +195,17 @@ Detailed implementation guides:
 - [Training with `Kubeflow Pipelines`](./docs/05_kubeflow_pipeline.md)
 - [Model Serving with `KServe`](./docs/06_kubeflow_kserve.md)
 - [Frontend Deployment](./docs/07_app_frontend.md)
+
+---
+
+- workflow
+  - tf apply
+  - tf destroy
+  - train image build
+  - inference image build
+  - frontend image build
+- infra
+  - cloudwatch
+  - grafana
+- web/
+  - 
