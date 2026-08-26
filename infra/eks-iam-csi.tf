@@ -3,6 +3,13 @@
 # ##############################
 # IAM: allow EBS CSI driver addon
 # ##############################
+resource "aws_iam_role" "eks_csi_ebs" {
+  name               = "${local.project_prefix}-csi-ebs"
+  assume_role_policy = data.aws_iam_policy_document.eks_csi_ebs.json
+
+  tags = local.project_tags
+}
+
 data "aws_iam_policy_document" "eks_csi_ebs" {
   statement {
     effect  = "Allow"
@@ -13,13 +20,6 @@ data "aws_iam_policy_document" "eks_csi_ebs" {
       identifiers = ["pods.eks.amazonaws.com"]
     }
   }
-}
-
-resource "aws_iam_role" "eks_csi_ebs" {
-  name               = "${local.project_prefix}-csi-ebs"
-  assume_role_policy = data.aws_iam_policy_document.eks_csi_ebs.json
-
-  tags = local.project_tags
 }
 
 resource "aws_iam_role_policy_attachment" "eks_csi_ebs" {
