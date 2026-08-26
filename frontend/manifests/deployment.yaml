@@ -21,7 +21,7 @@ spec:
 
       containers:
         - name: nginx
-          image: 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v0.1.0
+          image: 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-frontend:v2-cd6c35e
           imagePullPolicy: IfNotPresent
 
           env:

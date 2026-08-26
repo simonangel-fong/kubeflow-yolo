@@ -21,7 +21,7 @@ spec:
 
     containers:
       - name: kserve-container
-        image: 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-kserve:v0.1.0-cpu
+        image: 099139718958.dkr.ecr.ca-central-1.amazonaws.com/kubeflow-yolo-kserve:v3-737e1b5-cpu
         imagePullPolicy: IfNotPresent
 
         env:
