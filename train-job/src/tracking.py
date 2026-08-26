@@ -1,13 +1,5 @@
 """
 MLflow tracking for a training run.
-
-Tracking is opt-in: with no --mlflow-uri (and no MLFLOW_TRACKING_URI in the
-environment) every call here is a no-op, so the script still runs unchanged
-outside the cluster.
-
-Under Katib each trial is its own pod, so each trial becomes its own MLflow
-run. The Katib trial name arrives via the downward API as POD_NAME and is used
-as the run name, which is what ties an MLflow run back to its trial.
 """
 
 from __future__ import annotations
@@ -16,9 +8,6 @@ import functools
 import os
 from pathlib import Path
 
-# Per-epoch metrics come from an ultralytics callback. Ultralytics also ships
-# its own mlflow integration, which would open a second, competing run; the
-# env var below disables it.
 os.environ.setdefault("MLFLOW", "False")
 
 
