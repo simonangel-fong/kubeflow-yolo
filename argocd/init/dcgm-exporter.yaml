@@ -52,12 +52,9 @@ spec:
           # honorLabels keeps the exporter's own instance/node labels intact
           honorLabels: true
 
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            memory: 256Mi
+        # Chart defaults (100m/128Mi requests, 200m/512Mi limits) are kept:
+        # DCGM holds per-GPU field data plus NVML/MIG state, and a 256Mi limit
+        # OOMKilled it (exit 137) on the g5.xlarge A10G.
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
