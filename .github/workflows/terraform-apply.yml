@@ -189,7 +189,7 @@ jobs:
         env:
           TF_VAR_env: ${{ vars.ENV || 'dev' }}
           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_eso_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Summary
         run: |

@@ -1,19 +1,21 @@
-# # eks-argocd.tf
+# eks-argocd.tf
 
-# resource "helm_release" "argocd" {
-#   name       = local.argocd_release
-#   repository = local.argocd_repo
-#   chart      = local.argocd_chart
-#   version    = local.argocd_chart_version
+resource "helm_release" "argocd" {
+  count = var.enable_eks ? 1 : 0
 
-#   namespace        = local.argocd_namespace
-#   create_namespace = true
+  name       = local.argocd_release
+  repository = local.argocd_repo
+  chart      = local.argocd_chart
+  version    = local.argocd_chart_version
 
-#   wait          = true
-#   wait_for_jobs = true
-#   timeout       = 900
+  namespace        = local.argocd_namespace
+  create_namespace = true
 
-#   values = [local.argocd_values]
+  wait          = true
+  wait_for_jobs = true
+  timeout       = 900
 
-#   depends_on = [module.eks]
-# }
+  values = [local.argocd_values]
+
+  depends_on = [module.eks]
+}
