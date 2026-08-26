@@ -12,6 +12,6 @@ resource "aws_secretsmanager_secret" "eso_cloudflare" {
 resource "aws_secretsmanager_secret_version" "eso_cloudflare" {
   count = var.enable_eks ? 1 : 0
 
-  secret_id     = aws_secretsmanager_secret.eso_cloudflare.id
+  secret_id     = aws_secretsmanager_secret.eso_cloudflare[0].id
   secret_string = jsonencode({ apiToken = var.eso_cloudflare_api_token })
 }

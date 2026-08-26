@@ -5,7 +5,7 @@
 # ##############################
 output "vpc_id" {
   description = "VPC ID"
-  value       = module.vpc[0].vpc_id
+  value       = one(module.vpc[*].vpc_id)
 }
 
 # # ##############################
