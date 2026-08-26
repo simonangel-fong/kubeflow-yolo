@@ -11,7 +11,9 @@ metadata:
     app: kubeflow-yolo-ui
 spec:
   parentRefs:
-    - name: istio-ingress
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: istio-ingress
       namespace: istio-ingress
       sectionName: https
   hostnames:
@@ -22,8 +24,11 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: kubeflow-yolo-ui
+        - group: ""
+          kind: Service
+          name: kubeflow-yolo-ui
           port: 80
+          weight: 1
 ---
 # Redirect plain http to https; the Gateway's :80 listener accepts it first.
 apiVersion: gateway.networking.k8s.io/v1
@@ -35,13 +40,19 @@ metadata:
     app: kubeflow-yolo-ui
 spec:
   parentRefs:
-    - name: istio-ingress
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: istio-ingress
       namespace: istio-ingress
       sectionName: http
   hostnames:
     - kubeflow.arguswatcher.net
   rules:
-    - filters:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
         - type: RequestRedirect
           requestRedirect:
             scheme: https
