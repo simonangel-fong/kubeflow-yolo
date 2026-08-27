@@ -33,8 +33,7 @@ terraform -chdir=infra/cluster output
 
 terraform -chdir=infra/cluster import
 
-# clean up
-terraform -chdir=infra/cluster destroy -auto-approve
+
 ```
 
 - EKS cluster
@@ -95,6 +94,9 @@ kubectl delete -f app-of-apps.yaml
 kubectl -n argocd delete app $(kubectl -n argocd get app -o custom-columns=NAME:.metadata.name --no-headers | xargs)
 
 kubectl -n argocd patch app $(kubectl -n argocd get app -o custom-columns=NAME:.metadata.name --no-headers | xargs) --type merge -p '{"metadata":{"finalizers":[]}}'
+
+# clean up
+terraform -chdir=infra/cluster destroy -auto-approve
 ```
 
 - import
