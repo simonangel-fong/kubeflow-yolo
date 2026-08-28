@@ -1,0 +1,414 @@
+/* ── Tokens ── */
+:root {
+  --bg-base:      #0d1117;
+  --bg-surface:   #161b22;
+  --bg-card:      #1c2128;
+  --border:       #30363d;
+  --accent:       #2f81f7;
+  --accent-dim:   #1a4a8a;
+  --text-primary: #e6edf3;
+  --text-muted:   #8b949e;
+  --green:        #3fb950;
+  --orange:       #d29922;
+  --purple:       #a371f7;
+}
+
+/* ── Base ── */
+body {
+  font-family: "Inter", sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.container {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+@media (min-width: 992px) {
+  .container {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
+code, pre, .mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Inline code inherits the palette instead of Bootstrap's default pink */
+:not(pre) > code {
+  color: var(--accent);
+  background: rgba(47, 129, 247, 0.08);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+
+.screenshot-label code,
+.data-table .cell-label code {
+  color: inherit;
+  background: none;
+  padding: 0;
+}
+
+/* ── Utility ── */
+.text-emphasis  { color: var(--text-primary); }
+.text-green     { color: var(--green); }
+.text-orange    { color: var(--orange); }
+.text-purple    { color: var(--purple); }
+.text-accent    { color: var(--accent); }
+
+/* ── Typography ── */
+.body-text {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1.75;
+  max-width: 720px;
+}
+
+.body-list {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 2;
+  max-width: 720px;
+  padding-left: 1.25rem;
+}
+
+.subsection-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+/* ── Navbar ── */
+#mainNav {
+  background-color: rgba(13, 17, 23, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+#mainNav .navbar-brand {
+  font-weight: 700;
+  color: var(--accent) !important;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+#mainNav .nav-link {
+  color: var(--text-muted) !important;
+  font-size: 0.875rem;
+  padding: 0.4rem 0.75rem;
+  transition: color 0.2s;
+}
+
+#mainNav .nav-link:hover,
+#mainNav .nav-link.active {
+  color: var(--text-primary) !important;
+}
+
+/* ── Section shared ── */
+section {
+  padding: 5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.section-eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+/* ── Hero ── */
+#hero {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: 5rem 0;
+  border-bottom: 1px solid var(--border);
+  /* Left-weighted scrim keeps the text legible while the neon subject
+     on the right of the photo stays visible. */
+  background:
+    linear-gradient(to right, rgba(13,17,23,0.94) 0%, rgba(13,17,23,0.86) 40%, rgba(13,17,23,0.42) 72%, rgba(13,17,23,0.28) 100%),
+    linear-gradient(to bottom, rgba(13,17,23,0.60) 0%, rgba(13,17,23,0.20) 45%, rgba(13,17,23,0.88) 100%),
+    url("../../img/bg.jpg") center / cover no-repeat,
+    var(--bg-base);
+}
+
+.tagline {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.hero-subtitle {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.hero-desc {
+  font-size: 1.125rem;
+  color: var(--text-muted);
+  max-width: 620px;
+}
+
+/* ── Challenge blockquote ── */
+.challenge-quote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1.25rem;
+  margin: 0 0 2rem;
+}
+
+.challenge-question {
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ── Images ── */
+.section-img {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.screenshot {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.screenshot-label {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-top: 0.8rem;
+  text-align: center;
+}
+
+/* ── Cards ── */
+.feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.75rem;
+  height: 100%;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.feature-card:hover {
+  border-color: var(--accent-dim);
+  transform: translateY(-2px);
+}
+
+.feature-card .icon {
+  font-size: 1.75rem;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+
+.feature-card h5 {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* ── Tech stack badges ── */
+.tech-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0.25rem;
+}
+
+/* ── Data table ── */
+.data-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 640px;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.data-table thead th {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 0.9rem 1.1rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.6;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr:hover td {
+  background: rgba(47, 129, 247, 0.04);
+}
+
+.data-table .step-num {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--accent);
+  font-weight: 600;
+  width: 3rem;
+}
+
+.data-table .cell-label {
+  color: var(--text-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Stage list (MLOps / roadmap) ── */
+.stage-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.4rem;
+  height: 100%;
+}
+
+.stage-card .stage-step {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+
+.stage-card h5 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.stage-card p {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.stage-card.is-current {
+  border-color: var(--accent-dim);
+}
+
+.stage-card.is-current .stage-step {
+  color: var(--green);
+}
+
+/* ── Code block ── */
+.code-block {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem;
+  font-size: 0.82rem;
+  line-height: 1.75;
+  overflow-x: auto;
+  color: #cdd9e5;
+  margin: 0;
+}
+
+.code-block .k { color: var(--purple); }
+.code-block .v { color: var(--green); }
+.code-block .c { color: var(--text-muted); font-style: italic; }
+
+/* ── Doc links ── */
+.doc-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  height: 100%;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.doc-link:hover {
+  border-color: var(--accent-dim);
+  transform: translateY(-2px);
+  color: var(--text-primary);
+}
+
+.doc-link .bi {
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+
+.doc-link .doc-num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* ── Footer ── */
+footer {
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  padding: 2.5rem 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}

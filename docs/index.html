@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPU-Enabled MLOps Platform on AWS EKS with Kubeflow</title>
+  <meta name="description"
+    content="An end-to-end MLOps platform that trains, tracks, deploys, and serves a YOLO object detection model on AWS EKS using Kubeflow, MLflow, KServe, Terraform, Argo CD, and GitHub Actions." />
+
+  <!-- Favicon: inline SVG, no extra asset -->
+  <link rel="icon" href="img/logo.png" />
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet" />
+  <!-- Custom CSS -->
+  <link href="assets/css/style.css" rel="stylesheet" />
+</head>
+
+<body>
+
+  <!-- ── Navbar ── -->
+  <nav id="mainNav" class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="#hero">
+        <img src="img/logo.png" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+        kubeflow-yolo
+      </a>
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navLinks">
+        <ul class="navbar-nav ms-auto gap-1">
+          <li class="nav-item"><a class="nav-link" href="#challenge">Challenge</a></li>
+          <li class="nav-item"><a class="nav-link" href="#architecture">Architecture</a></li>
+          <li class="nav-item"><a class="nav-link" href="#mlops">MLOps</a></li>
+          <li class="nav-item"><a class="nav-link" href="#platform">Platform</a></li>
+          <li class="nav-item"><a class="nav-link" href="#devops">DevOps</a></li>
+          <li class="nav-item ms-2">
+            <a class="btn btn-sm btn-outline-secondary" href="https://github.com/simonangel-fong/kubeflow-yolo"
+              target="_blank" rel="noopener">
+              <i class="bi bi-github me-1"></i>GitHub
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section id="hero">
+    <div class="container">
+      <h1 class="tagline mb-2">GPU-Enabled MLOps Platform</h1>
+
+      <p class="hero-subtitle mb-3">
+        One platform. 3 engineerings. End-to-end MLOps practice.
+      </p>
+
+      <p class="hero-desc mb-4">
+        An end-to-end platform that trains, tracks, deploys, and serves a
+        <strong class="text-emphasis">YOLO</strong> object detection model on
+        <strong class="text-emphasis">AWS EKS</strong> with
+        <strong class="text-emphasis">Kubeflow</strong>, MLflow, KServe,
+        Terraform, Argo CD, and GitHub Actions.
+      </p>
+
+      <div class="mb-4">
+        <span class="tech-badge"><i class="bi bi-cloud-fill text-orange"></i>AWS EKS</span>
+        <span class="tech-badge"><i class="bi bi-diagram-3-fill text-purple"></i>Kubeflow</span>
+        <span class="tech-badge"><i class="bi bi-graph-up text-accent"></i>MLflow</span>
+        <span class="tech-badge"><i class="bi bi-broadcast text-green"></i>KServe</span>
+        <span class="tech-badge"><i class="bi bi-box-seam text-purple"></i>Terraform</span>
+        <span class="tech-badge"><i class="bi bi-arrow-repeat text-accent"></i>Argo CD</span>
+        <span class="tech-badge"><i class="bi bi-github"></i>GitHub Actions</span>
+      </div>
+
+      <div class="d-flex flex-wrap gap-3">
+        <a href="https://github.com/simonangel-fong/kubeflow-yolo" target="_blank" rel="noopener"
+          class="btn btn-outline-secondary">
+          <i class="bi bi-github me-1"></i>View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Business Challenge ── -->
+  <section id="challenge">
+    <div class="container">
+      <p class="section-eyebrow">The problem</p>
+      <h2 class="section-title">Business Challenge</h2>
+
+      <p class="body-text">
+        Machine learning models can deliver strong business value, but moving them from experimentation to reliable
+        production use requires more than model training.
+      </p>
+
+      <blockquote class="challenge-quote mb-5">
+        <p class="challenge-question">
+          Teams need reliable training platforms to manage scalable compute, experiment
+          tracking, model serving, and automated infrastructure.
+        </p>
+      </blockquote>
+
+      <p class="body-text mb-4">
+        This project addresses that challenge by building an end-to-end MLOps platform for a
+        YOLO object detection model from <strong class="text-emphasis">3 engineering perspectives</strong>:
+      </p>
+
+      <div class="row g-4 mb-5">
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="icon"><i class="bi bi-graph-up-arrow"></i></div>
+            <h5>MLOps Engineering</h5>
+            <p>Experiment, train, track, store, and serve the model.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="icon"><i class="bi bi-hdd-stack-fill"></i></div>
+            <h5>Platform Engineering</h5>
+            <p>Provide scalable GPU compute, storage, networking, security, and observability on EKS.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="icon"><i class="bi bi-arrow-repeat"></i></div>
+            <h5>DevOps Engineering</h5>
+            <p>Automate infrastructure and application delivery with Terraform, GitHub Actions, Argo CD, and GitOps.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="subsection-title text-emphasis">Live application demo</h3>
+      <p class="body-text mb-4">Car plate detection served by the deployed model.</p>
+      <div>
+        <img src="img/app_demo01.png" class="screenshot" alt="Live car plate detection demo" loading="lazy" />
+        <p class="screenshot-label">Live application demo: car plate detection</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Architecture ── -->
+  <section id="architecture">
+    <div class="container">
+      <p class="section-eyebrow">How it fits together</p>
+      <h2 class="section-title">Architecture</h2>
+
+      <div class="text-center mb-5">
+        <img src="img/diagram_architecture.gif" alt="Architecture diagram" class="section-img" loading="lazy" />
+      </div>
+  </section>
+
+  <!-- ── MLOps Engineering ── -->
+  <section id="mlops">
+    <div class="container">
+      <h2 class="section-title mb-5">MLOps Engineering</h2>
+
+      <div class="text-center mb-5">
+        <img src="img/diagram_mlops.gif" alt="MLOps workflow diagram" class="section-img" loading="lazy" />
+      </div>
+
+      <h3 class="subsection-title text-emphasis mb-5">MLOps stages</h3>
+      <div class="data-table-wrap mb-5">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>MLOps stage</th>
+              <th>Components / technologies</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="step-num">1</td>
+              <td class="cell-label">Data preparation</td>
+              <td>Images and labels stored in <code>S3</code>; versioned with <code>DVC</code></td>
+            </tr>
+            <tr>
+              <td class="step-num">2</td>
+              <td class="cell-label">Model development</td>
+              <td><code>Jupyter Notebook</code></td>
+            </tr>
+            <tr>
+              <td class="step-num">3</td>
+              <td class="cell-label">Experimentation</td>
+              <td><code>Katib</code> for hyperparameter trials; <code>MLflow</code> for metrics and run tracking</td>
+            </tr>
+            <tr>
+              <td class="step-num">4</td>
+              <td class="cell-label">Training pipeline</td>
+              <td><code>Kubeflow Pipeline</code> for orchestration; artifacts stored in <code>S3</code>; model
+                registered and versioned after training</td>
+            </tr>
+            <tr>
+              <td class="step-num">5</td>
+              <td class="cell-label">Model serving</td>
+              <td><code>KServe</code> for online inference</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="subsection-title text-emphasis mb-5">Workflow in action</h3>
+      <div class="d-flex flex-column gap-4">
+        <div>
+          <img src="img/data_images.png" class="screenshot" alt="Dataset images and labels" loading="lazy" />
+          <p class="screenshot-label">Data: images and labels</p>
+        </div>
+        <div>
+          <img src="img/kf_notebook_train01.png" class="screenshot" alt="Model exploration in Jupyter" loading="lazy" />
+          <p class="screenshot-label">Development: model exploration in <code>Jupyter</code></p>
+        </div>
+        <div>
+          <img src="img/kf_katib01.png" class="screenshot" alt="Katib hyperparameter trials" loading="lazy" />
+          <p class="screenshot-label">Experiments: <code>Katib</code> runs trials</p>
+        </div>
+        <div>
+          <img src="img/mlflow_metrics02.png" class="screenshot" alt="MLflow metric tracking" loading="lazy" />
+          <p class="screenshot-label">Experiments: <code>MLflow</code> tracks metrics</p>
+        </div>
+        <div>
+          <img src="img/kf_pipeline02.png" class="screenshot" alt="Kubeflow Pipeline run" loading="lazy" />
+          <p class="screenshot-label">Pipeline: <code>Kubeflow Pipeline</code> trains, evaluates, and registers</p>
+        </div>
+        <div>
+          <img src="img/kf_kserve_endpoint01.png" class="screenshot" alt="KServe inference endpoint" loading="lazy" />
+          <p class="screenshot-label">Serving: deploy the selected model with <code>KServe</code></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Platform Engineering ── -->
+  <section id="platform">
+    <div class="container">
+      <h2 class="section-title mb-5">Platform Engineering</h2>
+
+      <div class="text-center mb-5">
+        <img src="img/diagram_platform.gif" alt="Platform architecture diagram" class="section-img" loading="lazy" />
+      </div>
+
+      <h3 class="subsection-title text-emphasis">Infrastructure as Code</h3>
+      <p class="body-text">AWS infrastructure is managed with <strong class="text-emphasis">Terraform</strong>:</p>
+      <ul class="body-list mb-5">
+        <li>using an <strong class="text-emphasis">S3 remote backend</strong></li>
+        <li>integrating <code>GitHub Actions</code> for <code>fmt</code>, <code>validate</code>, <code>plan</code>, and
+          <code>apply</code>
+        </li>
+      </ul>
+
+      <h3 class="subsection-title text-emphasis mb-5">Platform capabilities</h3>
+      <div class="data-table-wrap mb-5">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Capability</th>
+              <th>Infrastructure / cluster</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cell-label">Compute</td>
+              <td>EKS, Karpenter, node selectors</td>
+              <td>Autoscaling and GPU node provisioning</td>
+            </tr>
+            <tr>
+              <td class="cell-label">Storage</td>
+              <td>S3, EBS, EFS, StorageClass, PVC</td>
+              <td>Persistent and shared storage for ML workloads</td>
+            </tr>
+            <tr>
+              <td class="cell-label">Networking</td>
+              <td>VPC, ALBC, Istio, Gateway API, ExternalDNS</td>
+              <td>North-south / east-west traffic and automated DNS</td>
+            </tr>
+            <tr>
+              <td class="cell-label">Security</td>
+              <td>Secrets Manager, KMS, ESO, cert-manager, NetworkPolicy, mTLS</td>
+              <td>Secrets, encryption, certificates, and isolation</td>
+            </tr>
+            <tr>
+              <td class="cell-label">Monitoring</td>
+              <td>Prometheus, Grafana</td>
+              <td>Logs and platform metrics</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="subsection-title text-emphasis mb-5">Platform in action</h3>
+      <div class="d-flex flex-column gap-4">
+        <div>
+          <img src="img/infra_eks.png" class="screenshot" alt="EKS cluster" loading="lazy" />
+          <p class="screenshot-label">EKS cluster</p>
+        </div>
+        <div>
+          <img src="img/infra_eks_node_gpu.png" class="screenshot" alt="GPU nodes provisioned by Karpenter"
+            loading="lazy" />
+          <p class="screenshot-label">Self-managed <code>GPU</code> nodes via <code>Karpenter</code></p>
+        </div>
+        <div>
+          <img src="img/monioring_gpu01.png" class="screenshot" alt="Grafana GPU dashboard" loading="lazy" />
+          <p class="screenshot-label">Grafana dashboard: GPU</p>
+        </div>
+        <div>
+          <img src="img/monitoring_k8s01.png" class="screenshot" alt="Grafana cluster dashboard" loading="lazy" />
+          <p class="screenshot-label">Grafana dashboard: cluster</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DevOps Engineering ── -->
+  <section id="devops">
+    <div class="container">
+      <h2 class="section-title mb-5">DevOps Engineering</h2>
+
+      <h3 class="subsection-title text-emphasis">CI/CD pipelines with <code>GitHub Actions</code></h3>
+      <div class="data-table-wrap mb-4">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Pipeline</th>
+              <th>Key steps</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cell-label"><code>terraform-apply</code></td>
+              <td>Trigger, <code>fmt</code>, <code>validate</code>, <code>plan</code>, <code>apply</code></td>
+              <td>Deploy infrastructure with <code>Terraform</code></td>
+            </tr>
+            <tr>
+              <td class="cell-label"><code>build-image-train</code></td>
+              <td>Trigger, build, push</td>
+              <td>Publish <strong class="text-emphasis">training</strong> image to <code>ECR</code></td>
+            </tr>
+            <tr>
+              <td class="cell-label"><code>build-image-inference</code></td>
+              <td>Trigger, build, push</td>
+              <td>Publish <strong class="text-emphasis">inference</strong> image to <code>ECR</code></td>
+            </tr>
+            <tr>
+              <td class="cell-label"><code>build-image-frontend</code></td>
+              <td>Trigger, build, push</td>
+              <td>Publish <strong class="text-emphasis">frontend</strong> image to <code>ECR</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mb-5">
+        <img src="img/cicd_build_train.png" class="screenshot" alt="CI/CD pipeline run" loading="lazy" />
+        <p class="screenshot-label">CI/CD pipeline in action</p>
+      </div>
+
+      <h3 class="subsection-title text-emphasis">GitOps with <code>Argo CD</code></h3>
+      <p class="body-text">Deployment is managed with GitOps practices via <code>Argo CD</code>:</p>
+      <ul class="body-list mb-4">
+        <li><strong class="text-emphasis">App-of-Apps</strong> declaratively manages platform and application components
+        </li>
+        <li><strong class="text-emphasis">Git as source of truth</strong> Argo CD continuously reconciles the cluster
+          with the repository</li>
+        <li><strong class="text-emphasis">Automated deployment</strong> platform and application changes are applied
+          through GitOps</li>
+      </ul>
+
+      <div>
+        <img src="img/infra_argocd01.png" class="screenshot" alt="Argo CD application tree" loading="lazy" />
+        <p class="screenshot-label"><code>Argo CD</code> in action</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Roadmap ── -->
+  <section id="roadmap">
+    <div class="container">
+      <p class="section-eyebrow">What comes next</p>
+      <h2 class="section-title">Roadmap</h2>
+
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+          <div class="stage-card is-current">
+            <div class="stage-step">CURRENT</div>
+            <h5>Make it work</h5>
+            <p>Deliver an MVP functional end-to-end MLOps platform.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="stage-card">
+            <div class="stage-step">NEXT</div>
+            <h5>Make it right</h5>
+            <p>Add model promotion gates, policy as code, latency monitoring, and CI/CD security scanning.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="stage-card">
+            <div class="stage-step">THEN</div>
+            <h5>Make it fast</h5>
+            <p>Optimize container builds with multi-stage builds and enable pipeline caching.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="stage-card">
+            <div class="stage-step">LATER</div>
+            <h5>Make it efficient</h5>
+            <p>Add FinOps practices and deeper Prometheus / Grafana monitoring.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+      <div>
+        <span class="fw-semibold text-emphasis">kubeflow-yolo</span>
+        &nbsp;·&nbsp; Built by
+        <a href="https://github.com/simonangel-fong" target="_blank" rel="noopener">simonangel-fong</a>
+      </div>
+      <div class="d-flex gap-3">
+        <a href="https://github.com/simonangel-fong/kubeflow-yolo" target="_blank" rel="noopener">
+          <i class="bi bi-github"></i> GitHub
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Custom JS -->
+  <script src="assets/js/main.js"></script>
+
+</body>
+
+</html>

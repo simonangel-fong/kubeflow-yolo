@@ -1,0 +1,10 @@
+title: GPU-Enabled MLOps Platform on AWS EKS with Kubeflow
+description: >-
+  An end-to-end MLOps platform that trains, tracks, deploys, and serves a YOLO
+  object detection model on AWS EKS using Kubeflow, MLflow, KServe, Terraform,
+  Argo CD, and GitHub Actions.
+theme: jekyll-theme-primer
+
+# index.html is a hand-built landing page; the numbered .md files are reference docs.
+exclude:
+  - diagrams/
