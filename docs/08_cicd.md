@@ -69,6 +69,7 @@ gh api -X PUT repos/simonangel-fong/kubeflow-yolo/environments/tf-apply -F "revi
 gh secret set CLOUDFLARE_API_TOKEN --body "<api_token>"
 # ✓ Set Actions secret CLOUDFLARE_API_TOKEN for simonangel-fong/kubeflow-yolo
 gh secret set CLOUDFLARE_ZONE_ID --body "<zone_id>"
+# ✓ Set Actions secret CLOUDFLARE_ZONE_ID for simonangel-fong/kubeflow-yolo
 ```
 
 ---
