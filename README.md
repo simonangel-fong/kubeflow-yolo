@@ -2,24 +2,23 @@
 
 > One platform. 3 engineerings. End-to-end MLOps practice.
 
-**[View the project site](https://simonangel-fong.github.io/kubeflow-yolo/)**
+An end-to-end **MLOps platform** that trains, tracks, deploys, and serves a YOLO object detection model on `AWS EKS` using `Kubeflow`, `MLflow`, `KServe`, `Terraform`, `Argo CD`, and `GitHub Actions`.
 
-An end-to-end MLOps platform that trains, tracks, deploys, and serves a YOLO object detection model on `AWS EKS` using `Kubeflow`, `MLflow`, `KServe`, `Terraform`, `Argo CD`, and `GitHub Actions`.
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=flat-square&logo=pytorch&logoColor=white) ![Ultralytics YOLO](https://img.shields.io/badge/Ultralytics%20YOLO-111F68?style=flat-square&logo=ultralytics&logoColor=white) ![ONNX](https://img.shields.io/badge/ONNX-005CED?style=flat-square&logo=onnx&logoColor=white) ![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=flat-square&logo=jupyter&logoColor=white) ![Kubeflow](https://img.shields.io/badge/Kubeflow-2C2C32?style=flat-square&logo=kubeflow&logoColor=white) ![MLflow](https://img.shields.io/badge/MLflow-0194E2?style=flat-square&logo=mlflow&logoColor=white) ![KServe](https://img.shields.io/badge/KServe-2C2C32?style=flat-square&logo=kubernetes&logoColor=white) ![DVC](https://img.shields.io/badge/DVC-13ADC7?style=flat-square&logo=dvc&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
 
-![AWS](https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazonwebservices&logoColor=white&style=plastic) ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white&style=plastic) ![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=Cloudflare&logoColor=white&style=plastic) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white&style=plastic) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white&style=plastic) ![YOLO](https://img.shields.io/badge/YOLO-111F68?logo=yolo&logoColor=fff&style=plastic) ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=plastic)
+![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonwebservices&logoColor=white) ![Amazon EKS](https://img.shields.io/badge/Amazon%20EKS-FF9900?style=flat-square&logo=amazoneks&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) ![NVIDIA GPU](https://img.shields.io/badge/NVIDIA%20GPU-76B900?style=flat-square&logo=nvidia&logoColor=white) ![Karpenter](https://img.shields.io/badge/Karpenter-FF9900?style=flat-square&logo=amazonwebservices&logoColor=white) ![Istio](https://img.shields.io/badge/Istio-466BB0?style=flat-square&logo=istio&logoColor=white) ![Helm](https://img.shields.io/badge/Helm-0F1689?style=flat-square&logo=helm&logoColor=white) ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white) ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white) ![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=flat-square&logo=cloudflare&logoColor=white)
 
-![Jupyter](https://img.shields.io/badge/Jupyter-ffffff?logo=Jupyter&style=plastic)
-argocd
+![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat-square&logo=terraform&logoColor=white) ![Argo CD](https://img.shields.io/badge/Argo%20CD-EF7B4D?style=flat-square&logo=argo&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white) ![GitHub](https://img.shields.io/badge/GitHub-121011?style=flat-square&logo=github&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) ![Kustomize](https://img.shields.io/badge/Kustomize-326CE5?style=flat-square&logo=kubernetes&logoColor=white) ![NGINX](https://img.shields.io/badge/NGINX-009639?style=flat-square&logo=nginx&logoColor=white)
 
 - [GPU-Enabled MLOps Platform on `AWS EKS` with `kubeflow`](#gpu-enabled-mlops-platform-on-aws-eks-with-kubeflow)
   - [Business Challenge](#business-challenge)
   - [Architecture](#architecture)
-  - [MLOps Engineering](#mlops-engineering)
-    - [Workflow in Action](#workflow-in-action)
+  - [ML Engineering](#ml-engineering)
+    - [ML Engineering in Action](#ml-engineering-in-action)
   - [Platform Engineering](#platform-engineering)
     - [Infrastructure as Code](#infrastructure-as-code)
     - [Platform Capabilities](#platform-capabilities)
-    - [Platform in Action](#platform-in-action)
+    - [Platform engineering in Action](#platform-engineering-in-action)
   - [DevOps Engineering](#devops-engineering)
     - [CI/CD Pipelines with `GitHub Actions`](#cicd-pipelines-with-github-actions)
     - [GitOps with `Argo CD`](#gitops-with-argo-cd)
@@ -32,11 +31,11 @@ argocd
 
 **Machine learning models** can deliver strong business value, but moving them from **experimentation** to reliable **production** use requires more than model training.
 
-> Teams need **reliable training platforms** to manage scalable compute, experiment tracking, model serving, and automated infrastructure.
+> THow do teams close the **GAP** between <u>experimentation</u> and <u>production</u>?
 
 This project addresses that challenge building an end-to-end MLOps platform for a YOLO object detection model with **3 engineering perspectives**:
 
-1. `MLOps Engineering`: experiment, train, track, store, and serve the model.
+1. `ML Engineering`: experiment, train, track, store, and serve the model.
 2. `Platform Engineering`: provide scalable `GPU` compute, storage, networking, security, and observability on `EKS`.
 3. `DevOps Engineering`: automate infrastructure and application delivery with `Terraform`, `GitHub Actions`, `Argo CD`, and `GitOps`.
 
@@ -75,11 +74,11 @@ kubeflow-yolo/
 
 ---
 
-## MLOps Engineering
+## ML Engineering
 
 ![diagram_mlops](./docs/img/diagram_mlops.gif)
 
-| #   | MLOps Stage       | Components / Technologies                                                                                      |
+| #   | ML Stage          | Components / Technologies                                                                                      |
 | --- | ----------------- | -------------------------------------------------------------------------------------------------------------- |
 | 1   | Data preparation  | Images and labels stored in `S3`; versioned with `DVC`                                                         |
 | 2   | Model development | `Jupyter Notebook`                                                                                             |
@@ -89,7 +88,7 @@ kubeflow-yolo/
 
 ---
 
-### Workflow in Action
+### ML Engineering in Action
 
 - **Data**: images and labels
   ![data_images](./docs/img/data_images.png)
@@ -136,7 +135,7 @@ AWS infrastructure is managed with **Terraform**:
 
 ---
 
-### Platform in Action
+### Platform engineering in Action
 
 - EKS cluster
 
@@ -214,7 +213,4 @@ Detailed implementation guides:
 
 ---
 
-- web
-- 2min video
-- trim comments
 - detail docs
