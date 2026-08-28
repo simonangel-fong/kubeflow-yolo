@@ -79,7 +79,7 @@ kubeflow-yolo/
 
 ## ML Engineering
 
-![diagram_mlops](./docs/img/diagram_mlops.gif)
+![diagram_ml](./docs/img/diagram_ml.gif)
 
 | #   | ML Stage          | Components / Technologies                                                                                      |
 | --- | ----------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -213,7 +213,3 @@ Detailed implementation guides:
 - [Frontend Deployment](./docs/07_app_frontend.md)
 - [CI/CD pipelines](./docs/08_cicd.md)
 - [Monitoring](./docs/09_monitoring.md)
-
----
-
-- detail docs
