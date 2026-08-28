@@ -39,3 +39,26 @@ output "github_terraform_apply_role_arn" {
   description = "Role the gated terraform apply job assumes; set as the TF_APPLY_ROLE_ARN variable"
   value       = aws_iam_role.github_terraform_apply.arn
 }
+
+# ##############################
+# Website
+# ##############################
+output "web_url" {
+  description = "Public website URL"
+  value       = "https://${local.web_domain}"
+}
+
+output "web_cloudfront_domain" {
+  description = "CloudFront distribution domain the DNS record targets"
+  value       = aws_cloudfront_distribution.web.domain_name
+}
+
+output "web_cloudfront_distribution_id" {
+  description = "Distribution ID; needed to invalidate the cache after a deploy"
+  value       = aws_cloudfront_distribution.web.id
+}
+
+output "web_s3_uri" {
+  description = "S3 location the site is served from"
+  value       = "s3://${aws_s3_bucket.project.id}/${local.web_s3_prefix}/"
+}

@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "infra/**"
+      - "web/**"
       - ".github/workflows/terraform-apply.yml"
   push:
     branches: [master]
     paths:
       - "infra/**"
+      - "web/**"
       - ".github/workflows/terraform-apply.yml"
   workflow_dispatch:
     inputs:
@@ -42,6 +44,48 @@ jobs:
   # ##############################
   # plan: read-only, runs on PRs and pushes
   # ##############################
+  # ##############################
+  # website: fail a PR whose landing page references a file that is not there
+  # ##############################
+  verify-web:
+    name: Verify website assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check referenced assets exist
+        working-directory: web
+        run: |
+          set -euo pipefail
+
+          missing=0
+          for f in index.html assets/css/style.css assets/js/main.js; do
+            if [ ! -f "$f" ]; then
+              echo "::error::missing from web/: $f"
+              missing=1
+            fi
+          done
+
+          # Every local asset index.html points at must be present.
+          while read -r ref; do
+            if [ ! -f "$ref" ]; then
+              echo "::error::index.html references missing file: $ref"
+              missing=1
+            fi
+          done < <(grep -oE '(src|href)="(img|assets)/[^"]*"' index.html | sed 's/.*="//;s/"//' | sort -u)
+
+          # The hero background is reached from CSS, not the HTML.
+          while read -r ref; do
+            if [ ! -f "$ref" ]; then
+              echo "::error::style.css references missing file: $ref"
+              missing=1
+            fi
+          done < <(grep -oE 'url\("\.\./\.\./[^"]*"\)' assets/css/style.css | sed 's|.*\.\./\.\./||;s|")||' | sort -u)
+
+          exit "$missing"
+
   terraform-plan:
     name: Plan (${{ matrix.root }})
     if: github.event_name != 'workflow_dispatch' || inputs.action == 'plan'
@@ -103,6 +147,8 @@ jobs:
           TF_VAR_eso_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_project_state_bucket: simonangelfong-terraform-backend
           TF_VAR_project_state_key: kubeflow-yolo/${{ vars.ENV || 'dev' }}/project.tfstate
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
 
       - name: Render plan
         id: render
@@ -223,6 +269,20 @@ jobs:
         env:
           TF_VAR_env: ${{ vars.ENV || 'dev' }}
           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
+
+      # Uploading a new object does not evict what CloudFront already cached,
+      # so the site would keep serving the old files without this.
+      - name: Invalidate CloudFront
+        run: |
+          set -euo pipefail
+
+          dist=$(terraform output -raw web_cloudfront_distribution_id)
+          id=$(aws cloudfront create-invalidation --distribution-id "$dist" --paths '/*' --query 'Invalidation.Id' --output text)
+
+          echo "invalidation $id on $dist"
+          aws cloudfront wait invalidation-completed --distribution-id "$dist" --invalidation-id "$id"
 
       - name: Summary
         run: |

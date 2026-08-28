@@ -25,6 +25,16 @@ locals {
   ]
 
   # ##############################
+  # Website
+  # ##############################
+  web_domain = "kubeflow-web.arguswatcher.net"
+  # Pre-existing wildcard certificate in us-east-1 covering the zone.
+  web_cert_domain = "*.arguswatcher.net"
+  web_s3_prefix   = "web"
+  web_index       = "index.html"
+  web_source_dir  = "${path.module}/../../web"
+
+  # ##############################
   # ECR
   # ##############################
   ecr_repo = ["train", "kserve", "frontend"]
