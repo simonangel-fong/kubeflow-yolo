@@ -1,0 +1,94 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write # deploy to Pages
+  id-token: write # OIDC for the Pages deployment
+
+# Allow one in-flight deployment; queue rather than cancel so a
+# published site is never left half-updated.
+concurrency:
+  group: deploy-pages
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+
+      - name: Verify landing page assets
+        run: |
+          set -euo pipefail
+
+          missing=0
+          for f in index.html assets/css/style.css assets/js/main.js img/bg.jpg; do
+            if [ ! -f "_site/$f" ]; then
+              echo "::error::missing from build output: $f"
+              missing=1
+            fi
+          done
+
+          # Every image the landing page references must exist in the output.
+          while read -r img; do
+            if [ ! -f "_site/$img" ]; then
+              echo "::error::index.html references missing image: $img"
+              missing=1
+            fi
+          done < <(grep -o 'src="img/[^"]*"' _site/index.html | sed 's/src="//;s/"//' | sort -u)
+
+          exit "$missing"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Summary
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          {
+            echo "### Pages deployed"
+            echo
+            echo "$PAGE_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
