@@ -1,6 +1,6 @@
 # GPU-Enabled MLOps Platform on `AWS EKS` with `kubeflow`
 
-> Cloud native. End-to-end. MLOps practice.
+> One platform. 3 engineerings. End-to-end MLOps practice.
 
 An end-to-end MLOps platform that trains, tracks, deploys, and serves a YOLO object detection model on `AWS EKS` using `Kubeflow`, `MLflow`, `KServe`, `Terraform`, `Argo CD`, and `GitHub Actions`.
 
@@ -111,14 +111,14 @@ kubeflow-yolo/
 
 ## Platform Engineering
 
+![diagram_platform](./docs/img/diagram_platform.gif)
+
 ### Infrastructure as Code
 
 AWS infrastructure is managed with **Terraform**:
 
 - using an **`S3` remote backend**
 - integrating `GitHub Actions` for `fmt`, `validate`, `plan`, and `apply`.
-
-![diagram_infra](./docs/img/diagram_infra.gif)
 
 ---
 
@@ -219,3 +219,5 @@ Detailed implementation guides:
   - devops
 - web
 - 2min video
+- trim comments
+- detail docs
