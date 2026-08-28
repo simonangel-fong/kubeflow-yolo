@@ -282,7 +282,7 @@ jobs:
           id=$(aws cloudfront create-invalidation --distribution-id "$dist" --paths '/*' --query 'Invalidation.Id' --output text)
 
           echo "invalidation $id on $dist"
-          aws cloudfront wait invalidation-completed --distribution-id "$dist" --invalidation-id "$id"
+          aws cloudfront wait invalidation-completed --distribution-id "$dist" --id "$id"
 
       - name: Summary
         run: |
