@@ -3,7 +3,12 @@
 # removed source file is removed from the bucket too.
 
 locals {
-  web_files = fileset(local.web_source_dir, "**")
+  # The video is too large for git and for terraform state, so it is uploaded
+  # out of band (see docs) and deliberately excluded here.
+  web_files = setsubtract(
+    fileset(local.web_source_dir, "**"),
+    fileset(local.web_source_dir, "video/**"),
+  )
 
   # S3 has no content-type sniffing; a wrong type makes browsers refuse the file.
   web_content_types = {

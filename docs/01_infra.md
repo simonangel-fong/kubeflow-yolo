@@ -6,6 +6,7 @@
   - [IaC - Terraform](#iac---terraform)
   - [ArgoCD](#argocd)
   - [Runbook](#runbook)
+  - [Web](#web)
 
 ---
 
@@ -106,4 +107,15 @@ import {
   to       = aws_secretsmanager_secret.mlflow_postgres
   identity = { "arn" = "<secret_arn>" }
 }
+```
+
+---
+
+## Web
+
+- Update video
+
+```sh
+aws s3 cp web/video/kubeflow-yolo.mp4 "s3://kubeflow-yolo-dev-099139718958/web/video/kubeflow-yolo.mp4" --content-type video/mp4 --cache-control "public, max-age=31536000, immutable"
+# upload: web\video\kubeflow-yolo.mp4 to s3://kubeflow-yolo-dev-099139718958/web/video/kubeflow-yolo.mp4
 ```

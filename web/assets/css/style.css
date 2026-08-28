@@ -412,3 +412,20 @@ footer a {
 footer a:hover {
   text-decoration: underline;
 }
+
+/* ── Demo video ── */
+.video-frame {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #000;
+  /* Reserve the 16:9 box up front so the poster swap causes no layout shift. */
+  aspect-ratio: 16 / 9;
+}
+
+.video-player {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

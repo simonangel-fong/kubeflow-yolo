@@ -37,6 +37,7 @@
       </button>
       <div class="collapse navbar-collapse" id="navLinks">
         <ul class="navbar-nav ms-auto gap-1">
+          <li class="nav-item"><a class="nav-link" href="#video">Demo</a></li>
           <li class="nav-item"><a class="nav-link" href="#challenge">Challenge</a></li>
           <li class="nav-item"><a class="nav-link" href="#architecture">Architecture</a></li>
           <li class="nav-item"><a class="nav-link" href="#mlops">ML</a></li>
@@ -112,6 +113,7 @@
         YOLO object detection model from <strong class="text-emphasis">3 engineering perspectives</strong>:
       </p>
 
+      <!-- problem -->
       <div class="row g-4 mb-5">
         <div class="col-md-4">
           <div class="feature-card">
@@ -136,12 +138,35 @@
         </div>
       </div>
 
+      <hr class="w-50 mx-auto py-3">
+
+      <!-- live demo -->
       <h3 class="subsection-title text-emphasis">Live application demo</h3>
       <p class="body-text mb-4">Car plate detection served by the deployed model.</p>
       <div>
         <img src="img/app_demo01.png" class="screenshot" alt="Live car plate detection demo" loading="lazy" />
         <p class="screenshot-label">Live application demo: car plate detection</p>
       </div>
+
+      <hr class="w-50 mx-auto py-3">
+
+      <h3 class="subsection-title text-emphasis">Project Demo</h3>
+
+      <p class="body-text mb-4">
+        🎥 Watch a 5-minute walkthrough 👇
+      </p>
+
+      <div class="video-frame">
+        <!-- muted + playsinline are what browsers require before they allow
+             autoplay; the clip has no audio track, so nothing is lost. -->
+        <video id="demoVideo" class="video-player" poster="img/video_poster.png" preload="none" muted loop playsinline
+          controls controlslist="nodownload" width="1920" height="1080">
+          <source src="video/kubeflow-yolo.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+          <a href="video/kubeflow-yolo.mp4">Download the demo video</a> instead.
+        </video>
+      </div>
+
     </div>
   </section>
 

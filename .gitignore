@@ -257,3 +257,6 @@ crash.log
 *.tfvars.json
 backend.hcl
 !*.tfvars.example
+
+# Website video: exceeds GitHub's 100 MB file limit; uploaded to S3 out of band.
+web/video/*.mp4
