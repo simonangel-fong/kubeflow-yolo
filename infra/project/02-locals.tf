@@ -27,7 +27,7 @@ locals {
   # ##############################
   # Website
   # ##############################
-  web_domain = "kubeflow-web.arguswatcher.net"
+  web_domain = "kubeflow-yolo.arguswatcher.net"
   # Pre-existing wildcard certificate in us-east-1 covering the zone.
   web_cert_domain = "*.arguswatcher.net"
   web_s3_prefix   = "web"

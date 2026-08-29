@@ -4,8 +4,6 @@
 
 An end-to-end **MLOps platform** that trains, tracks, deploys, and serves a YOLO object detection model on `AWS EKS` using `Kubeflow`, `MLflow`, `KServe`, `Terraform`, `Argo CD`, and `GitHub Actions`.
 
-**Project website**: <https://kubeflow-web.arguswatcher.net>
-
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=flat-square&logo=pytorch&logoColor=white) ![Ultralytics YOLO](https://img.shields.io/badge/Ultralytics%20YOLO-111F68?style=flat-square&logo=ultralytics&logoColor=white) ![ONNX](https://img.shields.io/badge/ONNX-005CED?style=flat-square&logo=onnx&logoColor=white) ![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=flat-square&logo=jupyter&logoColor=white) ![Kubeflow](https://img.shields.io/badge/Kubeflow-2C2C32?style=flat-square&logo=kubeflow&logoColor=white) ![MLflow](https://img.shields.io/badge/MLflow-0194E2?style=flat-square&logo=mlflow&logoColor=white) ![KServe](https://img.shields.io/badge/KServe-2C2C32?style=flat-square&logo=kubernetes&logoColor=white) ![DVC](https://img.shields.io/badge/DVC-13ADC7?style=flat-square&logo=dvc&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
 
 ![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonwebservices&logoColor=white) ![Amazon EKS](https://img.shields.io/badge/Amazon%20EKS-FF9900?style=flat-square&logo=amazoneks&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) ![NVIDIA GPU](https://img.shields.io/badge/NVIDIA%20GPU-76B900?style=flat-square&logo=nvidia&logoColor=white) ![Karpenter](https://img.shields.io/badge/Karpenter-FF9900?style=flat-square&logo=amazonwebservices&logoColor=white) ![Istio](https://img.shields.io/badge/Istio-466BB0?style=flat-square&logo=istio&logoColor=white) ![Helm](https://img.shields.io/badge/Helm-0F1689?style=flat-square&logo=helm&logoColor=white) ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white) ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white) ![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=flat-square&logo=cloudflare&logoColor=white)
@@ -33,7 +31,7 @@ An end-to-end **MLOps platform** that trains, tracks, deploys, and serves a YOLO
 
 **Machine learning models** can deliver strong business value, but moving them from **experimentation** to reliable **production** use requires more than model training.
 
-> THow do teams close the **GAP** between <u>experimentation</u> and <u>production</u>?
+> How do teams close the **GAP** between <u>experimentation</u> and <u>production</u>?
 
 This project addresses that challenge building an end-to-end MLOps platform for a YOLO object detection model with **3 engineering perspectives**:
 
@@ -46,6 +44,8 @@ This project addresses that challenge building an end-to-end MLOps platform for 
 - **Live application demo**: car plate detection
 
 ![app_demo01](./docs/img/app_demo01.png)
+
+- **Project website**: <https://kubeflow-yolo.arguswatcher.net>
 
 ---
 
