@@ -396,7 +396,7 @@ section {
 }
 
 /* ── Footer ── */
-footer {
+.site-footer {
   background: var(--bg-surface);
   border-top: 1px solid var(--border);
   padding: 2.5rem 0;
@@ -404,13 +404,48 @@ footer {
   font-size: 0.85rem;
 }
 
-footer a {
-  color: var(--accent);
-  text-decoration: none;
+.site-footer .container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
 }
 
-footer a:hover {
+.site-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.site-footer a:hover {
+  color: var(--text-primary);
   text-decoration: underline;
+}
+
+/* Muted until hovered so it reads as a control, not a second brand link */
+.footer-top-link {
+  color: var(--text-muted);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.footer-top-link span {
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+.footer-top-link:hover span {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 575.98px) {
+  .site-footer .container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* ── Demo video ── */
